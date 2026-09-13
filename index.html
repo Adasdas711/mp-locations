@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>PALACE / Memory Mapper</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#111316;--panel:#191c20;--elev:#272a2d;--line:rgba(255,255,255,.13);
+  --blue:#4da3ff;--text:#e2eeff;--muted:#7a8fa8;--green:#00ff88;--red:#ff3355;
+  --top:40px;--bottom:52px;--status:22px;--right:240px;--tool:32px
+}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:12.5px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+button,input,textarea,select{font:inherit}
+button{color:var(--text);background:var(--elev);border:1px solid var(--line);border-radius:5px;padding:5px 8px;cursor:pointer}
+button:hover{border-color:var(--blue);color:var(--blue)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:disabled:hover{border-color:var(--line);color:var(--text)}
+button.primary{background:var(--blue);color:#001820;border-color:var(--blue);font-weight:700}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.app{height:100%;display:flex;flex-direction:column}
+
+/* TOP — compact */
+.top{height:var(--top);background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 10px}
+.logo{letter-spacing:3px;font-weight:800;color:var(--blue);font-size:12px;flex-shrink:0}
+.dot{display:inline-block;width:6px;height:6px;background:var(--blue);border-radius:50%;margin-right:6px;box-shadow:0 0 10px var(--blue)}
+.title{flex:1;min-width:0;text-align:center}
+.title input{width:100%;max-width:320px;background:transparent;border:1px solid transparent;color:var(--text);text-align:center;font-size:13px;padding:4px 10px;border-radius:5px}
+.title input:focus{outline:none;border-color:var(--blue);background:var(--elev)}
+.title.flash input{animation:flash .5s ease-out}
+@keyframes flash{from{border-color:var(--blue);background:rgba(77,163,255,.22)}to{border-color:transparent;background:transparent}}
+@media (prefers-reduced-motion:reduce){.title.flash input{animation:none}}
+.top button{padding:4px 8px;font-size:12px;white-space:nowrap}
+
+/* MAIN */
+.main{flex:1;display:flex;min-height:0;position:relative}
+
+/* LEFT TOOLBAR — tighter */
+.left{position:absolute;z-index:9;left:10px;top:50%;transform:translateY(-50%);width:40px;background:rgba(25,28,32,.92);border:1px solid var(--line);border-radius:8px;padding:5px;display:flex;flex-direction:column;gap:4px;box-shadow:0 6px 18px #0009}
+.left span{display:block;height:6px}
+.tool{width:var(--tool);height:var(--tool);padding:0;font-size:14px;display:flex;align-items:center;justify-content:center}
+.tool.active{background:rgba(77,163,255,.18);border-color:var(--blue);color:var(--blue)}
+
+/* STAGE */
+.stage{flex:1;position:relative;overflow:hidden;background:#0d0f12;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:24px 24px}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;z-index:10}
+.empty strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
+.viewport{position:absolute;inset:0;transform-origin:0 0}
+.plan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 10px 32px #000;user-select:none}
+.plan img{display:block;max-width:none}
+.marker{position:absolute;width:28px;height:28px;border-radius:50%;background:#ffb800;color:#16110a;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;transform:translate(-50%,-50%) rotate(var(--mrot,0deg));cursor:grab;box-shadow:0 2px 10px #000;z-index:3}
+.marker.dragging{cursor:grabbing;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.18);box-shadow:0 0 0 4px #4da3ff66,0 6px 18px #000;z-index:20}
+.marker.selected{outline:2px solid var(--blue)}
+
+/* RIGHT PANEL — narrower + denser */
+.section{border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px}
+.section:last-child{border-bottom:0;margin-bottom:0}
+.section h3{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:0 0 7px}
+.field{margin:6px 0}
+.field label{display:block;color:var(--muted);font-size:10px;margin-bottom:3px}
+.field input,.field textarea,.field select{width:100%;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:6px 7px}
+.field textarea{min-height:72px;resize:vertical}
+.row{display:flex;gap:5px}
+.row>*{flex:1}
+
+/* FLOOR OVERLAY — compact chips */
+.floor-overlay{position:absolute;right:10px;top:10px;z-index:11;display:flex;flex-direction:column;gap:3px;background:#191c20ee;padding:4px;border:1px solid var(--line);border-radius:6px;max-height:calc(100% - 20px);overflow:auto}
+.floor-overlay button{padding:4px 8px;font-size:11px}
+.floor-overlay button.active{color:var(--blue);border-color:var(--blue)}
+.floor-overlay .add{border-style:dashed}
+
+/* BOTTOM ROUTE — shorter */
+.bottom{height:var(--bottom);background:var(--panel);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:6px 10px}
+.bottom>b{display:none}
+.route{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;scroll-behavior:smooth;padding:2px}
+.route::-webkit-scrollbar{display:none}
+.route .r{min-width:34px;height:34px;border-radius:50%;background:#ffb800;color:#16110a;border:2px solid #fff;font-weight:800;font-size:12px;cursor:grab;transition:transform .18s,box-shadow .18s}
+.route .r:hover{transform:translateY(-2px) scale(1.06);box-shadow:0 4px 12px #0008}
+.route .r:active{cursor:grabbing;transform:scale(.95)}
+.route .r.drag-over{box-shadow:0 0 0 2px #4da3ff}
+.route .r.sel{outline:2px solid var(--blue);outline-offset:2px}
+.rgroup{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:3px 9px 3px 7px;border:1px solid rgba(255,255,255,.09);border-radius:22px}
+.rgroup.current{border-color:var(--fc);background:rgba(255,255,255,.05)}
+.rgroup .r{background:var(--fc);opacity:.6}
+.rgroup.current .r{opacity:1}
+.rlabel{font-size:9.5px;color:var(--muted);white-space:nowrap;letter-spacing:.3px;cursor:pointer}
+.rgroup.current .rlabel{color:var(--fc);font-weight:700}
+
+/* STATUS — thinner */
+.status{height:var(--status);background:var(--panel);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 10px;color:var(--muted);gap:14px;font-size:10.5px}
+.badge{color:var(--green)}
+
+/* MODAL — less wasteful */
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
+.modal.show{display:flex}
+#askModal{z-index:40;background:#000c}
+.dialog{width:min(960px,96vw);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column}
+.dialog.narrow{width:min(560px,96vw)}
+.dialog.wide{width:min(1240px,98vw)}
+
+/* ЭЛЕМЕНТЫ УПРАВЛЕНИЯ НА ХОЛСТЕ */
+.canvas-ctl{position:absolute;z-index:11;display:flex;align-items:center;gap:8px;background:#191c20ee;border:1px solid var(--line);border-radius:8px;padding:7px 10px;box-shadow:0 6px 18px #0009}
+.canvas-ctl label{color:var(--muted);font-size:10.5px;white-space:nowrap}
+.canvas-ctl input[type=range]{width:120px;accent-color:var(--blue)}
+.canvas-ctl output{font-size:11px;font-weight:700;min-width:26px;text-align:right}
+#markerCtl{left:12px;bottom:12px}
+
+/* COMPASS — поворот плана */
+.compass{position:absolute;right:12px;bottom:12px;z-index:11;width:92px;height:92px;border-radius:50%;background:#191c20ee;border:1px solid var(--line);box-shadow:0 6px 18px #0009;cursor:grab;touch-action:none;user-select:none}
+.compass:active{cursor:grabbing}
+.compass:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.compass svg{display:block;width:100%;height:100%}
+.compass .needle{transform-box:fill-box;transform-origin:50% 50%}
+.compass-val{position:absolute;left:0;right:0;bottom:7px;display:flex;align-items:center;justify-content:center;gap:1px;font-size:10.5px;color:var(--muted)}
+.compass-val input{width:30px;padding:1px 2px;background:transparent;border:1px solid transparent;border-radius:4px;color:var(--text);font:inherit;font-weight:700;text-align:right}
+.compass-val input:hover{border-color:var(--line)}
+.compass-val input:focus{outline:none;border-color:var(--blue);background:#0d0f12}
+.dialog h2{font-size:16px;margin:0 0 4px}
+.dialog #pending{display:flex;flex-direction:column;gap:10px;overflow:auto;flex:1;margin:10px 0}
+.drop{border:1px dashed var(--line);padding:16px;text-align:center;color:var(--muted);margin:8px 0 0;border-radius:6px;cursor:pointer;flex:0 0 auto;transition:background .15s,color .15s,border-color .15s}
+.drop:hover,.drop:focus-visible{background:rgba(77,163,255,.12);border-color:var(--blue);color:var(--blue)}
+.drop.over{background:rgba(77,163,255,.2);border-color:var(--blue);color:var(--text)}
+/* PAGE CARDS — во всю ширину, друг под другом, управление поверх изображения */
+.page-card{position:relative;width:100%;flex:0 0 auto;background:#0d0f12;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.page-card img{display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;background:#0d0f12}
+.page-name{position:absolute;left:8px;top:8px;max-width:50%;padding:4px 8px;background:#191c20e6;border:1px solid var(--line);border-radius:5px;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page-ops{position:absolute;right:8px;top:8px;display:flex;gap:6px;background:#191c20e6;border:1px solid var(--line);border-radius:6px;padding:4px}
+.page-adj{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;background:#191c20e6;border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+.page-adj label{display:flex;align-items:center;gap:7px;justify-content:space-between;font-size:10.5px;color:var(--muted)}
+.page-adj input[type=range]{width:120px}
+.page-card button{padding:4px 7px;font-size:11px}
+.icon-action{width:32px;height:32px;font-size:16px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.icon-action.danger{color:#ff5570}
+.small{font-size:10.5px;color:var(--muted)}
+.save-grid{display:flex;flex-direction:column;gap:6px}
+.save-grid button{text-align:left;padding:9px 11px}
+.check{display:flex;align-items:center;gap:7px;margin:5px 0;font-size:11.5px;color:var(--text)}
+.check input{width:auto}
+</style></head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="logo"><span class="dot"></span>PALACE</div>
+    <div class="title"><input aria-label="Название дворца" id="palaceName" value="Новый дворец памяти"/></div>
+    <button id="newBtn">＋ Новый</button>
+    <button id="openBtn">Открыть</button>
+    <button class="primary" id="saveBtn">Сохранить</button>
+    <button id="modeBtn">Просмотр</button>
+    <input accept=".mplace,.zip" hidden="" id="fileOpen" type="file"/>
+  </header>
+  <main class="main">
+    <aside class="left">
+      <button class="tool active" data-tool="select" title="Выбор">⌁</button>
+      <button class="tool" data-tool="marker" title="Маркер">●</button>
+      <span style="flex:1"></span>
+      <button class="tool" id="zoomOut" title="Уменьшить">−</button>
+      <button class="tool" id="zoomIn" title="Увеличить">＋</button>
+      <button class="tool" id="resetView" title="Сбросить вид">⌂</button>
+    </aside>
+    <section class="stage" id="stage">
+      <div class="floor-overlay" id="floorOverlay"></div>
+      <div class="empty" id="empty"><div><strong>Холст готов</strong>Загрузите план этажа, чтобы начать<br/><button class="primary" id="uploadBtn" style="margin-top:14px">Загрузить планы</button></div></div>
+      <div class="viewport" id="viewport"><div class="plan" id="plan"></div></div>
+      <div class="compass" id="compass" tabindex="0" role="slider" aria-label="Поворот плана" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0" title="Тяните по кругу, чтобы повернуть план. Двойной щелчок — сброс">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="43" fill="none" stroke="rgba(255,255,255,.16)"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(255,255,255,.07)"/>
+          <g stroke="rgba(255,255,255,.28)" stroke-width="1.4">
+            <line x1="50" y1="7" x2="50" y2="15"/><line x1="93" y1="50" x2="85" y2="50"/>
+            <line x1="50" y1="93" x2="50" y2="85"/><line x1="7" y1="50" x2="15" y2="50"/>
+          </g>
+          <g class="needle" id="compassNeedle">
+            <path d="M50 14 L57 52 L50 47 L43 52 Z" fill="#4da3ff"/>
+            <path d="M50 86 L43 48 L50 53 L57 48 Z" fill="#5c6f84"/>
+            <circle cx="50" cy="50" r="4.5" fill="#e2eeff"/>
+          </g>
+        </svg>
+        <div class="compass-val"><input aria-label="Угол поворота в градусах" id="compassVal" inputmode="numeric" value="0"/><span>°</span></div>
+      </div>
+      <div class="canvas-ctl" id="markerCtl">
+        <label for="markerSize">Размер маркера</label>
+        <input id="markerSize" type="range" min="16" max="72" value="30"/>
+        <output id="markerSizeVal" for="markerSize">30</output>
+      </div>
+    </section>
+  </main>
+  <footer class="bottom">
+    <b>МАРШРУТ</b>
+    <div class="route" id="route"><span class="small">Добавьте маркеры на план</span></div>
+    <span class="small" id="count">0 локусов</span>
+  </footer>
+  <div class="status">
+    <span class="badge">● Готово</span>
+    <span id="status">Нет активного плана</span>
+    <span style="margin-left:auto">ПКМ по маркеру — удалить · колесо — масштаб · ПКМ по холсту — перемещение</span>
+  </div>
+</div>
+
+<div class="modal" id="saveModal"><div class="dialog narrow">
+  <h2>Сохранить</h2>
+  <p class="small">Файл .mplace хранит дворец целиком и открывается обратно в редакторе. Экспорт создаёт итоговые изображения.</p>
+  <div class="section props">
+    <h3>Свойства дворца</h3>
+    <div class="field"><label for="purpose">Назначение</label><input id="purpose" placeholder="Например: выступление"/></div>
+    <div class="field"><label for="source">Ссылка на оригинал</label><input id="source" placeholder="https://…"/></div>
+    <div class="field"><label for="explain">Пояснения</label><textarea id="explain" placeholder="Краткое описание дворца…"></textarea></div>
+    <div class="field"><label for="notes">Заметки дворца</label><textarea id="notes" placeholder="Заметка…"></textarea></div>
+  </div>
+  <div class="section">
+    <h3>Имя файла</h3>
+    <div class="field">
+      <input id="fileName" placeholder="Новый дворец памяти"/>
+      <div class="small" id="fileNameHint">Расширение добавляется автоматически. Пусто — берётся название дворца.</div>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Проект</h3>
+    <div class="save-grid">
+      <button class="primary" id="saveProjectBtn">Сохранить .mplace<br/><span class="small" style="color:#00303f">Все этажи, изображения и маркеры</span></button>
+      <button id="saveJsonBtn">JSON<br/><span class="small">Только данные, без изображений</span></button>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Экспорт PNG</h3>
+    <div class="row">
+      <div class="field"><label for="pngScope">Что</label><select id="pngScope"><option value="current">Текущий этаж</option><option value="all">Все этажи (ZIP)</option></select></div>
+      <div class="field"><label for="pngScale">Качество</label><select id="pngScale"><option value="1">1× — как есть</option><option selected value="2">2× — чёткое</option><option value="3">3× — печать</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="pngBg">Фон</label><select id="pngBg"><option value="#ffffff">Белый</option><option value="#f2f4f7">Светло-серый</option><option value="none">Прозрачный</option></select></div>
+      <div class="field"><label for="pngPad">Поля</label><select id="pngPad"><option value="0">Без полей</option><option selected value="40">Обычные</option><option value="90">Широкие</option></select></div>
+    </div>
+    <label class="check"><input checked id="pngMarkers" type="checkbox"/> Маркеры</label>
+    <label class="check"><input checked id="pngNumbers" type="checkbox"/> Номера маркеров</label>
+    <div class="save-grid" style="margin-top:8px"><button id="exportPngBtn">Экспортировать PNG</button></div>
+  </div>
+  <div class="section">
+    <h3>Экспорт PDF</h3>
+    <div class="row">
+      <div class="field"><label for="pdfScope">Что</label><select id="pdfScope"><option value="all">Все этажи</option><option value="current">Текущий этаж</option></select></div>
+      <div class="field"><label for="pdfFormat">Страница</label><select id="pdfFormat"><option selected value="a4">A4</option><option value="a3">A3</option><option value="fit">По размеру плана</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="pdfOrient">Ориентация</label><select id="pdfOrient"><option selected value="auto">Авто</option><option value="landscape">Альбомная</option><option value="portrait">Книжная</option></select></div>
+      <div class="field"><label for="pdfScale">Качество</label><select id="pdfScale"><option value="1">1×</option><option selected value="2">2×</option><option value="3">3×</option></select></div>
+    </div>
+    <label class="check"><input checked id="pdfTitles" type="checkbox"/> Заголовок с названием и номером этажа</label>
+    <label class="check"><input checked id="pdfMarkers" type="checkbox"/> Маркеры с номерами</label>
+    <div class="save-grid" style="margin-top:8px"><button id="exportPdfBtn">Экспортировать PDF</button></div>
+  </div>
+  <div style="text-align:right"><button id="closeSaveModal">Закрыть</button></div>
+</div></div>
+
+<div class="modal" id="modal"><div class="dialog wide">
+  <h2>Планирование этажей</h2>
+  <p class="small" id="planHint">Изображения будут добавлены как этажи.</p>
+  <div id="pending"></div>
+  <div class="drop" id="drop" tabindex="0">Перетащите PNG/JPG/PDF сюда<br/>или выберите файлы</div>
+  <div style="text-align:right"><button id="closeModal">Отмена</button> <button class="primary" id="applyPlans">Добавить этажи</button></div>
+</div></div>
+
+<div class="modal" id="askModal"><div class="dialog narrow">
+  <h2 id="askTitle">Подтверждение</h2>
+  <p id="askText" style="margin:6px 0 14px"></p>
+  <div style="text-align:right"><button id="askNo">Отмена</button> <button class="primary" id="askYes">Да</button></div>
+</div></div>
+
+<script>
+'use strict';
+
+/* ---------- безопасные помощники DOM ----------
+   Любое обращение к отсутствующему элементу больше не роняет весь скрипт. */
+const MAX_LEVELS = Infinity; /* верхняя граница числа этажей снята */
+function $(sel){ return document.querySelector(sel); }
+function $$(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+function on(sel, ev, fn){ const n = $(sel); if(n) n['on'+ev] = fn; return n; }
+function setVal(sel, v){ const n = $(sel); if(n) n.value = (v == null ? '' : v); }
+function getVal(sel, fallback){ const n = $(sel); return n ? n.value : fallback; }
+function setText(sel, t){ const n = $(sel); if(n) n.textContent = t; }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function status(msg){ setText('#status', msg); }
+
+/* Кнопки верхней панели привязываем ПЕРВЫМИ и двумя способами сразу.
+   Любая ошибка в коде ниже больше не может оставить «＋ Новый», «Открыть»
+   и «Сохранить» без обработчика, а сбой внутри самого действия становится
+   видимым в строке состояния, а не превращается в «кнопка не нажимается». */
+function bindAction(sel, fn, label){
+  const n = $(sel);
+  if(!n){ console.warn('PALACE: не найдена кнопка ' + sel); return; }
+  const handler = e => {
+    try{ fn(e); }
+    catch(err){
+      const m = (err && err.message) ? err.message : String(err);
+      status('Сбой: ' + (label || sel) + ' — ' + m);
+      try{ notify('Не удалось выполнить «' + (label || sel) + '»: ' + m); }catch(e2){}
+      console.error('PALACE:', sel, err);
+    }
+  };
+  n.onclick = handler;
+  n.addEventListener('click', e => { if(n.onclick !== handler) handler(e); });
+}
+bindAction('#newBtn', () => newPalace(), '＋ Новый');
+bindAction('#openBtn', () => { const f = $('#fileOpen'); if(!f) throw new Error('нет поля выбора файла'); f.value = ''; f.click(); }, 'Открыть');
+bindAction('#saveBtn', () => { const m = $('#saveModal'); if(!m) throw new Error('нет окна сохранения'); syncFileNameField(); m.classList.add('show'); }, 'Сохранить');
+
+/* Собственные диалоги вместо системных: Chrome умеет навсегда заблокировать
+   alert/confirm («Не давать этой странице создавать диалоговые окна»), после чего
+   confirm() всегда возвращает false и кнопки выглядят неработающими. */
+function ask(text, onYes, opts){
+  opts = opts || {};
+  const m = $('#askModal'), yes = $('#askYes'), no = $('#askNo');
+  if(!m || !yes){
+    if(opts.notice){ window.alert(text); return; }
+    if(window.confirm(text) && onYes) onYes();
+    return;
+  }
+  setText('#askTitle', opts.title || (opts.notice ? 'Сообщение' : 'Подтверждение'));
+  setText('#askText', text);
+  yes.textContent = opts.yes || (opts.notice ? 'Понятно' : 'Да');
+  if(no) no.style.display = opts.notice ? 'none' : '';
+  m.classList.add('show');
+  yes.onclick = () => { m.classList.remove('show'); if(onYes) onYes(); };
+  if(no) no.onclick = () => { m.classList.remove('show'); };
+  setTimeout(() => { try{ yes.focus(); }catch(e){} }, 0);
+}
+function notify(text, title){ ask(text, null, { notice:true, title:title || 'Сообщение' }); }
+function floorColor(i){
+  const palette = ['#ffb800','#4da3ff','#00ff88','#ff6b6b','#c084fc','#38e1d3','#ff9f45','#a3e635','#f472b6','#8fa6ff'];
+  return palette[((i % palette.length) + palette.length) % palette.length];
+}
+
+/* ---------- состояние ---------- */
+function blankState(){
+  const now = new Date().toISOString();
+  return { version:2, name:'Новый дворец памяти', purpose:'', source:'', explain:'', notes:'',
+           created:now, edited:now, levels:[], active:0, mode:'edit', tool:'select',
+           zoom:1, rotation:0, markerSize:30, dirty:false };
+}
+const state = blankState();
+let pending = [], drag = null, pan = null, planRenderToken = 0, suppressMarkerClick = false;
+
+function level(){ return state.levels[state.active] || null; }
+function touch(){ state.edited = new Date().toISOString(); state.dirty = true; }
+function markerSize(){ const n = Number(state.markerSize); return (n >= 10 && n <= 200) ? n : 30; }
+function floorOffset(){
+  return state.levels.slice(0, state.active).reduce((n,f) => n + ((f && f.markers) ? f.markers.length : 0), 0);
+}
+function safeFileName(name){
+  return String(name || 'palace').replace(/[\\/:*?"<>|\u0000-\u001f]+/g,'_').replace(/\s+/g,' ').trim().slice(0,80) || 'palace';
+}
+
+/* ---------- отрисовка ---------- */
+function render(){
+  setVal('#palaceName', state.name);
+  setVal('#purpose', state.purpose);
+  setVal('#source', state.source);
+  setVal('#explain', state.explain);
+  setVal('#markerSize', markerSize());
+  setText('#markerSizeVal', markerSize());
+  setVal('#notes', state.notes);
+  syncFileNameField();
+  updateCompass();
+
+  const l = level();
+  const emptyEl = $('#empty'); if(emptyEl) emptyEl.style.display = l ? 'none' : 'flex';
+
+  renderFloorOverlay();
+  if(l) drawPlan(); else clearPlan();
+  renderRoute();
+  syncTools();
+  applyMode();
+
+  status(l ? (l.name || ('Этаж #' + (state.active + 1))) + ' · ' + (l.markers || []).length + ' локусов'
+           : (state.levels.length ? 'Этаж не выбран' : 'Нет активного плана'));
+}
+
+function renderFloorOverlay(){
+  const box = $('#floorOverlay'); if(!box) return;
+  box.innerHTML = '';
+  state.levels.forEach((l, i) => {
+    const b = document.createElement('button');
+    b.className = (i === state.active ? 'active' : '');
+    b.textContent = 'Этаж #' + (i + 1);
+    b.title = l && l.name ? l.name : 'Этаж #' + (i + 1);
+    b.onclick = e => { e.stopPropagation(); selectLevel(i); };
+    box.appendChild(b);
+  });
+  const add = document.createElement('button');
+  add.className = 'add';
+  add.textContent = '＋ Планы';
+  add.title = 'Добавить этажи (PNG / JPG / PDF)';
+  add.onclick = e => { e.stopPropagation(); openPlansModal(); };
+  box.appendChild(add);
+}
+
+function clearPlan(){
+  planRenderToken++;
+  const p = $('#plan');
+  if(p){ p.innerHTML = ''; p.style.width = '0px'; p.style.height = '0px'; }
+}
+
+function drawPlan(){
+  const l = level(), p = $('#plan');
+  if(!p) return;
+  if(!l || !l.src){ clearPlan(); return; }
+  const token = ++planRenderToken;
+  const im = new Image();
+  im.onload = () => {
+    if(token !== planRenderToken || l !== level()) return;
+    l.w = im.naturalWidth; l.h = im.naturalHeight;
+    p.innerHTML = '';
+    p.style.width = im.naturalWidth + 'px';
+    p.style.height = im.naturalHeight + 'px';
+    const rot = Number(state.rotation) || 0;
+    p.style.transform = 'translate(-50%,-50%) rotate(' + rot + 'deg)';
+    p.style.setProperty('--mrot', (-rot) + 'deg');
+    p.appendChild(im);
+    const size = markerSize(), off = floorOffset();
+    (l.markers || []).forEach((m, i) => {
+      const d = document.createElement('div');
+      d.className = 'marker' + (m.dragging ? ' dragging' : '') + (l.selected === i ? ' selected' : '');
+      d.textContent = i + 1 + off;
+      d.style.left = m.x + 'px';
+      d.style.top = m.y + 'px';
+      d.style.width = d.style.height = size + 'px';
+      d.style.background = floorColor(state.active);
+      d.style.fontSize = Math.max(9, Math.round(size * 0.42)) + 'px';
+      d.onclick = e => {
+        e.stopPropagation();
+        if(suppressMarkerClick){ suppressMarkerClick = false; return; }
+        selectMarker(i);
+      };
+      d.oncontextmenu = e => {
+        e.preventDefault(); e.stopPropagation();
+        if(state.mode !== 'edit') return;
+        deleteMarker(i);
+      };
+      d.onmousedown = e => {
+        if(e.button === 2){ e.stopPropagation(); return; } /* ПКМ — удаление, не панорама */
+        if(state.mode !== 'edit' || e.button !== 0) return;
+        e.stopPropagation(); e.preventDefault();
+        const pt = planPoint(e.clientX, e.clientY);
+        m.dragging = true;
+        drag = { m, target:d, sx:e.clientX, sy:e.clientY, ox:pt.x - m.x, oy:pt.y - m.y, moved:false };
+        d.classList.add('dragging');
+      };
+      p.appendChild(d);
+    });
+  };
+  im.onerror = () => { if(token === planRenderToken){ clearPlan(); status('Не удалось отобразить изображение этажа'); } };
+  im.src = l.src;
+}
+
+function renderRoute(){
+  const box = $('#route'); if(!box) return;
+  const total = state.levels.reduce((n, l) => n + ((l && l.markers) ? l.markers.length : 0), 0);
+  if(!total){
+    box.innerHTML = '<span class="small">Добавьте маркеры на план</span>';
+    setText('#count', '0 локусов');
+    return;
+  }
+  let html = '', num = 0;
+  state.levels.forEach((l, li) => {
+    const ms = (l && l.markers) ? l.markers : [];
+    if(!ms.length) return;
+    const cur = li === state.active;
+    html += '<div class="rgroup' + (cur ? ' current' : '') + '" style="--fc:' + floorColor(li) + '">' +
+            '<span class="rlabel" data-floor="' + li + '" title="Перейти на этаж ' + (li + 1) + '">Этаж ' + (li + 1) + '</span>';
+    ms.forEach((m, i) => {
+      num++;
+      html += '<button class="r' + (cur && l.selected === i ? ' sel' : '') + '" draggable="true" data-l="' + li + '" data-i="' + i + '"' +
+              ' title="' + esc('Этаж ' + (li + 1) + ', локус ' + num) + '">' + num + '</button>';
+    });
+    html += '</div>';
+  });
+  box.innerHTML = html;
+  const cur = level();
+  setText('#count', total + ' локусов · этаж ' + (state.active + 1) + ': ' + (cur ? (cur.markers || []).length : 0));
+
+  $$('#route .rlabel').forEach(s => { s.onclick = () => selectLevel(Number(s.dataset.floor)); });
+  $$('#route .r').forEach(b => {
+    const li = Number(b.dataset.l), idx = Number(b.dataset.i);
+    b.ondragstart = e => e.dataTransfer.setData('text/plain', li + ':' + idx);
+    b.ondragover = e => { e.preventDefault(); b.classList.add('drag-over'); };
+    b.ondragleave = () => b.classList.remove('drag-over');
+    b.ondrop = e => {
+      e.preventDefault(); b.classList.remove('drag-over');
+      const from = String(e.dataTransfer.getData('text/plain')).split(':');
+      const fl = Number(from[0]), fi = Number(from[1]);
+      if(fl !== li){ status('Порядок меняется только внутри одного этажа'); return; }
+      const arr = state.levels[li] && state.levels[li].markers;
+      if(!arr || !arr[fi] || !arr[idx] || fi === idx) return;
+      const tmp = arr[fi]; arr[fi] = arr[idx]; arr[idx] = tmp;
+      state.levels[li].selected = null;
+      touch(); render();
+      requestAnimationFrame(() => $$('#route .r').forEach((x, i) => {
+        if(x.animate) x.animate([{transform:'translateY(-10px) scale(1.18)',filter:'brightness(1.35)'},{transform:'translateY(0) scale(1)',filter:'brightness(1)'}],{duration:420,delay:i*35,easing:'cubic-bezier(.16,1,.3,1)'});
+      }));
+    };
+    b.onclick = () => {
+      if(li !== state.active) selectLevel(li);
+      const l = state.levels[li];
+      const m = l && l.markers[idx];
+      if(!m) return;
+      selectMarker(idx);
+      const v = $('#viewport');
+      if(v) v.style.transform = 'translate(' + (innerWidth/2 - m.x*state.zoom) + 'px,' + (innerHeight/2 - m.y*state.zoom) + 'px) scale(' + state.zoom + ')';
+    };
+  });
+}
+
+function selectMarker(i){
+  const l = level(); if(!l) return;
+  l.selected = i;
+  drawPlan(); renderRoute();
+}
+
+function deleteMarker(i){
+  const l = level(); if(!l || !l.markers || !l.markers[i]) return;
+  l.markers.splice(i, 1);
+  l.selected = null;
+  touch(); render();
+}
+
+function selectLevel(i){
+  if(!state.levels[i]) return;
+  state.active = i;
+  state.zoom = 1;
+  const v = $('#viewport'); if(v) v.style.transform = '';
+  render();
+}
+
+function syncTools(){
+  $$('.tool[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === state.tool));
+}
+function applyMode(){
+  const view = state.mode === 'view';
+  setText('#modeBtn', view ? 'Редакт.' : 'Просмотр');
+  $$('.left button[data-tool], #saveModal .props input, #saveModal .props textarea').forEach(x => { x.disabled = view; });
+  const c = $('#compass'); if(c) c.style.display = view ? 'none' : '';
+  const mc = $('#markerCtl'); if(mc) mc.style.display = view ? 'none' : '';
+}
+
+/* Координаты точки в системе координат плана — с учётом масштаба и поворота. */
+function planPoint(clientX, clientY){
+  const p = $('#plan');
+  if(!p) return { x:0, y:0 };
+  const r = p.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  const z = state.zoom || 1;
+  const dx = (clientX - cx)/z, dy = (clientY - cy)/z;
+  const t = -(Number(state.rotation) || 0) * Math.PI/180;
+  const lx = dx*Math.cos(t) - dy*Math.sin(t);
+  const ly = dx*Math.sin(t) + dy*Math.cos(t);
+  return { x: lx + p.offsetWidth/2, y: ly + p.offsetHeight/2 };
+}
+function insidePlan(pt){
+  const p = $('#plan'); if(!p) return false;
+  return pt.x >= 0 && pt.y >= 0 && pt.x <= p.offsetWidth && pt.y <= p.offsetHeight;
+}
+
+/* ---------- редактор загружаемых страниц ---------- */
+function openPlansModal(){
+  const m = $('#modal'); if(m) m.classList.add('show');
+  setText('#planHint', 'Изображения будут добавлены как этажи. Сейчас этажей: ' + state.levels.length + ' — ограничения нет.');
+  renderPending();
+}
+function closePlansModal(){
+  const m = $('#modal'); if(m) m.classList.remove('show');
+  pending = []; renderPending();
+}
+function renderPending(){
+  const box = $('#pending'); if(!box) return;
+  if(!pending.length){ box.innerHTML = '<div class="small">Страницы пока не добавлены.</div>'; return; }
+  box.innerHTML = pending.map((x, i) =>
+    '<div class="page-card">' +
+      '<img alt="" src="' + x.src + '">' +
+      '<div class="page-name">' + esc(x.name) + '</div>' +
+      '<div class="page-ops">' +
+        '<button class="icon-action" data-act="rotate" data-i="' + i + '" title="Повернуть страницу" aria-label="Повернуть">↻</button>' +
+        '<button class="icon-action" data-act="flip" data-i="' + i + '" title="Отразить по горизонтали" aria-label="Отразить">⇄</button>' +
+        '<button class="icon-action danger" data-act="delete" data-i="' + i + '" title="Удалить страницу" aria-label="Удалить">🗑</button>' +
+      '</div>' +
+      '<div class="page-adj">' +
+        '<label>Яркость <input type="range" min="50" max="150" value="' + (x.brightness || 100) + '" data-adj="brightness" data-i="' + i + '"></label>' +
+        '<label>Контраст <input type="range" min="50" max="150" value="' + (x.contrast || 100) + '" data-adj="contrast" data-i="' + i + '"></label>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+  $$('#pending [data-act]').forEach(b => { b.onclick = () => pageEdit(Number(b.dataset.i), b.dataset.act); });
+  $$('#pending [data-adj]').forEach(inp => {
+    inp.oninput = () => previewAdjust(Number(inp.dataset.i), inp.dataset.adj, inp.value, inp);
+    inp.onchange = () => pageEdit(Number(inp.dataset.i), inp.dataset.adj, inp.value);
+  });
+}
+function previewAdjust(i, kind, value, input){
+  const x = pending[i]; if(!x) return;
+  x[kind] = Number(value);
+  const card = input && input.closest ? input.closest('.page-card') : null;
+  const img = card && card.querySelector('img');
+  if(img) img.style.filter = 'brightness(' + (x.brightness || 100) + '%) contrast(' + (x.contrast || 100) + '%)';
+}
+async function pageEdit(i, kind, value){
+  const x = pending[i]; if(!x) return;
+  if(kind === 'delete'){ pending.splice(i, 1); renderPending(); return; }
+  if(kind === 'rotate') x.rotation = ((x.rotation || 0) + 90) % 360;
+  if(kind === 'flip') x.flip = !x.flip;
+  if(kind === 'brightness') x.brightness = Number(value);
+  if(kind === 'contrast') x.contrast = Number(value);
+  try{
+    const im = await loadImage(x.original || x.src);
+    const turn = (((x.rotation || 0) / 90) % 4 + 4) % 4, swap = turn % 2;
+    const c = document.createElement('canvas');
+    c.width = swap ? im.naturalHeight : im.naturalWidth;
+    c.height = swap ? im.naturalWidth : im.naturalHeight;
+    const g = c.getContext('2d');
+    g.translate(c.width/2, c.height/2);
+    g.rotate((x.rotation || 0) * Math.PI/180);
+    g.scale(x.flip ? -1 : 1, 1);
+    g.filter = 'brightness(' + (x.brightness || 100) + '%) contrast(' + (x.contrast || 100) + '%)';
+    g.drawImage(im, -im.naturalWidth/2, -im.naturalHeight/2);
+    x.src = c.toDataURL('image/png');
+  }catch(err){ /* оставляем предыдущее изображение */ }
+  renderPending();
+}
+function loadImage(src){
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('Изображение не загрузилось'));
+    im.src = src;
+  });
+}
+async function addFiles(files){
+  const list = Array.prototype.slice.call(files || []);
+  if(!list.length) return;
+  let limited = false;
+  for(const f of list){
+    if(pending.length + state.levels.length >= MAX_LEVELS){ limited = true; break; }
+    const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+    if(isPdf){
+      if(!window.pdfjsLib){ notify('Модуль чтения PDF не загрузился. Проверьте подключение к интернету.'); continue; }
+      try{
+        const data = await f.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data }).promise;
+        for(let pageNo = 1; pageNo <= pdf.numPages; pageNo++){
+          if(pending.length + state.levels.length >= MAX_LEVELS){ limited = true; break; }
+          const page = await pdf.getPage(pageNo);
+          const view = page.getViewport({ scale: 2 });
+          const canvas = document.createElement('canvas');
+          canvas.width = view.width; canvas.height = view.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport: view }).promise;
+          const src = canvas.toDataURL('image/png');
+          pending.push({ name: f.name.replace(/\.[^.]+$/, '') + ' · стр. ' + pageNo, src, original: src });
+        }
+      }catch(err){ notify('Не удалось прочитать PDF: ' + (err && err.message ? err.message : err)); }
+      continue;
+    }
+    if(f.type && f.type.indexOf('image/') === 0){
+      try{
+        const src = await new Promise((ok, no) => {
+          const r = new FileReader();
+          r.onload = () => ok(r.result);
+          r.onerror = () => no(new Error('Файл не прочитан'));
+          r.readAsDataURL(f);
+        });
+        pending.push({ name: f.name.replace(/\.[^.]+$/, ''), src, original: src });
+      }catch(err){ notify('Не удалось прочитать файл: ' + f.name); }
+    }
+  }
+  renderPending();
+}
+
+/* ---------- сохранение / открытие ---------- */
+function buildSerializableState(){
+  const copy = {
+    version: 2,
+    name: state.name, purpose: state.purpose, source: state.source, explain: state.explain, notes: state.notes,
+    created: state.created, edited: new Date().toISOString(),
+    active: Math.max(0, Math.min(state.active, Math.max(0, state.levels.length - 1))),
+    rotation: Number(state.rotation) || 0,
+    markerSize: markerSize(),
+    mode: 'edit', tool: 'select', zoom: 1, dirty: false,
+    levels: (state.levels || []).map((l, i) => ({
+      name: l.name || ('Этаж #' + (i + 1)),
+      image: 'images/level-' + (i + 1) + '.png',
+      w: l.w || null, h: l.h || null,
+      rotation: l.rotation || 0, flip: !!l.flip,
+      brightness: l.brightness || 100, contrast: l.contrast || 100,
+      draw: l.draw || [],
+      markers: (l.markers || []).map(m => ({ x: m.x, y: m.y, note: m.note || '' }))
+    }))
+  };
+  return copy;
+}
+function b64ToBlob(b64, mime){
+  const bin = atob(b64 || ''), bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime || 'image/png' });
+}
+/* Любое изображение этажа приводим к настоящему PNG, чтобы файл images/level-N.png
+   действительно физически лежал в архиве и корректно читался при открытии. */
+async function srcToPngBlob(src){
+  if(!src) return null;
+  if(/^data:image\/png;base64,/i.test(src)) return b64ToBlob(src.split(',')[1], 'image/png');
+  const im = await loadImage(src);
+  const c = document.createElement('canvas');
+  c.width = im.naturalWidth; c.height = im.naturalHeight;
+  c.getContext('2d').drawImage(im, 0, 0);
+  const b64 = c.toDataURL('image/png').split(',')[1];
+  return b64ToBlob(b64, 'image/png');
+}
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+async function saveMplace(){
+  if(!window.JSZip) throw new Error('Библиотека ZIP не загрузилась. Проверьте подключение к интернету.');
+  if(!state.levels.length){ notify('В дворце нет ни одного этажа — сначала загрузите планы.'); return; }
+  status('Сохранение…');
+  const z = new JSZip(), copy = buildSerializableState();
+  const images = z.folder('images');
+  for(let i = 0; i < state.levels.length; i++){
+    const blob = await srcToPngBlob(state.levels[i].src);
+    if(blob) images.file('level-' + (i + 1) + '.png', blob);
+    else copy.levels[i].image = null;
+  }
+  z.file('palace.json', JSON.stringify(copy, null, 2));
+  const blob = await z.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:6 } });
+  downloadBlob(blob, outName() + '.mplace');
+  state.edited = copy.edited;
+  state.dirty = false;
+  status('Файл .mplace сохранён (' + state.levels.length + ' этаж(ей))');
+}
+function exportJson(){
+  const blob = new Blob([JSON.stringify(buildSerializableState(), null, 2)], { type:'application/json' });
+  downloadBlob(blob, outName() + '.json');
+  status('JSON сохранён');
+}
+function sniffMime(bytes){
+  if(!bytes || bytes.length < 4) return 'image/png';
+  if(bytes[0] === 0xFF && bytes[1] === 0xD8) return 'image/jpeg';
+  if(bytes[0] === 0x47 && bytes[1] === 0x49) return 'image/gif';
+  if(bytes[0] === 0x52 && bytes[1] === 0x49) return 'image/webp';
+  return 'image/png';
+}
+async function loadMplaceBuffer(buffer){
+  if(!window.JSZip) throw new Error('Библиотека ZIP не загрузилась');
+  const z = await JSZip.loadAsync(buffer);
+  const entry = z.file('palace.json');
+  if(!entry) throw new Error('palace.json отсутствует');
+  const data = JSON.parse(await entry.async('string'));
+  const fresh = blankState();
+  const levels = Array.isArray(data.levels) ? data.levels : [];
+  for(let i = 0; i < levels.length; i++){
+    const l = levels[i] || {};
+    l.markers = Array.isArray(l.markers) ? l.markers.filter(m => m && isFinite(m.x) && isFinite(m.y))
+                                                     .map(m => ({ x:Number(m.x), y:Number(m.y), note:m.note || '' })) : [];
+    l.selected = null;
+    l.name = l.name || ('Этаж #' + (i + 1));
+    let file = z.file(l.image || ('images/level-' + (i + 1) + '.png'));
+    if(!file){
+      const found = z.file(new RegExp('^images/level-' + (i + 1) + '\\.', 'i'));
+      if(found && found.length) file = found[0];
+    }
+    if(file){
+      const bytes = await file.async('uint8array');
+      let bin = '';
+      for(let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(k, k + 0x8000));
+      l.src = 'data:' + sniffMime(bytes) + ';base64,' + btoa(bin);
+    }
+    /* формат прошлых версий: изображение лежало прямо в palace.json */
+    if(!l.src && typeof levels[i].src === 'string') l.src = levels[i].src;
+  }
+  Object.assign(state, fresh, {
+    name: data.name || 'Дворец памяти',
+    purpose: data.purpose || '', source: data.source || '', explain: data.explain || '', notes: data.notes || '',
+    created: data.created || fresh.created, edited: data.edited || fresh.edited,
+    levels: levels,
+    rotation: Number(data.rotation) || 0,
+    markerSize: Number(data.markerSize) || 30,
+    active: Math.max(0, Math.min(Number(data.active) || 0, Math.max(0, levels.length - 1))),
+    dirty: false
+  });
+  state.zoom = 1;
+  const v = $('#viewport'); if(v) v.style.transform = '';
+  render();
+  status('Открыт дворец «' + state.name + '» · этажей: ' + levels.length);
+}
+function openFileObject(file){
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = async () => {
+    try{ await loadMplaceBuffer(r.result); }
+    catch(err){ notify('Не удалось открыть файл .mplace: ' + (err && err.message ? err.message : 'архив повреждён или palace.json отсутствует') + '.'); }
+  };
+  r.onerror = () => notify('Не удалось прочитать файл.');
+  r.readAsArrayBuffer(file);
+}
+
+/* ---------- экспорт изображений ---------- */
+function chk(sel, dflt){ const n = $(sel); return n ? !!n.checked : !!dflt; }
+function num(sel, dflt){ const v = Number(getVal(sel, dflt)); return isFinite(v) ? v : dflt; }
+/* Имя скачиваемого файла: поле в окне «Сохранить», иначе название дворца. */
+function outName(){
+  const typed = String(getVal('#fileName', '') || '').trim();
+  return safeFileName(typed || state.name);
+}
+function syncFileNameField(){
+  const n = $('#fileName');
+  if(n) n.placeholder = safeFileName(state.name);
+}
+
+/* opt: { scale, bg ('none' — прозрачный), pad, markers, numbers } */
+async function renderLevelCanvas(index, opt){
+  opt = opt || {};
+  const l = state.levels[index];
+  if(!l || !l.src) throw new Error('У этажа нет изображения');
+  const im = await loadImage(l.src);
+  const scale = Math.max(1, Math.min(4, opt.scale || 1));
+  const pad = (opt.pad == null ? 40 : opt.pad);
+  const bg = opt.bg || '#ffffff';
+  const showMarkers = opt.markers !== false;
+  const showNumbers = opt.numbers !== false;
+  const c = document.createElement('canvas');
+  c.width = Math.round((im.naturalWidth + pad*2) * scale);
+  c.height = Math.round((im.naturalHeight + pad*2) * scale);
+  const g = c.getContext('2d');
+  if(g.setTransform) g.setTransform(scale, 0, 0, scale, 0, 0);
+  if(bg !== 'none'){ g.fillStyle = bg; g.fillRect(0, 0, im.naturalWidth + pad*2, im.naturalHeight + pad*2); }
+  if(g.imageSmoothingQuality) g.imageSmoothingQuality = 'high';
+  g.drawImage(im, pad, pad);
+  if(showMarkers){
+    const off = state.levels.slice(0, index).reduce((n, f) => n + ((f && f.markers) ? f.markers.length : 0), 0);
+    const r = Math.max(10, markerSize()/2);
+    (l.markers || []).forEach((m, i) => {
+      const x = pad + m.x, y = pad + m.y;
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI*2);
+      g.fillStyle = floorColor(index); g.fill();
+      g.lineWidth = 2; g.strokeStyle = '#ffffff'; g.stroke();
+      g.lineWidth = 1; g.strokeStyle = 'rgba(0,0,0,.35)'; g.stroke();
+      if(showNumbers){
+        g.fillStyle = '#16110a';
+        g.font = '800 ' + Math.max(10, Math.round(r*0.95)) + 'px Arial, sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(String(i + 1 + off), x, y);
+      }
+    });
+  }
+  c.__natW = im.naturalWidth + pad*2;
+  c.__natH = im.naturalHeight + pad*2;
+  return c;
+}
+function canvasBlob(c){
+  return new Promise((resolve, reject) => {
+    if(!c.toBlob) return reject(new Error('Браузер не умеет создавать PNG'));
+    c.toBlob(b => b ? resolve(b) : reject(new Error('Браузер не смог создать PNG')), 'image/png');
+  });
+}
+function pngOptions(){
+  return {
+    scope: getVal('#pngScope', 'current'),
+    scale: num('#pngScale', 2),
+    bg: getVal('#pngBg', '#ffffff'),
+    pad: num('#pngPad', 40),
+    markers: chk('#pngMarkers', true),
+    numbers: chk('#pngNumbers', true)
+  };
+}
+async function exportPng(){
+  if(!state.levels.length) throw new Error('Нет ни одного этажа — сначала загрузите план.');
+  const o = pngOptions();
+  const base = outName();
+  if(o.scope === 'all'){
+    const idx = state.levels.map((l, i) => i).filter(i => state.levels[i] && state.levels[i].src);
+    if(!idx.length) throw new Error('Ни у одного этажа нет изображения.');
+    if(idx.length === 1) o.scope = 'current';
+    else{
+      if(!window.JSZip) throw new Error('Библиотека ZIP не загрузилась — выберите «Текущий этаж».');
+      status('Подготовка PNG…');
+      const z = new JSZip();
+      for(const i of idx){
+        const c = await renderLevelCanvas(i, o);
+        z.file(base + '-etazh-' + (i + 1) + '.png', await canvasBlob(c));
+      }
+      const zip = await z.generateAsync({ type:'blob' });
+      downloadBlob(zip, base + '-png.zip');
+      status('PNG всех этажей сохранены в ZIP (' + idx.length + ')');
+      return;
+    }
+  }
+  const l = level();
+  if(!l || !l.src) throw new Error('Активный этаж не выбран или у него нет изображения.');
+  status('Подготовка PNG…');
+  const c = await renderLevelCanvas(state.active, o);
+  downloadBlob(await canvasBlob(c), base + '-etazh-' + (state.active + 1) + '.png');
+  status('PNG этажа ' + (state.active + 1) + ' сохранён (' + c.width + '×' + c.height + ')');
+}
+function loadScript(src){
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve;
+    s.onerror = () => reject(new Error('Не удалось загрузить PDF-модуль'));
+    document.head.appendChild(s);
+  });
+}
+async function exportPdf(){
+  if(!state.levels.length) throw new Error('Нет ни одного этажа — сначала загрузите план.');
+  const scope = getVal('#pdfScope', 'all');
+  const fmt = getVal('#pdfFormat', 'a4');
+  const orientPref = getVal('#pdfOrient', 'auto');
+  const scale = num('#pdfScale', 2);
+  const titles = chk('#pdfTitles', true);
+  const withMarkers = chk('#pdfMarkers', true);
+
+  const idx = (scope === 'current' ? [state.active] : state.levels.map((l, i) => i))
+    .filter(i => state.levels[i] && state.levels[i].src);
+  if(!idx.length) throw new Error('Нет этажей с изображениями для экспорта.');
+
+  status('Подготовка PDF…');
+  if(!(window.jspdf && window.jspdf.jsPDF)){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  }
+  const JsPDF = window.jspdf && window.jspdf.jsPDF;
+  if(!JsPDF) throw new Error('PDF-модуль недоступен');
+
+  const pages = [];
+  for(const i of idx){
+    const c = await renderLevelCanvas(i, { scale, bg:'#ffffff', pad:40, markers:withMarkers, numbers:withMarkers });
+    pages.push({ index:i, data:c.toDataURL('image/png'), w:c.__natW || c.width, h:c.__natH || c.height });
+  }
+  const orientOf = p => orientPref === 'auto' ? (p.w >= p.h ? 'landscape' : 'portrait') : orientPref;
+  const formatOf = p => fmt === 'fit' ? [p.w*0.75, p.h*0.75] : fmt;
+
+  const doc = new JsPDF({ orientation: orientOf(pages[0]), unit:'pt', format: formatOf(pages[0]) });
+  pages.forEach((p, n) => {
+    if(n > 0) doc.addPage(formatOf(p), orientOf(p));
+    const pw = doc.internal.pageSize.getWidth(), ph = doc.internal.pageSize.getHeight();
+    const margin = fmt === 'fit' ? 0 : 28;
+    const header = titles ? 34 : margin;
+    if(titles){
+      doc.setTextColor(20, 20, 20);
+      doc.setFontSize(12);
+      doc.text(String(state.name || 'Дворец памяти') + ' — этаж ' + (p.index + 1), Math.max(margin, 14), 22);
+    }
+    const maxW = pw - margin*2, maxH = ph - header - margin;
+    const ratio = Math.min(maxW/p.w, maxH/p.h);
+    const w = p.w*ratio, h = p.h*ratio;
+    doc.addImage(p.data, 'PNG', (pw - w)/2, header + (maxH - h)/2, w, h);
+  });
+  doc.save(outName() + '.pdf');
+  status('PDF сохранён: страниц ' + pages.length + ', ' + (fmt === 'fit' ? 'по размеру плана' : fmt.toUpperCase()));
+}
+
+/* ---------- новый дворец ---------- */
+function isBlankPalace(){
+  return !state.levels.length && !state.dirty &&
+         state.name === 'Новый дворец памяти' &&
+         !state.purpose && !state.source && !state.explain && !state.notes;
+}
+function flash(msg){
+  status(msg);
+  const t = document.querySelector('.title');
+  if(t){ t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); }
+}
+function resetPalace(){
+  planRenderToken++;
+  Object.assign(state, blankState());
+  pending = [];
+  drag = null; pan = null;
+  const v = $('#viewport'); if(v) v.style.transform = '';
+  const f = $('#fileOpen'); if(f) f.value = '';
+  setVal('#fileName', '');
+  const sm = $('#saveModal'); if(sm) sm.classList.remove('show');
+  clearPlan();
+  renderPending();
+  render();
+}
+function finishNewPalace(){
+  resetPalace();
+  flash('Создан новый дворец');
+  const n = $('#palaceName');
+  if(n && !n.disabled){ n.focus(); if(n.select) n.select(); }
+}
+function newPalace(){
+  /* Дворец уже пустой — сбрасывать нечего, поэтому сразу ведём к загрузке планов:
+     иначе нажатие выглядит как «кнопка не работает». */
+  if(isBlankPalace()){
+    resetPalace();
+    flash('Новый дворец готов — загрузите планы этажей');
+    openPlansModal();
+    return;
+  }
+  if(state.dirty){
+    ask('Есть несохранённые изменения. Создать новый дворец?', finishNewPalace, { yes:'Создать новый' });
+    return;
+  }
+  finishNewPalace();
+}
+
+/* ---------- обработчики верхней панели ----------
+   ＋ Новый / Открыть / Сохранить привязаны выше через bindAction. */
+on('#fileOpen', 'change', e => {
+  const file = e.target.files && e.target.files[0];
+  openFileObject(file);
+  e.target.value = ''; /* чтобы тот же файл можно было открыть повторно */
+});
+on('#closeSaveModal', 'click', () => { const m = $('#saveModal'); if(m) m.classList.remove('show'); });
+on('#saveModal', 'mousedown', e => { if(e.target && e.target.id === 'saveModal') e.currentTarget.classList.remove('show'); });
+on('#saveProjectBtn', 'click', async () => {
+  try{ await saveMplace(); }
+  catch(err){ status('Ошибка сохранения'); notify('Не удалось сохранить .mplace: ' + (err && err.message ? err.message : err)); }
+});
+on('#saveJsonBtn', 'click', () => {
+  try{ exportJson(); }
+  catch(err){ notify('Не удалось сохранить JSON: ' + (err && err.message ? err.message : err)); }
+});
+on('#exportPngBtn', 'click', async () => {
+  try{ await exportPng(); }
+  catch(err){ status('Экспорт PNG не выполнен'); notify('Не удалось экспортировать PNG: ' + (err && err.message ? err.message : err)); }
+});
+on('#exportPdfBtn', 'click', async () => {
+  try{ await exportPdf(); }
+  catch(err){ status('Экспорт PDF не выполнен'); notify('Не удалось экспортировать PDF: ' + (err && err.message ? err.message : err)); }
+});
+on('#modeBtn', 'click', () => { state.mode = state.mode === 'edit' ? 'view' : 'edit'; applyMode(); });
+
+/* ---------- модальное окно этажей ---------- */
+on('#uploadBtn', 'click', openPlansModal);
+on('#closeModal', 'click', closePlansModal);
+on('#drop', 'click', () => {
+  const i = document.createElement('input');
+  i.type = 'file'; i.multiple = true; i.accept = 'image/*,.pdf';
+  i.onchange = () => { addFiles(i.files); i.value = ''; };
+  i.click();
+});
+on('#drop', 'dragover', e => { e.preventDefault(); e.currentTarget.classList.add('over'); });
+on('#drop', 'dragleave', e => e.currentTarget.classList.remove('over'));
+on('#drop', 'drop', e => {
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('over');
+  addFiles(e.dataTransfer.files);
+});
+on('#applyPlans', 'click', () => {
+  if(!pending.length){ closePlansModal(); return; }
+  const start = state.levels.length;
+  const room = MAX_LEVELS - state.levels.length;
+  pending.slice(0, room).forEach((x, i) => state.levels.push({
+    name: x.name || ('Этаж #' + (start + i + 1)),
+    src: x.src, original: x.original || x.src,
+    rotation: x.rotation || 0, flip: !!x.flip,
+    brightness: x.brightness || 100, contrast: x.contrast || 100,
+    markers: [], draw: [], selected: null
+  }));
+  pending = [];
+  state.active = Math.min(start, state.levels.length - 1);
+  state.zoom = 1; state.rotation = 0;
+  const v = $('#viewport'); if(v) v.style.transform = '';
+  const m = $('#modal'); if(m) m.classList.remove('show');
+  renderPending();
+  touch(); render();
+});
+
+/* ---------- холст ---------- */
+on('#stage', 'dblclick', e => { e.preventDefault(); });
+on('#stage', 'click', e => {
+  if(e.detail > 1) return; /* второй клик двойного нажатия не создаёт лишний маркер */
+  if(state.mode !== 'edit') return;
+  const l = level(); if(!l) return;
+  if(state.tool !== 'marker'){
+    if(state.tool === 'select' && l.selected != null){ l.selected = null; drawPlan(); renderRoute(); }
+    return;
+  }
+  const pt = planPoint(e.clientX, e.clientY);
+  if(!insidePlan(pt)) return;
+  if(l.markers.length >= 100){ status('Достигнут предел в 100 локусов на этаже'); return; }
+  l.markers.push({ x: pt.x, y: pt.y, note: '' });
+  l.selected = l.markers.length - 1;
+  touch(); render();
+});
+on('#stage', 'contextmenu', e => e.preventDefault());
+on('#stage', 'mousedown', e => {
+  if(e.button !== 2) return;
+  pan = { x:e.clientX, y:e.clientY, tx:0, ty:0 };
+  const v = $('#viewport');
+  const m = v ? getComputedStyle(v).transform : 'none';
+  if(m && m !== 'none' && window.DOMMatrix){ const q = new DOMMatrix(m); pan.tx = q.e; pan.ty = q.f; }
+  e.preventDefault();
+});
+on('#stage', 'wheel', e => { e.preventDefault(); applyZoom(state.zoom * (e.deltaY < 0 ? 1.12 : 0.89), e.clientX, e.clientY); });
+
+window.onmousemove = e => {
+  if(pan){
+    const v = $('#viewport'); if(!v) return;
+    v.style.transform = 'translate(' + (pan.tx + e.clientX - pan.x) + 'px,' + (pan.ty + e.clientY - pan.y) + 'px) scale(' + state.zoom + ')';
+    return;
+  }
+  if(!drag) return;
+  const p = $('#plan'); if(!p) return;
+  const pt = planPoint(e.clientX, e.clientY);
+  drag.m.x = Math.max(0, Math.min(p.offsetWidth, pt.x - drag.ox));
+  drag.m.y = Math.max(0, Math.min(p.offsetHeight, pt.y - drag.oy));
+  if(Math.abs(e.clientX - drag.sx) > 2 || Math.abs(e.clientY - drag.sy) > 2) drag.moved = true;
+  if(drag.target){ drag.target.style.left = drag.m.x + 'px'; drag.target.style.top = drag.m.y + 'px'; }
+};
+window.onmouseup = () => {
+  if(drag){
+    const moved = drag.moved;
+    drag.m.dragging = false;
+    if(drag.target) drag.target.classList.remove('dragging');
+    if(moved){ suppressMarkerClick = true; touch(); }
+    drag = null; pan = null;
+    render();
+    return;
+  }
+  drag = null; pan = null;
+};
+window.onkeydown = e => {
+  if(e.key === 'Escape'){
+    const am = $('#askModal');
+    if(am && am.classList.contains('show')){ am.classList.remove('show'); return; }
+    const sm = $('#saveModal'); if(sm) sm.classList.remove('show');
+    const pm = $('#modal'); if(pm && pm.classList.contains('show')) closePlansModal();
+    return;
+  }
+  const t = e.target && e.target.tagName;
+  if(t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+  if((e.key === 'Delete' || e.key === 'Backspace') && state.mode === 'edit'){
+    const l = level();
+    if(l && l.selected != null){ e.preventDefault(); deleteMarker(l.selected); }
+  }
+};
+
+$$('.tool').forEach(b => {
+  if(!b.dataset.tool) return;
+  b.onclick = () => {
+    state.tool = b.dataset.tool;
+    $$('.tool').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  };
+});
+function applyZoom(z, cx, cy){
+  const v = $('#viewport'); if(!v) return;
+  if(cx == null) cx = innerWidth/2;
+  if(cy == null) cy = innerHeight/2;
+  const m = getComputedStyle(v).transform;
+  const q = (m && m !== 'none' && window.DOMMatrix) ? new DOMMatrix(m) : { e:0, f:0 };
+  const old = state.zoom || 1;
+  state.zoom = Math.max(0.25, Math.min(4, z));
+  const k = state.zoom/old;
+  v.style.transform = 'translate(' + (cx - (cx - q.e)*k) + 'px,' + (cy - (cy - q.f)*k) + 'px) scale(' + state.zoom + ')';
+}
+on('#zoomIn', 'click', () => applyZoom(state.zoom*1.2));
+on('#zoomOut', 'click', () => applyZoom(state.zoom/1.2));
+on('#resetView', 'click', () => {
+  state.zoom = 1; state.rotation = 0;
+  const v = $('#viewport'); if(v) v.style.transform = '';
+  render();
+});
+/* ---------- компас поворота плана ---------- */
+function normDeg(d){ d = Number(d) || 0; d %= 360; return d < 0 ? d + 360 : d; }
+function applyRotation(deg, live){
+  state.rotation = normDeg(deg);
+  const p = $('#plan');
+  if(p && level()){
+    p.style.transform = 'translate(-50%,-50%) rotate(' + state.rotation + 'deg)';
+    p.style.setProperty('--mrot', (-state.rotation) + 'deg');
+  }
+  updateCompass();
+  if(!live) touch();
+}
+function updateCompass(){
+  const deg = normDeg(state.rotation);
+  const n = $('#compassNeedle');
+  if(n) n.style.transform = 'rotate(' + deg + 'deg)';
+  const f = $('#compassVal');
+  if(f && document.activeElement !== f) f.value = String(Math.round(deg));
+  const c = $('#compass'); if(c) c.setAttribute('aria-valuenow', String(Math.round(deg)));
+}
+/* Коэффициент связи «поворот мыши вокруг компаса» → «поворот плана».
+   1 означает строгое соответствие 1:1 и меняется только здесь. */
+const ROTATE_RATIO = 1;
+(function initCompass(){
+  const c = $('#compass'); if(!c) return;
+  const field = $('#compassVal');
+  let dragging = false, lastAngle = 0, freeAngle = 0, mouseArc = 0;
+  const angleAt = (x, y) => {
+    const r = c.getBoundingClientRect();
+    return Math.atan2(y - (r.top + r.height/2), x - (r.left + r.width/2)) * 180/Math.PI + 90;
+  };
+  /* Считаем именно ПРИРАЩЕНИЕ угла: сколько градусов курсор прошёл по дуге
+     с прошлого события, столько же получает план. Абсолютная привязка к точке
+     захвата убрана — она рассинхронизировалась и давала неверный масштаб. */
+  c.addEventListener('pointerdown', e => {
+    if(state.mode !== 'edit') return;
+    if(e.target === field) return; /* клик по полю ввода — не перетаскивание */
+    dragging = true;
+    lastAngle = angleAt(e.clientX, e.clientY);
+    freeAngle = normDeg(state.rotation);
+    mouseArc = 0;
+    if(c.setPointerCapture) { try{ c.setPointerCapture(e.pointerId); }catch(err){} }
+    e.preventDefault();
+  });
+  c.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    const a = angleAt(e.clientX, e.clientY);
+    let delta = a - lastAngle;
+    if(delta > 180) delta -= 360; else if(delta < -180) delta += 360;
+    lastAngle = a;
+    mouseArc += delta;
+    freeAngle += delta * ROTATE_RATIO;
+    applyRotation(e.shiftKey ? Math.round(freeAngle/15)*15 : freeAngle, true);
+    status('Поворот плана: ' + Math.round(normDeg(state.rotation)) + '° · мышь прошла ' + Math.round(mouseArc) + '°');
+    e.preventDefault();
+  });
+  const stop = () => {
+    if(!dragging) return;
+    dragging = false;
+    touch();
+    status('Поворот плана: ' + Math.round(normDeg(state.rotation)) + '°');
+  };
+  c.addEventListener('pointerup', stop);
+  c.addEventListener('pointercancel', stop);
+  c.addEventListener('lostpointercapture', stop);
+  c.addEventListener('dblclick', () => { if(state.mode === 'edit') applyRotation(0); });
+  c.addEventListener('contextmenu', e => e.preventDefault());
+  c.addEventListener('wheel', e => {
+    if(state.mode !== 'edit') return;
+    e.preventDefault(); e.stopPropagation();
+    applyRotation(state.rotation + (e.deltaY < 0 ? 5 : -5));
+  }, { passive: false });
+  c.addEventListener('keydown', e => {
+    if(state.mode !== 'edit' || e.target === field) return;
+    const step = e.shiftKey ? 45 : 5;
+    if(e.key === 'ArrowRight' || e.key === 'ArrowUp'){ applyRotation(state.rotation + step); e.preventDefault(); }
+    else if(e.key === 'ArrowLeft' || e.key === 'ArrowDown'){ applyRotation(state.rotation - step); e.preventDefault(); }
+    else if(e.key === 'Home'){ applyRotation(0); e.preventDefault(); }
+  });
+  /* точный ввод угла числом */
+  if(field){
+    field.addEventListener('input', () => {
+      if(state.mode !== 'edit') return;
+      const v = parseFloat(String(field.value).replace(',', '.'));
+      if(isFinite(v)) applyRotation(v, true);
+    });
+    field.addEventListener('change', () => { touch(); updateCompass(); });
+    field.addEventListener('blur', updateCompass);
+    field.addEventListener('keydown', e => {
+      const step = e.shiftKey ? 15 : 1;
+      if(e.key === 'ArrowUp'){ applyRotation(state.rotation + step); e.preventDefault(); }
+      else if(e.key === 'ArrowDown'){ applyRotation(state.rotation - step); e.preventDefault(); }
+      else if(e.key === 'Enter'){ field.blur(); }
+      e.stopPropagation();
+    });
+  }
+  /* Компас лежит внутри холста. Эти слушатели регистрируются последними, поэтому
+     собственные обработчики компаса уже отработали, а до карты событие не доходит:
+     двойной щелчок по компасу больше не ставит маркеры и не панорамирует холст. */
+  ['click', 'dblclick', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'contextmenu'].forEach(ev => {
+    c.addEventListener(ev, e => {
+      e.stopPropagation();
+      if(ev === 'dblclick' || ev === 'contextmenu') e.preventDefault();
+    });
+  });
+})();
+on('#markerSize', 'input', e => {
+  state.markerSize = Number(e.target.value) || 30;
+  setText('#markerSizeVal', markerSize());
+  if(level()) drawPlan();
+  touch();
+});
+/* Регулятор лежит на холсте — его клики не должны ставить маркеры. */
+(function shieldMarkerCtl(){
+  const c = $('#markerCtl'); if(!c) return;
+  ['click', 'dblclick', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'wheel', 'contextmenu'].forEach(ev => {
+    c.addEventListener(ev, e => { e.stopPropagation(); if(ev === 'contextmenu') e.preventDefault(); });
+  });
+})();
+
+/* ---------- текстовые поля ---------- */
+on('#palaceName', 'input', e => { state.name = e.target.value; syncFileNameField(); touch(); });
+on('#purpose', 'input', e => { state.purpose = e.target.value; touch(); });
+on('#source', 'input', e => { state.source = e.target.value; touch(); });
+on('#explain', 'input', e => { state.explain = e.target.value; touch(); });
+on('#notes', 'input', e => { state.notes = e.target.value; touch(); });
+
+/* ---------- перетаскивание файлов на окно ---------- */
+document.body.ondragover = e => {
+  if(e.dataTransfer && e.dataTransfer.types && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') > -1){
+    e.preventDefault();
+    document.body.style.outline = '2px solid var(--blue)';
+    document.body.style.outlineOffset = '-2px';
+  }
+};
+document.body.ondragleave = () => { document.body.style.outline = ''; };
+document.body.ondrop = e => {
+  e.preventDefault();
+  document.body.style.outline = '';
+  const files = (e.dataTransfer && e.dataTransfer.files) ? Array.prototype.slice.call(e.dataTransfer.files) : [];
+  if(!files.length) return;
+  const mplace = files.find(f => /\.(mplace|zip)$/i.test(f.name));
+  if(mplace){
+    if(state.dirty){ ask('Есть несохранённые изменения. Открыть другой дворец?', () => openFileObject(mplace), { yes:'Открыть' }); return; }
+    openFileObject(mplace);
+    return;
+  }
+  const plans = files.filter(f => (f.type && f.type.indexOf('image/') === 0) || /\.pdf$/i.test(f.name));
+  if(plans.length){ openPlansModal(); addFiles(plans); }
+};
+
+window.onbeforeunload = e => { if(state.dirty){ e.preventDefault(); e.returnValue = ''; } };
+
+/* pdf.js воркер — иначе чтение PDF молча падает */
+try{ if(window.pdfjsLib && pdfjsLib.GlobalWorkerOptions) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }catch(err){}
+
+try{
+  renderPending();
+  render();
+}catch(err){
+  status('Ошибка запуска: ' + (err && err.message ? err.message : err));
+  console.error('PALACE init:', err);
+}
+window.addEventListener('error', e => {
+  status('Ошибка сценария: ' + (e && e.message ? e.message : 'неизвестная'));
+});
+</script>
+</body></html>
