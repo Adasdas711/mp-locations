@@ -4,41 +4,130 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box}
+/* VS Code Dark Modern — токены как на vscode.dev */
 :root{
-  --bg:#111316;--panel:#191c20;--elev:#272a2d;--line:rgba(255,255,255,.13);
-  --blue:#4da3ff;--text:#e2eeff;--muted:#7a8fa8;--green:#00ff88;--red:#ff3355;
-  --top:40px;--bottom:52px;--status:22px;--right:240px;--tool:32px
+  --vscode-fg:#cccccc;
+  --vscode-fg-dim:#9d9d9d;
+  --vscode-fg-mute:#6e6e6e;
+  --vscode-titlebar-bg:#181818;
+  --vscode-activity-bg:#181818;
+  --vscode-activity-fg:#d7d7d7;
+  --vscode-activity-inactive:#7f7f7f;
+  --vscode-activity-badge:#0078d4;
+  --vscode-sidebar-bg:#181818;
+  --vscode-editor-bg:#1f1f1f;
+  --vscode-tab-bg:#181818;
+  --vscode-tab-active-bg:#1f1f1f;
+  --vscode-tab-border:#2b2b2b;
+  --vscode-input-bg:#313131;
+  --vscode-input-border:#3c3c3c;
+  --vscode-button-bg:#0e639c;
+  --vscode-button-hover:#1177bb;
+  --vscode-status-bg:#0078d4;
+  --vscode-status-fg:#ffffff;
+  --vscode-widget-border:#454545;
+  --vscode-list-hover:#2a2d2e;
+  --vscode-focus:#007fd4;
+  --bg:var(--vscode-editor-bg);--panel:var(--vscode-sidebar-bg);--elev:#2d2d2d;--line:var(--vscode-tab-border);
+  --blue:var(--vscode-status-bg);--blue2:var(--vscode-button-hover);--text:var(--vscode-fg);--muted:var(--vscode-fg-dim);--green:#89d185;--red:#f14c4c;
+  --top:30px;--tabs:35px;--bottom:35px;--status:22px;--activity:48px;--tool:32px;
+  --sidebar:var(--vscode-sidebar-bg);--editor:var(--vscode-editor-bg);--tab-active:var(--vscode-tab-active-bg);--tab:var(--vscode-tab-bg)
 }
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:12.5px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--vscode-titlebar-bg);color:var(--text);
+  font:13px/1.4 "Segoe WPC","Segoe UI",sans-serif}
 button,input,textarea,select{font:inherit}
-button{color:var(--text);background:var(--elev);border:1px solid var(--line);border-radius:5px;padding:5px 8px;cursor:pointer}
-button:hover{border-color:var(--blue);color:var(--blue)}
+button{color:var(--text);background:var(--vscode-input-bg);border:1px solid transparent;border-radius:2px;padding:4px 10px;cursor:pointer}
+button:hover{background:#3a3a3a}
 button:disabled{opacity:.45;cursor:not-allowed}
-button:disabled:hover{border-color:var(--line);color:var(--text)}
-button.primary{background:var(--blue);color:#001820;border-color:var(--blue);font-weight:700}
-button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
-.app{height:100%;display:flex;flex-direction:column}
+button.primary{background:var(--vscode-button-bg);color:#fff;border-color:transparent;font-weight:500}
+button.primary:hover{background:var(--vscode-button-hover)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:1px solid var(--vscode-focus);outline-offset:-1px}
+.app{height:100%;display:flex;flex-direction:column;background:var(--vscode-titlebar-bg)}
 
-/* TOP — compact */
-.top{height:var(--top);background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 10px}
-.logo{letter-spacing:3px;font-weight:800;color:var(--blue);font-size:12px;flex-shrink:0}
-.dot{display:inline-block;width:6px;height:6px;background:var(--blue);border-radius:50%;margin-right:6px;box-shadow:0 0 10px var(--blue)}
-.title{flex:1;min-width:0;text-align:center}
-.title input{width:100%;max-width:320px;background:transparent;border:1px solid transparent;color:var(--text);text-align:center;font-size:13px;padding:4px 10px;border-radius:5px}
-.title input:focus{outline:none;border-color:var(--blue);background:var(--elev)}
+/* TITLE BAR — vscode.dev */
+.top{height:var(--top);background:var(--vscode-titlebar-bg);border-bottom:1px solid var(--vscode-tab-border);
+  display:flex;align-items:center;gap:0;padding:0 8px;flex-shrink:0;user-select:none}
+.menubar{display:flex;align-items:center;gap:0;flex-shrink:0;-webkit-app-region:no-drag}
+.menubar .menu-item{padding:0 8px;height:30px;line-height:30px;font-size:13px;color:var(--vscode-fg);background:transparent;border:0;border-radius:0;cursor:default}
+.menubar .menu-item:hover{background:rgba(255,255,255,.08)}
+.logo{display:none}
+.dot{display:none}
+.title{flex:1;min-width:0;text-align:center;display:flex;justify-content:center}
+.title input{width:100%;max-width:420px;background:transparent;border:1px solid transparent;color:var(--vscode-fg-dim);
+  text-align:center;font-size:12px;padding:2px 10px;border-radius:2px;height:22px}
+.title input:hover{background:rgba(255,255,255,.04)}
+.title input:focus{outline:none;border-color:var(--vscode-focus);background:var(--vscode-input-bg);color:var(--vscode-fg)}
 .title.flash input{animation:flash .5s ease-out}
-@keyframes flash{from{border-color:var(--blue);background:rgba(77,163,255,.22)}to{border-color:transparent;background:transparent}}
+@keyframes flash{from{border-color:var(--vscode-focus);background:rgba(0,127,212,.2)}to{border-color:transparent;background:transparent}}
 @media (prefers-reduced-motion:reduce){.title.flash input{animation:none}}
-.top button{padding:4px 8px;font-size:12px;white-space:nowrap}
+.top-actions{display:flex;align-items:center;gap:2px;-webkit-app-region:no-drag}
+.top-actions button{padding:0 10px;height:24px;font-size:12px;background:transparent;border-radius:2px;color:var(--vscode-fg)}
+.top-actions button:hover{background:rgba(255,255,255,.08)}
+.top-actions button.primary{background:var(--vscode-button-bg);color:#fff}
+.top-actions button.primary:hover{background:var(--vscode-button-hover)}
 
-/* MAIN */
-.main{flex:1;display:flex;min-height:0;position:relative}
+/* WORKBENCH */
+.workbench{flex:1;display:flex;min-height:0;background:var(--vscode-editor-bg)}
 
-/* LEFT TOOLBAR — tighter */
-.left{position:absolute;z-index:9;left:10px;top:50%;transform:translateY(-50%);width:40px;background:rgba(25,28,32,.92);border:1px solid var(--line);border-radius:8px;padding:5px;display:flex;flex-direction:column;gap:4px;box-shadow:0 6px 18px #0009}
-.left span{display:block;height:6px}
-.tool{width:var(--tool);height:var(--tool);padding:0;font-size:14px;display:flex;align-items:center;justify-content:center}
-.tool.active{background:rgba(77,163,255,.18);border-color:var(--blue);color:var(--blue)}
+/* ACTIVITY BAR */
+.activity{width:var(--activity);background:var(--vscode-activity-bg);display:flex;flex-direction:column;align-items:center;
+  padding:0;flex-shrink:0;border-right:1px solid var(--vscode-tab-border)}
+.abtn{width:48px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  background:transparent;border:0;border-radius:0;color:var(--vscode-activity-inactive);cursor:pointer;position:relative;padding:0}
+.abtn .ico{font-size:22px;line-height:1;font-weight:300}
+.abtn .albl{display:none}
+.abtn:hover{color:var(--vscode-activity-fg)}
+.abtn.active{color:var(--vscode-activity-fg)}
+.abtn.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:#fff}
+.abtn.primary-act{color:var(--vscode-activity-fg)}
+.activity .ab-spacer{flex:1}
+.activity .ab-sep{width:24px;height:1px;background:var(--vscode-widget-border);margin:4px 0;opacity:.5}
+
+/* EDITOR GROUP + TABS */
+.main-wrap{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--vscode-editor-bg)}
+.tabs{height:var(--tabs);background:var(--vscode-tab-bg);display:flex;align-items:stretch;flex-shrink:0;
+  border-bottom:1px solid var(--vscode-tab-border);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:0 12px;font-size:13px;color:var(--vscode-fg-dim);
+  background:var(--vscode-tab-bg);border-right:1px solid var(--vscode-tab-border);cursor:pointer;white-space:nowrap;
+  user-select:none;border:0;border-radius:0;height:100%;border-top:1px solid transparent;min-width:0}
+.tab:hover{color:var(--vscode-fg)}
+.tab.active{background:var(--vscode-tab-active-bg);color:var(--vscode-fg);border-top-color:var(--vscode-focus)}
+.tab .tab-ico{opacity:.85;font-size:14px}
+.tab .tab-close{opacity:0;margin-left:6px;font-size:14px;width:18px;height:18px;line-height:16px;text-align:center;border-radius:3px}
+.tab:hover .tab-close,.tab.active .tab-close{opacity:.7}
+.tab .tab-close:hover{opacity:1;background:rgba(255,255,255,.12)}
+.main{flex:1;display:flex;min-height:0;position:relative;background:var(--vscode-editor-bg)}
+
+/* Plan tools — floating, VS Code widget look */
+.left{position:absolute;z-index:9;left:12px;top:50%;transform:translateY(-50%);width:40px;
+  background:var(--vscode-sidebar-bg);border:1px solid var(--vscode-widget-border);border-radius:6px;padding:4px;
+  display:flex;flex-direction:column;gap:2px;box-shadow:0 2px 8px rgba(0,0,0,.36)}
+.left span{display:block;height:4px}
+.tool{width:var(--tool);height:var(--tool);padding:0;font-size:14px;display:flex;align-items:center;justify-content:center;
+  border-radius:4px;background:transparent;border:0;color:var(--vscode-fg-dim)}
+.tool:hover{background:var(--vscode-list-hover);color:var(--vscode-fg)}
+.tool.active{background:rgba(0,127,212,.28);color:#fff}
+
+/* ui modes */
+.app[data-ui=plan] #tourPanel{display:none !important}
+.app[data-ui=plan] #stage{flex:1}
+.app[data-ui=tour] #stage{display:none !important}
+.app[data-ui=tour] #tourPanel{display:flex !important;width:100% !important;margin:0 !important;border:0 !important;border-radius:0 !important;flex:1 !important;flex-direction:column !important;position:relative !important;overflow:hidden !important}
+.app[data-ui=tour] .tour-resizer{display:none !important}
+.app[data-ui=tour] .left{display:none}
+.app[data-ui=tour] .bottom{display:none}
+.app[data-ui=tour] #tourPanel.open{margin:0 !important;border:0 !important}
+.tour-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--vscode-sidebar-bg);border-bottom:1px solid var(--vscode-tab-border);flex-shrink:0}
+.tour-toolbar input{flex:1;min-width:0;background:var(--vscode-input-bg);color:var(--text);border:1px solid var(--vscode-input-border);border-radius:2px;padding:6px 10px;font-size:13px}
+.tour-toolbar input:focus{border-color:var(--vscode-focus);outline:none}
+.tour-toolbar .primary{padding:6px 14px}
+.tour-host{font-size:12px;color:var(--vscode-fg-mute);max-width:28%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tour{display:none;flex-direction:column;background:var(--vscode-editor-bg);min-width:0}
+.tour-body{flex:1;position:relative;min-height:0;background:#1f1f1f}
+.tour-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#1f1f1f}
+.tour-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;color:var(--vscode-fg-dim);font-size:13px;line-height:1.6}
+.tour-empty strong{display:block;color:var(--vscode-fg);font-size:20px;margin-bottom:12px;font-weight:400}
 
 /* STAGE */
 .stage{flex:1;position:relative;overflow:hidden;cursor:crosshair;user-select:none;-webkit-user-select:none;-ms-user-select:none;background:#0d0f12;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:24px 24px}
@@ -47,6 +136,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .viewport{position:absolute;inset:0;transform-origin:0 0}
 .plan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 10px 32px #000;user-select:none;cursor:crosshair}
 .stage.mode-view{cursor:default}
+.stage.panning,.stage.panning .plan{cursor:grabbing}
 .plan img{display:block;max-width:none;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 .marker{position:absolute;width:28px;height:28px;border-radius:50%;background:#ffb800;color:#16110a;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;transform:translate(-50%,-50%) rotate(var(--mrot,0deg));cursor:grab;box-shadow:0 2px 10px #000;z-index:3}
 .marker.dragging{cursor:grabbing;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.18);box-shadow:0 0 0 4px #4da3ff66,0 6px 18px #000;z-index:20}
@@ -69,15 +159,113 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .floor-overlay button.active{color:var(--blue);border-color:var(--blue)}
 .floor-overlay .add{border-style:dashed}
 
+/* 3D-ТУР iGUIDE */
+.tour{position:relative;width:0;flex-shrink:0;background:var(--panel);display:flex;flex-direction:column;transition:width .2s,margin .2s;overflow:hidden}
+.tour.open{margin:8px 8px 8px 10px;border:1px solid var(--line);border-radius:10px}
+.tour.resizing{transition:none;user-select:none}
+.tour-resizer{position:absolute;left:-10px;top:0;bottom:0;width:12px;z-index:3;cursor:col-resize;touch-action:none;display:none}
+.tour.open .tour-resizer{display:block}
+.tour-resizer::before{content:'';position:absolute;left:3px;top:50%;width:2px;height:34px;margin-top:-17px;border-radius:2px;background:var(--line)}
+.tour-resizer:hover::before,.tour.resizing .tour-resizer::before{background:var(--blue)}
+.tour.resizing .tour-body{pointer-events:none}
+.tsec{border-bottom:1px solid var(--line);flex-shrink:0}
+.tsec[hidden]{display:none}
+.tsec-head{display:flex;align-items:center;gap:6px;width:100%;text-align:left;background:transparent;border:0;border-radius:0;padding:6px 9px;font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);cursor:pointer}
+.tsec-head:hover{color:var(--text);background:#ffffff08}
+.tsec-head .chev{display:inline-block;transition:transform .15s;font-size:10px}
+.tsec.closed .chev{transform:rotate(-90deg)}
+.tsec.closed .tsec-body{display:none}
+.tsec-note{margin-left:auto;text-transform:none;letter-spacing:0;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.tour-head{display:flex;align-items:center;gap:6px;padding:7px 8px}
+.tour-head input{flex:1;min-width:0;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:5px 7px;font-size:11px}
+.tour-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 8px;font-size:10.5px;color:var(--muted)}
+.tour-bar button{padding:4px 7px;font-size:11px}
+.tour-bar label{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.tour-bar .dot-live{width:7px;height:7px;border-radius:50%;background:#5c6f84;flex-shrink:0}
+.tsec.live .dot-live{background:var(--green);box-shadow:0 0 8px var(--green)}
+.marker.pinned::after{content:'';position:absolute;right:-3px;bottom:-3px;width:8px;height:8px;border-radius:50%;background:#4da3ff;border:1.5px solid #0d0f12}
+.tour-info{max-height:190px;overflow:auto;padding:2px 8px 8px;font-size:10.5px}
+.tour-info[hidden]{display:none}
+.ti-floor{padding:4px 5px;border-radius:5px;cursor:pointer}
+.ti-floor:hover{background:#ffffff08}
+.ti-floor.cur{background:rgba(77,163,255,.14)}
+.ti-floor b{font-size:11px}
+.ti-floor span{color:var(--muted)}
+.ti-rooms{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.ti-room{padding:2px 6px;border:1px solid var(--line);border-radius:10px;color:var(--muted);white-space:nowrap}
+.ti-room i{font-style:normal;opacity:.7}
+.tour-body{flex:1;position:relative;min-height:0}
+.tour-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#0d0f12}
+.tour-overlay{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.tov{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;padding:3px 8px 3px 3px;border-radius:16px;
+     background:#0d0f12cc;border:1px solid #ffffff55;color:#fff;font-size:11px;white-space:nowrap;pointer-events:auto;cursor:pointer;
+     box-shadow:0 3px 12px #000a;backdrop-filter:blur(2px);transition:opacity .12s}
+.tov:hover{border-color:var(--blue)}
+.tov .tov-n{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10.5px;color:#16110a;background:var(--fc,#ffb800)}
+.tov.sel{border-color:#fff;box-shadow:0 0 0 2px #4da3ff,0 3px 12px #000a}
+.tov.edge{opacity:.45}
+.tov-jumps{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:7px;pointer-events:auto}
+.tov-jump{padding:3px 9px;border-radius:14px;background:#0d0f12cc;border:1px solid var(--line);color:var(--muted);font-size:10.5px;cursor:pointer}
+.tov-jump:hover{color:#fff;border-color:var(--blue)}
+.tour-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.5}
+#tourBtn.on,#tourHere.on{border-color:var(--blue);color:var(--blue);background:rgba(77,163,255,.16)}
+.spot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:2px dashed var(--blue);
+      background:rgba(77,163,255,.2);display:flex;align-items:center;justify-content:center;font-size:12px;z-index:2;pointer-events:none}
+.spot::after{content:'';position:absolute;width:6px;height:6px;border-radius:50%;background:var(--blue)}
+.fov-layer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible}
+.fov-cone{fill:rgba(0,122,204,.22);stroke:rgba(0,180,255,.65);stroke-width:2}
+.fov-dir{stroke:#fff;stroke-width:2;stroke-linecap:round;opacity:.9}
+.fov-arc{fill:none;stroke:rgba(0,200,255,.5);stroke-width:1.5;stroke-dasharray:4 3}
+.marker.in-fov{box-shadow:0 0 0 3px #00d4ff,0 2px 10px #000;z-index:5}
+.marker.in-fov::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(0,212,255,.5);pointer-events:none}
+.path-layer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible}
+.path-stroke{fill:none;stroke:#ffb800;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.path-stroke-soft{fill:none;stroke:rgba(0,0,0,.45);stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
+.path-hit{fill:none;stroke:transparent;stroke-width:14;stroke-linecap:round;stroke-linejoin:round;pointer-events:stroke;cursor:crosshair}
+.path-way{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:2px;background:#ffb800;border:2px solid #fff;
+  box-shadow:0 1px 6px #000a;z-index:4;cursor:grab;transform:rotate(var(--mrot,0deg))}
+.path-way:hover,.path-way.dragging{background:#fff;border-color:#ffb800}
+.tool.on-path{color:#ffb800!important}
+/* Диагностика postMessage от iGUIDE */
+.tour-diag{position:absolute;left:8px;right:8px;bottom:8px;z-index:4;max-height:42%;overflow:auto;
+  background:#0d0f12f2;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:10.5px/1.4 ui-monospace,Menlo,monospace;color:var(--muted);
+  pointer-events:auto;display:none;box-shadow:0 6px 18px #000a}
+.tour-diag.show{display:block}
+.tour-diag .td-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;color:var(--text);font-weight:700}
+.tour-diag .td-head button{padding:2px 6px;font-size:10px}
+.tour-diag .td-live{color:var(--green);margin-bottom:4px;word-break:break-all}
+.tour-diag .td-log{max-height:160px;overflow:auto;border-top:1px solid var(--line);padding-top:4px}
+.tour-diag .td-log div{border-bottom:1px solid #ffffff08;padding:2px 0;white-space:pre-wrap;word-break:break-all}
+.tour-hint{position:absolute;left:8px;right:8px;top:8px;z-index:3;padding:8px 10px;background:#191c20ee;border:1px solid var(--blue);
+  border-radius:8px;font-size:11px;line-height:1.4;color:var(--text);pointer-events:none;display:none}
+.tour-hint.show{display:block}
+/* Двухшаговая привязка: клик по плану → навести объект → клик по зоне над туром */
+.tour-bind-zone{position:absolute;left:10px;right:10px;bottom:10px;z-index:5;display:none;
+  padding:12px 14px;border-radius:10px;border:2px solid var(--blue);background:rgba(13,15,18,.92);
+  color:var(--text);font-size:12.5px;line-height:1.35;cursor:pointer;text-align:center;
+  box-shadow:0 6px 22px #000c;pointer-events:auto;user-select:none}
+.tour-bind-zone.show{display:block}
+.tour-bind-zone:hover{border-color:#fff;background:rgba(77,163,255,.22)}
+.tour-bind-zone b{color:var(--blue)}
+.tour-bind-zone .tbz-sub{display:block;margin-top:4px;font-size:10.5px;color:var(--muted)}
+/* Прицел в центре 3D-панорамы */
+.tour-reticle{position:absolute;left:50%;top:50%;z-index:3;width:28px;height:28px;margin:-14px 0 0 -14px;pointer-events:none}
+.tour-reticle::before,.tour-reticle::after{content:'';position:absolute;background:rgba(255,255,255,.85);box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+.tour-reticle::before{left:50%;top:3px;bottom:3px;width:2px;margin-left:-1px}
+.tour-reticle::after{top:50%;left:3px;right:3px;height:2px;margin-top:-1px}
+.tour-reticle i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;border:1.5px solid rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(0,0,0,.4);background:rgba(0,122,204,.35)}
+
 /* BOTTOM ROUTE — shorter */
-.bottom{height:var(--bottom);background:var(--panel);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:6px 10px}
 .bottom>b{display:none}
 .route{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;scroll-behavior:smooth;padding:2px}
 .route::-webkit-scrollbar{display:none}
 .route .r{min-width:34px;height:34px;border-radius:50%;background:#ffb800;color:#16110a;border:2px solid #fff;font-weight:800;font-size:12px;cursor:grab;transition:transform .18s,box-shadow .18s}
 .route .r:hover{transform:translateY(-2px) scale(1.06);box-shadow:0 4px 12px #0008}
 .route .r:active{cursor:grabbing;transform:scale(.95)}
-.route .r.drag-over{box-shadow:0 0 0 2px #4da3ff}
+.route .r.dragging{opacity:.45}
+.route .r.drop-before::before,.route .r.drop-after::before{content:'';position:absolute;top:-3px;bottom:-3px;width:3px;border-radius:2px;background:var(--blue);box-shadow:0 0 8px var(--blue)}
+.route .r.drop-before::before{left:-6px}
+.route .r.drop-after::before{right:-6px}
 .route .r.sel{outline:2px solid var(--blue);outline-offset:2px}
 .rgroup{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:3px 9px 3px 7px;border:1px solid rgba(255,255,255,.09);border-radius:22px}
 .rgroup.current{border-color:var(--fc);background:rgba(255,255,255,.05)}
@@ -87,8 +275,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .rgroup.current .rlabel{color:var(--fc);font-weight:700}
 
 /* STATUS — thinner */
-.status{height:var(--status);background:var(--panel);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 10px;color:var(--muted);gap:14px;font-size:10.5px}
-.badge{color:var(--green)}
+.status{height:var(--status);background:var(--vscode-status-bg);border-top:0;display:flex;align-items:center;padding:0 10px;color:var(--vscode-status-fg);gap:12px;font-size:12px}
+.badge{color:#fff;opacity:.95}
+.status .small,.status span{color:rgba(255,255,255,.92)}
+.bottom{height:var(--bottom);background:var(--vscode-sidebar-bg);border-top:1px solid var(--vscode-tab-border);display:flex;align-items:center;gap:8px;padding:4px 12px}
+.route .r{border-radius:50%}
+.floor-overlay{background:var(--vscode-sidebar-bg)!important;border-color:var(--vscode-widget-border)!important}
+.canvas-ctl{background:var(--vscode-sidebar-bg)!important;border-color:var(--vscode-widget-border)!important}
+.compass{background:var(--vscode-sidebar-bg)!important;border-color:var(--vscode-widget-border)!important}
+.dialog{background:var(--vscode-sidebar-bg)!important;border-color:var(--vscode-widget-border)!important;border-radius:6px!important}
+.dialog h2{font-weight:400;font-size:18px}
+.field input,.field textarea,.field select{background:var(--vscode-input-bg)!important;border-color:var(--vscode-input-border)!important;border-radius:2px!important}
+.modal{background:rgba(0,0,0,.5)!important}
 
 /* MODAL — less wasteful */
 .modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
@@ -142,20 +340,40 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .check input{width:auto}
 </style></head>
 <body>
-<div class="app">
+<div class="app" data-ui="plan" id="appRoot">
   <header class="top">
-    <div class="logo"><span class="dot"></span>PALACE</div>
-    <div class="title"><input aria-label="Название дворца" id="palaceName" value="Новый дворец памяти"/></div>
-    <button id="newBtn">＋ Новый</button>
-    <button id="openBtn">Открыть</button>
-    <button class="primary" id="saveBtn">Сохранить</button>
-    <button id="modeBtn">Просмотр</button>
+    <div class="menubar">
+      <button type="button" class="menu-item" id="menuFile" title="Файл">Файл</button>
+      <button type="button" class="menu-item" id="modeBtn" title="Режим редактирования / просмотра">Вид</button>
+      <button type="button" class="menu-item" id="abUploadMenu" title="Загрузить планы">Планы</button>
+    </div>
+    <div class="title"><input aria-label="Название дворца" id="palaceName" value="Новый дворец памяти — PALACE"/></div>
+    <div class="top-actions">
+      <button class="primary" id="saveBtn">Сохранить</button>
+    </div>
     <input accept=".mplace,.zip" hidden="" id="fileOpen" type="file"/>
   </header>
+  <div class="workbench">
+    <nav class="activity" aria-label="Режимы">
+      <button type="button" class="abtn active" data-ui="plan" id="abPlan" title="План дворца"><span class="ico">◫</span><span class="albl">План</span></button>
+      <button type="button" class="abtn" data-ui="tour" id="abTour" title="3D-тур"><span class="ico">◉</span><span class="albl">3D</span></button>
+      <div class="ab-sep"></div>
+      <button type="button" class="abtn" id="newBtn" title="Новый дворец"><span class="ico">＋</span></button>
+      <button type="button" class="abtn" id="openBtn" title="Открыть .mplace"><span class="ico">📂</span></button>
+      <button type="button" class="abtn primary-act" id="abSave" title="Сохранить"><span class="ico">💾</span></button>
+      <div class="ab-spacer"></div>
+      <button type="button" class="abtn" id="abUpload" title="Загрузить планы"><span class="ico">⬆</span></button>
+    </nav>
+    <div class="main-wrap">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-ui="plan" id="tabPlan"><span class="tab-ico">◫</span> План дворца<span class="tab-close" title="Закрыть" hidden>×</span></button>
+        <button type="button" class="tab" data-ui="tour" id="tabTour"><span class="tab-ico">◉</span> 3D-тур<span class="tab-close" title="Закрыть" hidden>×</span></button>
+      </div>
   <main class="main">
-    <aside class="left">
+    <aside class="left" id="planTools">
       <button class="tool active" data-tool="select" title="Выбор">⌁</button>
       <button class="tool" data-tool="marker" title="Маркер">●</button>
+      <button class="tool" data-tool="path" title="Путь: показать и править изломы" id="pathTool">╱</button>
       <span style="flex:1"></span>
       <button class="tool" id="zoomOut" title="Уменьшить">−</button>
       <button class="tool" id="zoomIn" title="Увеличить">＋</button>
@@ -187,7 +405,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <output id="markerSizeVal" for="markerSize">30</output>
       </div>
     </section>
+    <aside class="tour" id="tourPanel">
+      <div class="tour-toolbar">
+        <input id="tourUrl" placeholder="Ссылка на iGUIDE-тур (youriguide.com/…)" aria-label="Ссылка на 3D-тур"/>
+        <button class="primary" id="tourApply">Открыть</button>
+        <button type="button" id="tourDownload" title="Как скачать Offline iGUIDE">Скачать</button>
+        <span class="tour-host" id="tourHost"></span>
+      </div>
+      <div class="tour-body" id="tourBody">
+        <div class="tour-empty" id="tourEmpty">
+          <strong>3D-тур</strong>
+          Вставьте ссылку на тур iGUIDE и нажмите «Открыть».<br/>
+          <span class="small">Например: youriguide.com/2_kalb_ct_dix_hills_ny</span><br/><br/>
+          <span class="small">План этажа загружается отдельно на вкладке «План дворца».</span>
+        </div>
+      </div>
+    </aside>
   </main>
+    </div><!-- .main-wrap -->
+  </div><!-- .workbench -->
   <footer class="bottom">
     <b>МАРШРУТ</b>
     <div class="route" id="route"><span class="small">Добавьте маркеры на план</span></div>
@@ -275,6 +511,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* ---------- безопасные помощники DOM ----------
    Любое обращение к отсутствующему элементу больше не роняет весь скрипт. */
+const FORMAT_VERSION = '1.0'; /* версия формата файла .mplace */
+const TOUR_WIDTH_DEFAULT = 460, TOUR_WIDTH_MIN = 280;
 const MAX_LEVELS = Infinity; /* верхняя граница числа этажей снята */
 function $(sel){ return document.querySelector(sel); }
 function $$(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); }
@@ -361,12 +599,60 @@ function floorColor(i){
 /* ---------- состояние ---------- */
 function blankState(){
   const now = new Date().toISOString();
-  return { version:2, name:'Новый дворец памяти', purpose:'', source:'', explain:'', notes:'',
+  return { version:FORMAT_VERSION, name:'Новый дворец памяти', purpose:'', source:'', explain:'', notes:'',
            created:now, edited:now, levels:[], active:0, mode:'edit', tool:'select',
-           zoom:1, rotation:0, markerSize:30, dirty:false };
+           zoom:1, rotation:0, markerSize:30, showPath:false, tour:'', tourWidth:TOUR_WIDTH_DEFAULT, tourOpen:false, uiMode:'plan', tourFollow:true, tourAutoBind:false, tourTags:true, tourYawFlip:false, tourSummary:null, panoSpots:{},
+           tourPanels:{ link:true, sync:true, info:true }, dirty:false };
 }
 const state = blankState();
 let pending = [], drag = null, pan = null, planRenderToken = 0, suppressMarkerClick = false;
+let routeDrag = null;
+function clearRouteHints(){
+  $$('#route .r').forEach(x => x.classList.remove('drop-before', 'drop-after', 'dragging'));
+}
+let placingSpot = false;
+function setPlacingSpot(on){
+  placingSpot = !!on;
+  const b = $('#tourHere');
+  if(b) b.classList.toggle('on', placingSpot);
+}
+/* Двухшаговая привязка: { level, index } после клика по плану, пока ждём клик по зоне тура */
+let pendingBind = null;
+function clearPendingBind(){
+  pendingBind = null;
+  const z = $('#tourBindZone');
+  if(z) z.classList.remove('show');
+}
+function beginPendingBind(li, idx){
+  if(!tourApi.ready || !state.tour){ clearPendingBind(); return; }
+  pendingBind = { level: li, index: idx };
+  openTour(true, true);
+  const z = $('#tourBindZone');
+  if(z){
+    z.classList.add('show');
+    const num = idx + 1 + state.levels.slice(0, li).reduce((n, f) => n + ((f && f.markers) ? f.markers.length : 0), 0);
+    z.innerHTML = '<b>Шаг 2:</b> наведите объект локуса <b>' + num + '</b> в туре и <b>кликните сюда</b>' +
+      '<span class="tbz-sub">Привяжется точка и ракурс камеры · Esc — отмена · можно крутить тур мышкой</span>';
+  }
+  status('Локус поставлен — наведите объект в 3D-туре и кликните синюю зону внизу панели тура');
+}
+function confirmPendingBind(){
+  if(!pendingBind) return;
+  const li = pendingBind.level, idx = pendingBind.index;
+  const l = state.levels[li];
+  const m = l && l.markers && l.markers[idx];
+  if(!m){ clearPendingBind(); return; }
+  if(!tourApi.ready){ notify('3D-тур ещё не подключён'); return; }
+  if(!tourApi.pano){ notify('Пройдите в туре в нужную точку — она пока не определена'); return; }
+  m.pano = tourApi.pano;
+  m.camera = tourApi.camera ? { angle: tourApi.camera.angle, elevation: tourApi.camera.elevation, zoom: tourApi.camera.zoom } : null;
+  state.active = li;
+  l.selected = idx;
+  clearPendingBind();
+  touch(); drawPlan(); renderRoute(); renderTourBar(); scheduleTourOverlay();
+  status('Локус ' + (idx + 1 + floorOffset()) + ' привязан к точке тура ' + m.pano +
+        (m.camera ? (' · угол ' + Math.round(m.camera.angle) + '°') : ''));
+}
 let stageDown = null; /* нажатие ЛКМ по холсту: нужно отличать щелчок от протяжки */
 
 function level(){ return state.levels[state.active] || null; }
@@ -398,6 +684,17 @@ function render(){
   if(l) drawPlan(); else clearPlan();
   renderRoute();
   syncTools();
+  const tourPanel = $('#tourPanel');
+  if(state.uiMode){
+    const root = $('#appRoot') || document.querySelector('.app');
+    if(root && root.getAttribute('data-ui') !== state.uiMode) setUiMode(state.uiMode, true);
+    else if(state.uiMode !== 'plan' && tourPanel && !tourPanel.classList.contains('open')) openTour(true, true);
+  }else if(tourPanel && tourPanel.classList.contains('open') !== !!state.tourOpen) openTour(!!state.tourOpen, true);
+  else applyTourWidth();
+  renderTour();
+  renderTourBar();
+  scheduleTourOverlay();
+  renderTourSummary();
   applyMode();
 
   status(l ? (l.name || ('Этаж #' + (state.active + 1))) + ' · ' + (l.markers || []).length + ' локусов'
@@ -429,6 +726,116 @@ function clearPlan(){
   if(p){ p.innerHTML = ''; p.style.width = '0px'; p.style.height = '0px'; }
 }
 
+/* Точки полилинии пути: локусы + изломы toNext между ними */
+function buildPathNodes(l){
+  const ms = (l && l.markers) ? l.markers : [];
+  const nodes = [];
+  for(let i = 0; i < ms.length; i++){
+    nodes.push({ x: ms[i].x, y: ms[i].y, kind: 'locus', mi: i });
+    if(i < ms.length - 1){
+      const mid = Array.isArray(ms[i].toNext) ? ms[i].toNext : [];
+      mid.forEach((w, wi) => {
+        if(w && isFinite(w.x) && isFinite(w.y)) nodes.push({ x: w.x, y: w.y, kind: 'way', mi: i, wi: wi });
+      });
+    }
+  }
+  return nodes;
+}
+function distPointSeg(px, py, ax, ay, bx, by){
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  if(len2 < 1e-6) return { d: Math.hypot(px - ax, py - ay), t: 0, x: ax, y: ay };
+  let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const x = ax + t * dx, y = ay + t * dy;
+  return { d: Math.hypot(px - x, py - y), t: t, x: x, y: y };
+}
+/* Вставить излом на ближайший сегмент пути */
+function insertPathWaypoint(l, pt, maxDist){
+  const ms = l.markers || [];
+  if(ms.length < 2) return false;
+  let best = null;
+  for(let mi = 0; mi < ms.length - 1; mi++){
+    const chain = [{ x: ms[mi].x, y: ms[mi].y }].concat(Array.isArray(ms[mi].toNext) ? ms[mi].toNext : []).concat([{ x: ms[mi + 1].x, y: ms[mi + 1].y }]);
+    for(let s = 0; s < chain.length - 1; s++){
+      const hit = distPointSeg(pt.x, pt.y, chain[s].x, chain[s].y, chain[s + 1].x, chain[s + 1].y);
+      if(hit.d <= (maxDist || 28) && (!best || hit.d < best.d)){
+        best = { mi: mi, insertAt: s, x: hit.x, y: hit.y, d: hit.d };
+      }
+    }
+  }
+  if(!best) return false;
+  if(!Array.isArray(ms[best.mi].toNext)) ms[best.mi].toNext = [];
+  /* insertAt: 0 = после локуса (индекс 0 в toNext), s>=1 → toNext[s-1] */
+  const idx = best.insertAt;
+  ms[best.mi].toNext.splice(idx, 0, { x: best.x, y: best.y });
+  return true;
+}
+function drawPathLayer(p, l, w, h){
+  if(!state.showPath) return;
+  const nodes = buildPathNodes(l);
+  if(nodes.length < 2) return;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'path-layer');
+  svg.setAttribute('width', String(w));
+  svg.setAttribute('height', String(h));
+  const pts = nodes.map(n => n.x + ',' + n.y).join(' ');
+  const soft = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  soft.setAttribute('class', 'path-stroke-soft');
+  soft.setAttribute('points', pts);
+  svg.appendChild(soft);
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  line.setAttribute('class', 'path-stroke');
+  line.setAttribute('points', pts);
+  svg.appendChild(line);
+  if(state.tool === 'path' && state.mode === 'edit'){
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    hit.setAttribute('class', 'path-hit');
+    hit.setAttribute('points', pts);
+    hit.style.pointerEvents = 'stroke';
+    svg.style.pointerEvents = 'none';
+    hit.addEventListener('click', e => {
+      e.stopPropagation();
+      const pt = planPoint(e.clientX, e.clientY);
+      if(insertPathWaypoint(l, pt, 40)){ touch(); drawPlan(); status('Излом добавлен · перетащите точку · ПКМ — удалить'); }
+    });
+    /* hit needs pointer events on svg for the stroke */
+    svg.style.pointerEvents = 'auto';
+    svg.appendChild(hit);
+  }
+  p.appendChild(svg);
+  /* Ручки изломов */
+  if(state.showPath){
+    nodes.forEach(n => {
+      if(n.kind !== 'way') return;
+      const d = document.createElement('div');
+      d.className = 'path-way';
+      d.style.left = n.x + 'px';
+      d.style.top = n.y + 'px';
+      d.title = 'Излом пути · перетащите · ПКМ — удалить';
+      d.oncontextmenu = e => {
+        e.preventDefault(); e.stopPropagation();
+        if(state.mode !== 'edit') return;
+        const m = l.markers[n.mi];
+        if(!m || !Array.isArray(m.toNext)) return;
+        m.toNext.splice(n.wi, 1);
+        if(!m.toNext.length) delete m.toNext;
+        touch(); drawPlan(); status('Излом удалён');
+      };
+      d.onmousedown = e => {
+        if(e.button !== 0 || state.mode !== 'edit') return;
+        e.stopPropagation(); e.preventDefault();
+        const m = l.markers[n.mi];
+        if(!m || !m.toNext || !m.toNext[n.wi]) return;
+        const wpt = m.toNext[n.wi];
+        wpt.dragging = true;
+        drag = { m: wpt, target: d, sx: e.clientX, sy: e.clientY, ox: 0, oy: 0, moved: false, way: true };
+        d.classList.add('dragging');
+      };
+      p.appendChild(d);
+    });
+  }
+}
 function drawPlan(){
   const l = level(), p = $('#plan');
   if(!p) return;
@@ -448,10 +855,12 @@ function drawPlan(){
     im.setAttribute('draggable', 'false');
     im.ondragstart = e => e.preventDefault();
     p.appendChild(im);
+    drawPathLayer(p, l, im.naturalWidth, im.naturalHeight);
     const size = markerSize(), off = floorOffset();
     (l.markers || []).forEach((m, i) => {
       const d = document.createElement('div');
-      d.className = 'marker' + (m.dragging ? ' dragging' : '') + (l.selected === i ? ' selected' : '');
+      d.className = 'marker' + (m.dragging ? ' dragging' : '') + (l.selected === i ? ' selected' : '') + (m.pano ? ' pinned' : '');
+      d.dataset.mi = String(i);
       d.textContent = i + 1 + off;
       d.style.left = m.x + 'px';
       d.style.top = m.y + 'px';
@@ -469,7 +878,7 @@ function drawPlan(){
         deleteMarker(i);
       };
       d.onmousedown = e => {
-        if(e.button === 2){ e.stopPropagation(); return; } /* ПКМ — удаление, не панорама */
+        if(e.button === 2){ e.stopPropagation(); return; }
         if(state.mode !== 'edit' || e.button !== 0) return;
         e.stopPropagation(); e.preventDefault();
         const pt = planPoint(e.clientX, e.clientY);
@@ -502,7 +911,8 @@ function renderRoute(){
     ms.forEach((m, i) => {
       num++;
       html += '<button class="r' + (cur && l.selected === i ? ' sel' : '') + '" draggable="true" data-l="' + li + '" data-i="' + i + '"' +
-              ' title="' + esc('Этаж ' + (li + 1) + ', локус ' + num) + '">' + num + '</button>';
+              ' title="' + esc('Этаж ' + (li + 1) + ', локус ' + num + (m.pano ? ' · привязан к туру' : '')) + '">' + num +
+              (m.pano ? '<span class="rb" title="Привязан к 3D-туру">◉</span>' : '') + '</button>';
     });
     html += '</div>';
   });
@@ -513,19 +923,43 @@ function renderRoute(){
   $$('#route .rlabel').forEach(s => { s.onclick = () => selectLevel(Number(s.dataset.floor)); });
   $$('#route .r').forEach(b => {
     const li = Number(b.dataset.l), idx = Number(b.dataset.i);
-    b.ondragstart = e => e.dataTransfer.setData('text/plain', li + ':' + idx);
-    b.ondragover = e => { e.preventDefault(); b.classList.add('drag-over'); };
-    b.ondragleave = () => b.classList.remove('drag-over');
+    b.ondragstart = e => {
+      e.dataTransfer.setData('text/plain', li + ':' + idx);
+      e.dataTransfer.effectAllowed = 'move';
+      routeDrag = { level: li, index: idx };
+      b.classList.add('dragging');
+    };
+    b.ondragend = () => { routeDrag = null; clearRouteHints(); };
+    /* Локус встаёт МЕЖДУ фишками: сторона определяется по положению курсора
+       относительно середины фишки, туда же показывается вертикальная метка вставки. */
+    b.ondragover = e => {
+      e.preventDefault();
+      if(routeDrag && routeDrag.level !== li) return;
+      const r = b.getBoundingClientRect();
+      const after = (e.clientX - r.left) > r.width/2;
+      clearRouteHints();
+      b.classList.add(after ? 'drop-after' : 'drop-before');
+    };
+    b.ondragleave = () => { b.classList.remove('drop-before', 'drop-after'); };
     b.ondrop = e => {
-      e.preventDefault(); b.classList.remove('drag-over');
+      e.preventDefault();
+      const after = b.classList.contains('drop-after');
+      clearRouteHints();
+      routeDrag = null;
       const from = String(e.dataTransfer.getData('text/plain')).split(':');
       const fl = Number(from[0]), fi = Number(from[1]);
       if(fl !== li){ status('Порядок меняется только внутри одного этажа'); return; }
       const arr = state.levels[li] && state.levels[li].markers;
-      if(!arr || !arr[fi] || !arr[idx] || fi === idx) return;
-      const tmp = arr[fi]; arr[fi] = arr[idx]; arr[idx] = tmp;
-      state.levels[li].selected = null;
+      if(!arr || !arr[fi]) return;
+      let to = idx + (after ? 1 : 0);
+      if(fi < to) to--;                       /* после изъятия элемента индексы справа сдвигаются */
+      to = Math.max(0, Math.min(arr.length - 1, to));
+      if(to === fi) return;
+      const moved = arr.splice(fi, 1)[0];
+      arr.splice(to, 0, moved);
+      state.levels[li].selected = to;         /* перенесённый локус остаётся выбранным */
       touch(); render();
+      status('Локус перемещён на позицию ' + (to + 1) + ' в этаже ' + (li + 1));
       requestAnimationFrame(() => $$('#route .r').forEach((x, i) => {
         if(x.animate) x.animate([{transform:'translateY(-10px) scale(1.18)',filter:'brightness(1.35)'},{transform:'translateY(0) scale(1)',filter:'brightness(1)'}],{duration:420,delay:i*35,easing:'cubic-bezier(.16,1,.3,1)'});
       }));
@@ -550,7 +984,9 @@ function selectMarker(i){
 
 function deleteMarker(i){
   const l = level(); if(!l || !l.markers || !l.markers[i]) return;
+  if(pendingBind && pendingBind.level === state.active && pendingBind.index === i) clearPendingBind();
   l.markers.splice(i, 1);
+  if(pendingBind && pendingBind.level === state.active && pendingBind.index > i) pendingBind.index--;
   l.selected = null;
   touch(); render();
 }
@@ -708,8 +1144,21 @@ async function addFiles(files){
 /* ---------- сохранение / открытие ---------- */
 function buildSerializableState(){
   const copy = {
-    version: 2,
+    version: FORMAT_VERSION,
+    app: 'PALACE / Memory Mapper',
     name: state.name, purpose: state.purpose, source: state.source, explain: state.explain, notes: state.notes,
+    tour: state.tour || '',
+    tourWidth: clampTourWidth(state.tourWidth),
+    tourOpen: !!state.tourOpen,
+    uiMode: state.uiMode || 'plan',
+    showPath: !!state.showPath,
+    tourFollow: state.tourFollow !== false,
+    tourAutoBind: !!state.tourAutoBind,
+    tourTags: state.tourTags !== false,
+    tourYawFlip: !!state.tourYawFlip,
+    panoSpots: state.panoSpots || {},
+    tourPanels: Object.assign({ link:true, sync:true, info:true }, state.tourPanels || {}),
+    tourSummary: state.tourSummary || null,
     created: state.created, edited: new Date().toISOString(),
     active: Math.max(0, Math.min(state.active, Math.max(0, state.levels.length - 1))),
     rotation: Number(state.rotation) || 0,
@@ -722,7 +1171,12 @@ function buildSerializableState(){
       rotation: l.rotation || 0, flip: !!l.flip,
       brightness: l.brightness || 100, contrast: l.contrast || 100,
       draw: l.draw || [],
-      markers: (l.markers || []).map(m => ({ x: m.x, y: m.y, note: m.note || '' }))
+      markers: (l.markers || []).map(m => ({
+        x: m.x, y: m.y, note: m.note || '',
+        pano: m.pano || null,
+        camera: m.camera || null,
+        toNext: Array.isArray(m.toNext) ? m.toNext.filter(w => w && isFinite(w.x) && isFinite(w.y)).map(w => ({ x: w.x, y: w.y })) : undefined
+      }))
     }))
   };
   return copy;
@@ -791,7 +1245,14 @@ async function loadMplaceBuffer(buffer){
   for(let i = 0; i < levels.length; i++){
     const l = levels[i] || {};
     l.markers = Array.isArray(l.markers) ? l.markers.filter(m => m && isFinite(m.x) && isFinite(m.y))
-                                                     .map(m => ({ x:Number(m.x), y:Number(m.y), note:m.note || '' })) : [];
+                                                     .map(m => ({
+                                                       x:Number(m.x), y:Number(m.y), note:m.note || '',
+                                                       pano:m.pano || null,
+                                                       camera:m.camera || null,
+                                                       toNext: Array.isArray(m.toNext)
+                                                         ? m.toNext.filter(w => w && isFinite(w.x) && isFinite(w.y)).map(w => ({ x: Number(w.x), y: Number(w.y) }))
+                                                         : undefined
+                                                     })) : [];
     l.selected = null;
     l.name = l.name || ('Этаж #' + (i + 1));
     let file = z.file(l.image || ('images/level-' + (i + 1) + '.png'));
@@ -811,6 +1272,21 @@ async function loadMplaceBuffer(buffer){
   Object.assign(state, fresh, {
     name: data.name || 'Дворец памяти',
     purpose: data.purpose || '', source: data.source || '', explain: data.explain || '', notes: data.notes || '',
+    tour: (function(){
+      /* Ссылки, сохранённые до появления флага api, дополняем им при открытии. */
+      try{ return data.tour ? normalizeTourUrl(data.tour) : ''; }catch(err){ return data.tour || ''; }
+    })(),
+    tourWidth: clampTourWidth(data.tourWidth),
+    tourOpen: !!data.tourOpen,
+    uiMode: data.uiMode === 'tour' ? 'tour' : 'plan',
+    showPath: !!data.showPath,
+    tourFollow: data.tourFollow !== false,
+    tourAutoBind: data.tourAutoBind === true,
+    tourTags: data.tourTags !== false,
+    tourYawFlip: !!data.tourYawFlip,
+    panoSpots: (data.panoSpots && typeof data.panoSpots === 'object') ? data.panoSpots : {},
+    tourPanels: Object.assign({ link:true, sync:true, info:true }, data.tourPanels || {}),
+    tourSummary: Array.isArray(data.tourSummary) ? data.tourSummary : null,
     created: data.created || fresh.created, edited: data.edited || fresh.edited,
     levels: levels,
     rotation: Number(data.rotation) || 0,
@@ -821,7 +1297,7 @@ async function loadMplaceBuffer(buffer){
   state.zoom = 1;
   const v = $('#viewport'); if(v) v.style.transform = '';
   render();
-  status('Открыт дворец «' + state.name + '» · этажей: ' + levels.length);
+  status('Открыт дворец «' + state.name + '» · этажей: ' + levels.length + ' · формат ' + (data.version || '1.0'));
 }
 function openFileObject(file){
   if(!file) return;
@@ -988,6 +1464,843 @@ async function exportPdf(){
   status('PDF сохранён: страниц ' + pages.length + ', ' + (fmt === 'fit' ? 'по размеру плана' : fmt.toUpperCase()));
 }
 
+/* ---------- 3D-тур iGUIDE ----------
+   Тур iGUIDE не существует в виде файла: это веб-просмотрщик на youriguide.com.
+   Поэтому единственный честный способ показать 3D-вид дома рядом с планом —
+   официальный код вставки (iframe). План этажа по-прежнему берётся из PDF/JPG,
+   который iGUIDE отдаёт отдельным файлом. */
+const IGUIDE_HOSTS = /^(unbranded\.|manage\.)?(youriguide|iguidephotos|iguideradix)\.com$/i;
+const TOUR_HOSTS = /^(unbranded\.)?(youriguide|iguidephotos|iguideradix)\.com$/i;
+function normalizeTourUrl(raw){
+  let v = String(raw == null ? '' : raw).trim();
+  if(!v) return '';
+  const fromIframe = v.match(/src\s*=\s*["']([^"']+)["']/i);
+  if(fromIframe) v = fromIframe[1];
+  const fromScript = v.match(/["']url["']\s*:\s*["']([^"']+)["']/i);
+  if(fromScript) v = fromScript[1];
+  v = v.trim();
+  if(v.indexOf('//') === 0) v = 'https:' + v;
+  if(!/^https?:\/\//i.test(v)) v = 'https://' + v;
+  let u;
+  try{ u = new URL(v); }catch(err){ throw new Error('Это не похоже на ссылку'); }
+  let host = u.hostname.toLowerCase();
+  if(host === 'manage.youriguide.com') host = 'youriguide.com'; /* ссылка из конструктора вставки */
+  if(!TOUR_HOSTS.test(host)){
+    throw new Error('Поддерживаются ссылки youriguide.com, iguidephotos.com и iguideradix.com');
+  }
+  u.protocol = 'https:';
+  u.hostname = host;
+  if(!/^\/embed\//.test(u.pathname)){
+    u.pathname = '/embed' + (u.pathname.charAt(0) === '/' ? '' : '/') + u.pathname;
+  }
+  u.pathname = u.pathname.replace(/\/+$/, '') + '/';
+  /* Ключевой момент: без флага api плеер iGUIDE не отвечает на postMessage,
+     и подключение к туру висит бесконечно. */
+  const parts = (u.search || '').replace(/^\?/, '').split('&').filter(Boolean);
+  if(!parts.some(x => x === 'api' || x.indexOf('api=') === 0)) parts.push('api');
+  return u.origin + u.pathname + (parts.length ? '?' + parts.join('&') : '');
+}
+/* Адрес вида (viewPath) нужен публичному View API iGUIDE */
+function tourViewPath(url){
+  try{
+    const u = new URL(url || state.tour);
+    const m = u.pathname.match(/^\/embed\/([^/?#]+)/);
+    return m ? { host: u.hostname, path: m[1] } : null;
+  }catch(err){ return null; }
+}
+/* Публичный View API: токен не нужен, отдаёт состав здания — этажи и комнаты. */
+async function fetchTourSummary(){
+  const view = tourViewPath();
+  if(!view) throw new Error('Сначала задайте ссылку на тур');
+  const base = 'https://' + view.host + '/' + view.path + '/data/';
+  const status0 = await fetch(base + 'status', { mode:'cors' }).then(r => r.json());
+  if(status0 && status0.status && status0.status !== 'ready'){
+    throw new Error(status0.status === 'locked' ? 'Тур закрыт или истёк' : 'Тур ещё не отрисован');
+  }
+  const data = await fetch(base + 'summary', { mode:'cors' }).then(r => r.json());
+  const buildings = (data && data.summary && data.summary.buildings) || [];
+  const floors = [];
+  buildings.forEach(b => (b.floors || []).forEach(f => {
+    floors.push({
+      building: b.name || '',
+      name: f.name || ('Этаж ' + floors.length + 1),
+      area: Math.round((f.interiorArea || f.finishedArea || 0) / 1e6 * 10) / 10,
+      rooms: (f.rooms || []).map(r => ({
+        name: r.name || r.type || 'Комната',
+        type: r.type || '',
+        area: Math.round((r.area || 0) / 1e6 * 10) / 10,
+        dims: Array.isArray(r.dims) && r.dims.length === 2
+          ? [Math.round(r.dims[0]) / 1000, Math.round(r.dims[1]) / 1000] : null
+      }))
+    });
+  }));
+  return floors;
+}
+function renderTourSummary(){
+  const box = $('#tourInfo'); if(!box) return;
+  const floors = state.tourSummary || [];
+  if(!floors.length){ box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = floors.map((f, i) =>
+    '<div class="ti-floor' + (i === state.active ? ' cur' : '') + '" data-floor="' + i + '">' +
+      '<b>' + esc(f.name) + '</b>' + (f.area ? ' <span>' + f.area + ' м²</span>' : '') +
+      '<div class="ti-rooms">' + f.rooms.map(r =>
+        '<span class="ti-room" title="' + esc(r.type + (r.dims ? ' · ' + r.dims[0] + '×' + r.dims[1] + ' м' : '')) + '">' +
+        esc(r.name) + (r.area ? ' <i>' + r.area + '</i>' : '') + '</span>').join('') +
+      '</div>' +
+    '</div>').join('');
+  $$('#tourInfo .ti-floor').forEach(el => {
+    el.onclick = () => { const i = Number(el.dataset.floor); if(state.levels[i]) selectLevel(i); };
+  });
+}
+async function loadTourData(){
+  status('Запрашиваю данные тура…');
+  let floors;
+  try{
+    floors = await fetchTourSummary();
+  }catch(err){
+    notify('Не удалось получить данные тура: ' + (err && err.message ? err.message : err) +
+           '. Браузер блокирует запрос к youriguide.com, если файл открыт с диска — опубликуйте его по http(s) или проверьте ссылку.');
+    status('Данные тура недоступны');
+    return;
+  }
+  if(!floors.length){ notify('Тур не содержит описания этажей'); return; }
+  state.tourSummary = floors;
+  /* Этажи плана нумеруются в том же порядке, что и в туре — переносим названия. */
+  let renamed = 0;
+  state.levels.forEach((l, i) => {
+    if(floors[i] && floors[i].name){ l.name = floors[i].name; renamed++; }
+  });
+  touch(); render();
+  status('Из тура получено: этажей ' + floors.length + ', комнат ' +
+         floors.reduce((n, f) => n + f.rooms.length, 0) + (renamed ? ', названий перенесено ' + renamed : ''));
+}
+
+/* Клиент официального iGUIDE Viewer API (пакет @iguide/viewer — тонкая обёртка
+   над postMessage). Рукопожатие: шлём {ctrl:'ping'} в iframe, получаем
+   {ctrl:'ready'|'pong', info}. Команды: {action:'tour:move'|'tour:camera-move'|
+   'tour:floorplan-resize'}. События приходят как {event, args}.
+   ВАЖНО: плеер отвечает только если в ссылке есть флаг api. */
+/* Нормализация объекта camera из любого варианта args плеера. */
+function normalizeCamera(raw){
+  if(!raw || typeof raw !== 'object') return null;
+  const angle = Number(raw.angle != null ? raw.angle : (raw.rotation != null ? raw.rotation : raw.yaw));
+  const elevation = Number(raw.elevation != null ? raw.elevation : (raw.pitch != null ? raw.pitch : 0));
+  const zoom = Number(raw.zoom != null ? raw.zoom : 1);
+  if(!isFinite(angle)) return null;
+  return {
+    angle: angle,
+    elevation: isFinite(elevation) ? elevation : 0,
+    zoom: (isFinite(zoom) && zoom > 0.05) ? zoom : 1
+  };
+}
+function extractCameraFromArgs(args, data){
+  if(Array.isArray(args)){
+    for(let i = 0; i < args.length; i++){
+      const c = normalizeCamera(args[i]);
+      if(c) return c;
+    }
+  }
+  return normalizeCamera(data && data.camera) || normalizeCamera(data);
+}
+const tourDiag = { enabled: false, log: [], max: 80, lastEvent: '', camMoves: 0 };
+function tourDiagPush(kind, detail){
+  if(!tourDiag.enabled) return;
+  const ts = new Date().toISOString().slice(11, 23);
+  const line = ts + '  ' + kind + (detail ? '  ' + detail : '');
+  tourDiag.log.unshift(line);
+  if(tourDiag.log.length > tourDiag.max) tourDiag.log.length = tourDiag.max;
+  tourDiag.lastEvent = kind;
+  const live = $('#tourDiagLive');
+  const logEl = $('#tourDiagLog');
+  if(live){
+    const cam = tourApi.camera;
+    live.textContent = 'pano=' + (tourApi.pano != null ? tourApi.pano : '—') +
+      '  angle=' + (cam ? Number(cam.angle).toFixed(2) : '—') +
+      '  elev=' + (cam ? Number(cam.elevation).toFixed(2) : '—') +
+      '  zoom=' + (cam ? Number(cam.zoom).toFixed(3) : '—') +
+      '  camMoves=' + tourDiag.camMoves +
+      '  last=' + tourDiag.lastEvent;
+  }
+  if(logEl){
+    logEl.innerHTML = tourDiag.log.map(s => '<div>' + esc(s) + '</div>').join('');
+  }
+}
+function setTourDiag(on){
+  tourDiag.enabled = !!on;
+  const panel = $('#tourDiagPanel');
+  if(panel) panel.classList.toggle('show', tourDiag.enabled);
+  const chk = $('#tourDiag');
+  if(chk && document.activeElement !== chk) chk.checked = tourDiag.enabled;
+  if(tourDiag.enabled) tourDiagPush('diag', 'включена');
+}
+const tourApi = {
+  frame: null, ready: false, info: null,
+  pano: null, camera: null, selfMove: false, pings: 0, timer: null,
+  win(){ return this.frame ? this.frame.contentWindow : null; },
+  send(msg){
+    const w = this.win();
+    if(!w) return false;
+    try{ w.postMessage(msg, '*'); return true; }catch(err){ return false; }
+  },
+  attach(frame){
+    this.detach();
+    this.frame = frame;
+    this.ready = false; this.info = null; this.pano = null; this.camera = null; this.pings = 0;
+    tourDiag.camMoves = 0;
+    const ping = () => {
+      if(this.ready || !this.frame) return;
+      if(this.pings++ > 40){ renderTourBar(); tourDiagPush('ping-timeout', 'плеер не ответил'); return; }
+      this.send({ ctrl: 'ping' });
+      this.timer = setTimeout(ping, 500);
+    };
+    ping();
+    renderTourBar();
+  },
+  detach(){
+    if(this.timer){ clearTimeout(this.timer); this.timer = null; }
+    this.frame = null; this.ready = false; this.info = null;
+    this.pano = null; this.camera = null;
+    renderTourBar();
+    scheduleTourOverlay();
+  },
+  gaveUp(){ return !this.ready && this.pings > 40; },
+  applyCamera(cam, reason){
+    if(!cam) return false;
+    const prev = this.camera;
+    this.camera = cam;
+    if(!prev || Math.abs((prev.angle||0)-(cam.angle||0)) > 0.01 ||
+       Math.abs((prev.elevation||0)-(cam.elevation||0)) > 0.01 ||
+       Math.abs((prev.zoom||1)-(cam.zoom||1)) > 0.001){
+      tourDiag.camMoves++;
+      scheduleTourOverlay();
+      return true;
+    }
+    return false;
+  },
+  onMessage(e){
+    const w = this.win();
+    const d = e.data;
+    if(!d || typeof d !== 'object') return;
+    /* Жёсткая привязка к contentWindow иногда ломается после навигации iframe —
+       принимаем сообщения, похожие на Viewer API, если панель тура жива. */
+    const fromFrame = !!(w && e.source === w);
+    const looks = !!(d.ctrl || d.event || (d.action && String(d.action).indexOf('tour:') === 0));
+    if(!fromFrame && !(this.frame && looks)) return;
+
+    if(d.ctrl === 'ready' || d.ctrl === 'pong'){
+      this.ready = true;
+      if(d.info) this.info = d.info;
+      if(this.timer){ clearTimeout(this.timer); this.timer = null; }
+      const infoCam = extractCameraFromArgs([], d.info || d);
+      if(infoCam) this.applyCamera(infoCam, d.ctrl);
+      else if(!this.camera) this.camera = { angle: 0, elevation: 0, zoom: 1 }; /* первый вид до первого camera-move */
+      if(d.info && d.info.position != null) this.pano = d.info.position;
+      status('3D-тур подключён — доступен переход по локусам');
+      tourDiagPush(d.ctrl, d.info ? JSON.stringify(d.info).slice(0, 180) : '');
+      renderTourBar();
+      scheduleTourOverlay();
+      startTourOverlayLoop();
+      return;
+    }
+
+    const ev = d.event || d.type || '';
+    const args = Array.isArray(d.args) ? d.args : (d.args != null ? [d.args] : []);
+
+    /* Универсальный вылов camera из любого пакета */
+    const anyCam = extractCameraFromArgs(args, d) || extractCameraFromArgs([], d.data) || extractCameraFromArgs([], d.payload);
+    if(anyCam && (String(ev).indexOf('camera') >= 0 || !ev)){
+      this.applyCamera(anyCam, ev || 'loose-cam');
+    }
+
+    if(!ev){
+      if(tourDiag.enabled && fromFrame) tourDiagPush('other', JSON.stringify(d).slice(0, 220));
+      return;
+    }
+
+    if(ev === 'tour:move-start' || ev === 'tour:move-end' || ev === 'move-start' || ev === 'move-end'){
+      const pos = args[0] != null ? args[0] : (d.position != null ? d.position : this.pano);
+      this.pano = pos;
+      const cam = extractCameraFromArgs(args.length > 1 ? args.slice(1) : args, d) || anyCam;
+      if(cam) this.applyCamera(cam, ev);
+      tourDiagPush(ev, 'pano=' + pos + (cam ? ' ang=' + cam.angle.toFixed(1) : ''));
+      if(ev === 'tour:move-end' || ev === 'move-end'){
+        if(this.selfMove) this.selfMove = false;
+        else syncMarkerFromTour(this.pano);
+      }
+      renderTourBar();
+      scheduleTourOverlay();
+    }else if(String(ev).indexOf('camera') >= 0){
+      const cam = anyCam || extractCameraFromArgs(args, d);
+      if(cam){
+        this.applyCamera(cam, ev);
+        if(tourDiag.enabled && (tourDiag.camMoves % 5 === 1 || String(ev).indexOf('end') >= 0)){
+          tourDiagPush(ev, 'ang=' + cam.angle.toFixed(2) + ' el=' + cam.elevation.toFixed(2) + ' z=' + cam.zoom.toFixed(3));
+        }else if(tourDiag.enabled){
+          const live = $('#tourDiagLive');
+          if(live){
+            live.textContent = 'pano=' + (this.pano != null ? this.pano : '—') +
+              '  angle=' + Number(cam.angle).toFixed(2) +
+              '  elev=' + Number(cam.elevation).toFixed(2) +
+              '  zoom=' + Number(cam.zoom).toFixed(3) +
+              '  camMoves=' + tourDiag.camMoves +
+              '  last=' + ev;
+          }
+        }
+      }else if(tourDiag.enabled){
+        tourDiagPush(ev, 'нет camera в args: ' + JSON.stringify(args).slice(0, 120));
+      }
+      scheduleTourOverlay();
+      if(String(ev).indexOf('end') >= 0) renderTourBar();
+    }else if(tourDiag.enabled){
+      tourDiagPush(ev, JSON.stringify(args).slice(0, 160));
+    }
+  },
+  move(pano, camera){
+    if(!this.ready || !pano) return false;
+    this.selfMove = true;
+    return this.send({ action:'tour:move', position:pano, camera:camera || undefined, transition:'crossfade' });
+  },
+  floorplan(stateName){
+    if(!this.ready) return false;
+    return this.send({ action:'tour:floorplan-resize', state:stateName });
+  }
+};
+addEventListener('message', e => { try{ tourApi.onMessage(e); }catch(err){} });
+
+/* Локус ↔ панорама тура */
+function bindMarkerToTour(){
+  const l = level();
+  if(!l || l.selected == null){ notify('Сначала выберите локус на плане'); return; }
+  if(!tourApi.ready){ notify('3D-тур ещё не подключён'); return; }
+  if(tourApi.pano == null){ notify('Пройдите в туре в нужную точку — она пока не определена'); return; }
+  if(!tourApi.camera){ notify('Угол камеры ещё не получен — чуть поверните тур мышью и повторите'); return; }
+  const m = l.markers[l.selected];
+  m.pano = tourApi.pano;
+  m.camera = { angle: Number(tourApi.camera.angle) || 0, elevation: Number(tourApi.camera.elevation) || 0, zoom: Number(tourApi.camera.zoom) || 1 };
+  clearPendingBind();
+  touch(); drawPlan(); renderRoute(); renderTourBar(); scheduleTourOverlay();
+  status('Локус ' + (l.selected + 1 + floorOffset()) + ' привязан · точка ' + m.pano + ' · угол ' + Math.round(m.camera.angle) + '°');
+}
+function unbindMarkerFromTour(){
+  const l = level();
+  if(!l || l.selected == null){ notify('Сначала выберите локус на плане'); return; }
+  const m = l.markers[l.selected];
+  if(!m.pano){ status('У этого локуса и так нет привязки'); return; }
+  m.pano = null; m.camera = null;
+  touch(); drawPlan(); renderRoute(); renderTourBar(); scheduleTourOverlay();
+  status('Привязка локуса к туру снята');
+}
+function tourGoToMarker(m){
+  if(!m || !m.pano) return false;
+  if(state.tourFollow === false || !tourApi.ready) return false;
+  return tourApi.move(m.pano, m.camera);
+}
+/* Обратная связь: пользователь ходит по туру — подсвечиваем нужный локус */
+function syncMarkerFromTour(pano){
+  if(pano == null || state.tourFollow === false) return;
+  for(let li = 0; li < state.levels.length; li++){
+    const l = state.levels[li];
+    const ms = (l && l.markers) ? l.markers : [];
+    for(let i = 0; i < ms.length; i++){
+      if(samePano(ms[i].pano, pano)){
+        if(state.active !== li){ state.active = li; render(); }
+        else { scheduleTourOverlay(); }
+        const cur = state.levels[state.active];
+        cur.selected = i;
+        drawPlan(); renderRoute(); renderTourBar();
+        status('Тур в точке локуса ' + (i + 1 + state.levels.slice(0, li).reduce((n, f) => n + ((f && f.markers) ? f.markers.length : 0), 0)));
+        return;
+      }
+    }
+  }
+  scheduleTourOverlay();
+}
+/* ═══════════════════════════════════════════════════════════════
+   Метки в 3D-туре — только по ракурсу камеры (надёжный путь).
+
+   iframe чужой: клики и координаты объектов недоступны. Есть только
+   postMessage: pano + camera { angle, elevation, zoom } в градусах.
+
+   Правило: у локуса при привязке сохраняются pano и camera «когда
+   смотрели на объект». Позиция метки на экране =
+     Δyaw = yawSign * (saved.angle − cam.angle)  →  горизонталь
+     Δpitch = saved.elevation − cam.elevation     →  вертикаль
+   В кадре, если |Δ| меньше половины FOV.
+
+   Геометрию «точка съёмки на плане» больше не используем для меток:
+   без точного компаса тура она давала кучу меток в центре.
+   «Я стою здесь» остаётся справочной отметкой на плане, не для overlay.
+   ═══════════════════════════════════════════════════════════════ */
+const TOUR_BASE_HFOV = 80;
+function normDeltaDeg(d){
+  d = Number(d) || 0;
+  d = ((d % 360) + 540) % 360 - 180;
+  return d;
+}
+function yawSign(){ return state.tourYawFlip ? -1 : 1; }
+function ensureCamera(){
+  if(!tourApi.camera){
+    tourApi.camera = { angle: 0, elevation: 0, zoom: 1 };
+  }
+  return tourApi.camera;
+}
+function tourFov(cam, w, h){
+  const zoom = Math.max(0.2, Number(cam && cam.zoom) || 1);
+  const hFov = TOUR_BASE_HFOV / zoom;
+  const aspect = Math.max(0.3, (Number(w) || 1) / Math.max(1, Number(h) || 1));
+  return { hFov: hFov, vFov: hFov / aspect, zoom: zoom };
+}
+/* Δyaw → позиция на экране (0..100%). d=0 — центр прицела. */
+function projectDelta(d, dv, cam, w, h){
+  const fov = tourFov(cam, w, h);
+  if(Math.abs(d) > fov.hFov * 0.52) return null;
+  if(Math.abs(dv) > fov.vFov * 0.52) return null;
+  return {
+    x: Math.max(3, Math.min(97, 50 + (d / fov.hFov) * 100)),
+    y: Math.max(6, Math.min(94, 50 - (dv / fov.vFov) * 100)),
+    edge: Math.abs(d) > fov.hFov * 0.38 || Math.abs(dv) > fov.vFov * 0.38,
+    dir: d,
+    angDist: Math.hypot(d, dv)
+  };
+}
+function tourProject(saved, cam, w, h){
+  if(!saved || !cam) return null;
+  if(!isFinite(Number(saved.angle)) || !isFinite(Number(cam.angle))) return null;
+  const d = yawSign() * normDeltaDeg(Number(saved.angle) - Number(cam.angle));
+  const dv = (Number(saved.elevation) || 0) - (Number(cam.elevation) || 0);
+  return projectDelta(d, dv, cam, w, h);
+}
+function panoSpot(pano){
+  const spots = state.panoSpots || {};
+  return (pano != null && spots[pano]) ? spots[pano] : null;
+}
+function bearingDeg(ax, ay, bx, by){ return Math.atan2(by - ay, bx - ax) * 180 / Math.PI; }
+/* north: camera.angle − bearing(план), усреднённо по привязкам с этой точки */
+function tourNorthOffset(forPano){
+  const pano = forPano != null ? forPano : tourApi.pano;
+  let sx = 0, sy = 0, n = 0;
+  state.levels.forEach((l, li) => {
+    (l && l.markers ? l.markers : []).forEach(m => {
+      if(!m.camera || !samePano(m.pano, pano)) return;
+      const sp = panoSpot(m.pano);
+      if(!sp || sp.l !== li) return;
+      const dist = Math.hypot(m.x - sp.x, m.y - sp.y);
+      if(dist < 12) return;
+      const off = normDeltaDeg((Number(m.camera.angle) || 0) - bearingDeg(sp.x, sp.y, m.x, m.y)) * Math.PI / 180;
+      sx += Math.cos(off); sy += Math.sin(off); n++;
+    });
+  });
+  if(!n) return 0; /* без калибровки — 0; «Зеркало» инвертирует знак yaw */
+  return Math.atan2(sy, sx) * 180 / Math.PI;
+}
+/* Азимут взгляда на плане (градусы, y вниз, 0 = +X) */
+function planLookBearing(cam, north){
+  const a = Number(cam && cam.angle) || 0;
+  return a - (north || 0);
+}
+function markerDeltaFromPlan(m, spot, north, cam){
+  if(!m || !spot || !cam) return null;
+  const bearing = bearingDeg(spot.x, spot.y, m.x, m.y);
+  /* Когда смотрим на маркер: cam.angle ≈ bearing + north → delta ≈ 0 */
+  const d = yawSign() * normDeltaDeg((bearing + (north || 0)) - Number(cam.angle));
+  return d;
+}
+/* ─── FOV-конус на плане (миникарта) ─── */
+function updatePlanFov(){
+  const cone = $('#fovCone'), dir = $('#fovDir'), spotEl = $('#fovSpot');
+  const p = $('#plan');
+  if(!cone || !dir || !p) return;
+  const cam = tourApi.camera;
+  const spot = panoSpot(tourApi.pano);
+  $$('#plan .marker').forEach(el => el.classList.remove('in-fov'));
+  if(!cam || !spot || spot.l !== state.active){
+    cone.setAttribute('d', '');
+    dir.setAttribute('x2', dir.getAttribute('x1') || '0');
+    dir.setAttribute('y2', dir.getAttribute('y1') || '0');
+    if(spotEl) spotEl.setAttribute('opacity', '0');
+    return;
+  }
+  const north = tourNorthOffset(tourApi.pano);
+  const look = planLookBearing(cam, north);
+  const half = (tourFov(cam, 800, 600).hFov / 2) * (yawSign() < 0 ? -1 : 1);
+  /* Для сектора всегда берём абсолютный half от FOV */
+  const halfAbs = tourFov(cam, 800, 600).hFov / 2;
+  const a0 = (look - halfAbs) * Math.PI / 180;
+  const a1 = (look + halfAbs) * Math.PI / 180;
+  const sx = spot.x, sy = spot.y;
+  const R = Math.max(80, Math.min(p.offsetWidth || 800, p.offsetHeight || 600) * 0.42);
+  const x0 = sx + R * Math.cos(a0), y0 = sy + R * Math.sin(a0);
+  const x1 = sx + R * Math.cos(a1), y1 = sy + R * Math.sin(a1);
+  const large = halfAbs > 180 ? 1 : 0;
+  /* sweep=1 при y-down / стандартном SVG (углы по часовой в экранных координатах с cos/sin от atan2) */
+  const d = 'M ' + sx + ' ' + sy + ' L ' + x0 + ' ' + y0 + ' A ' + R + ' ' + R + ' 0 ' + large + ' 1 ' + x1 + ' ' + y1 + ' Z';
+  cone.setAttribute('d', d);
+  const lx = sx + R * 0.92 * Math.cos(look * Math.PI / 180);
+  const ly = sy + R * 0.92 * Math.sin(look * Math.PI / 180);
+  dir.setAttribute('x1', String(sx));
+  dir.setAttribute('y1', String(sy));
+  dir.setAttribute('x2', String(lx));
+  dir.setAttribute('y2', String(ly));
+  if(spotEl){
+    spotEl.setAttribute('cx', String(sx));
+    spotEl.setAttribute('cy', String(sy));
+    spotEl.setAttribute('opacity', '1');
+  }
+  /* Подсветка локусов в конусе */
+  const l = level();
+  if(l && l.markers){
+    l.markers.forEach((m, i) => {
+      const delta = markerDeltaFromPlan(m, spot, north, cam);
+      if(delta != null && Math.abs(delta) <= halfAbs){
+        const el = p.querySelector('.marker[data-mi="' + i + '"]');
+        if(el) el.classList.add('in-fov');
+      }
+    });
+  }
+}
+let tourOverlayPending = false;
+let tourOverlayLoopOn = false;
+let tourOverlayLastKey = '';
+function scheduleTourOverlay(){ /* связь план↔3D отключена */ }
+function startTourOverlayLoop(){ /* no-op */ }
+function stopTourOverlayLoop(){ /* no-op */ }
+function renderTourOverlay(){ const box = $('#tourOverlay'); if(box) box.innerHTML = ''; }
+function updatePlanFov(){ /* no-op */ }
+function updateTourHint(msg){
+  const el = $('#tourHint');
+  if(!el) return;
+  if(!msg){ el.classList.remove('show'); el.textContent = ''; return; }
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function samePano(a, b){
+  if(a == null || b == null) return false;
+  return String(a) === String(b);
+}
+function collectTourLoci(){
+  const list = [];
+  let num = 0;
+  state.levels.forEach((l, li) => {
+    (l && l.markers ? l.markers : []).forEach((m, i) => {
+      num++;
+      list.push({ m: m, li: li, i: i, num: num });
+    });
+  });
+  return list;
+}
+function renderTourOverlay(){
+  const box = $('#tourOverlay'); if(!box) return;
+  if(state.tourTags === false || !tourApi.ready || !state.tour){
+    box.innerHTML = '';
+    updateTourHint('');
+    return;
+  }
+  const body = $('#tourBody');
+  const w = (body && body.clientWidth) || 600;
+  const h = (body && body.clientHeight) || 400;
+  const cam = ensureCamera();
+  const curPano = tourApi.pano;
+  const spot = panoSpot(curPano);
+  const north = tourNorthOffset(curPano);
+  const all = collectTourLoci();
+  const onThisFloor = all.filter(t => spot && t.li === spot.l);
+  const boundHere = all.filter(t => samePano(t.m.pano, curPano) && t.m.camera);
+  const boundElsewhere = all.filter(t => t.m.pano != null && !samePano(t.m.pano, curPano));
+  const unbound = all.filter(t => t.m.pano == null);
+
+  if(spot && spot.l === state.active){
+    updateTourHint('');
+  }else if(!spot){
+    updateTourHint('Чтобы конус обзора и метки совпали с планом: в туре встаньте в точку → «Я стою здесь» → клик по тому же месту на плане. До этого метки в 3D — только по сохранённому ракурсу.');
+  }else{
+    updateTourHint('');
+  }
+
+  const tags = [], away = [];
+  const used = new Set();
+
+  /* 1) Геометрия плана: все локусы этажа точки съёмки */
+  if(spot){
+    onThisFloor.forEach(t => {
+      const dist = Math.hypot(t.m.x - spot.x, t.m.y - spot.y);
+      if(dist < 8) return;
+      const d = markerDeltaFromPlan(t.m, spot, north, cam);
+      if(d == null) return;
+      const pos = projectDelta(d, 0, cam, w, h);
+      t.dir = d;
+      if(pos){
+        t.pos = pos;
+        t.scale = Math.max(0.8, 1.05 - dist / 2000);
+        tags.push(t);
+        used.add(t.li + ':' + t.i);
+      }else{
+        away.push(t);
+        used.add(t.li + ':' + t.i);
+      }
+    });
+  }
+
+  /* 2) Ракурс камеры для привязанных на этой панораме, ещё не учтённых */
+  boundHere.forEach(t => {
+    if(used.has(t.li + ':' + t.i)) return;
+    const pos = tourProject(t.m.camera, cam, w, h);
+    if(pos){
+      t.pos = pos; t.dir = pos.dir; t.scale = 1;
+      tags.push(t);
+    }else{
+      t.dir = yawSign() * normDeltaDeg(Number(t.m.camera.angle) - Number(cam.angle));
+      away.push(t);
+    }
+    used.add(t.li + ':' + t.i);
+  });
+
+  boundElsewhere.forEach(t => { if(!used.has(t.li + ':' + t.i)) away.push(t); });
+  unbound.forEach(t => { if(!used.has(t.li + ':' + t.i)) away.push(t); });
+
+  away.sort((a, b) => {
+    const da = a.dir == null ? 999 : Math.abs(a.dir);
+    const db = b.dir == null ? 999 : Math.abs(b.dir);
+    return da - db || a.num - b.num;
+  });
+  tags.sort((a, b) => (a.pos.x - b.pos.x) || a.num - b.num);
+  for(let k = 1; k < tags.length; k++){
+    if(Math.abs(tags[k].pos.x - tags[k-1].pos.x) < 4 && Math.abs(tags[k].pos.y - tags[k-1].pos.y) < 5){
+      tags[k].pos.y = Math.min(92, tags[k-1].pos.y + 7);
+      tags[k].pos.edge = true;
+    }
+  }
+
+  let html = '';
+  tags.forEach(t => {
+    const selected = state.active === t.li && state.levels[t.li] && state.levels[t.li].selected === t.i;
+    html += '<div class="tov' + (t.pos.edge ? ' edge' : '') + (selected ? ' sel' : '') + '"' +
+            ' style="left:' + t.pos.x.toFixed(2) + '%;top:' + t.pos.y.toFixed(2) + '%;--fc:' + floorColor(t.li) +
+            ';transform:translate(-50%,-50%) scale(' + (t.scale || 1).toFixed(2) + ')"' +
+            ' data-l="' + t.li + '" data-i="' + t.i + '"' +
+            ' title="' + esc('Локус ' + t.num) + '">' +
+            '<span class="tov-n">' + t.num + '</span>Локус ' + t.num + '</div>';
+  });
+  if(away.length){
+    html += '<div class="tov-jumps">' + away.slice(0, 20).map(t => {
+      const arrow = t.dir == null ? (t.m.pano != null ? '→' : '○') : (t.dir > 0 ? '↻' : '↺');
+      const hint = t.dir != null
+        ? ('Локус ' + t.num + ' — ' + (t.dir > 0 ? 'вправо' : 'влево') + ' ' + Math.round(Math.abs(t.dir)) + '°')
+        : (t.m.pano != null ? ('Перейти к локусу ' + t.num) : ('Локус ' + t.num + ' не привязан'));
+      return '<button class="tov-jump" data-l="' + t.li + '" data-i="' + t.i + '"' +
+             (t.m.pano != null ? ' data-go="1"' : '') +
+             ' title="' + esc(hint) + '">' + arrow + ' ' + t.num + '</button>';
+    }).join('') + '</div>';
+  }
+  box.innerHTML = html;
+  $$('#tourOverlay [data-l]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      const li = Number(el.dataset.l), i = Number(el.dataset.i);
+      const m = state.levels[li] && state.levels[li].markers[i];
+      if(!m) return;
+      if(el.dataset.go && m.pano != null){ tourApi.move(m.pano, m.camera); }
+      if(state.active !== li) selectLevel(li);
+      selectMarker(i);
+    };
+  });
+}
+function flipTourYaw(){
+  state.tourYawFlip = !state.tourYawFlip;
+  touch();
+  tourOverlayLastKey = '';
+  scheduleTourOverlay();
+  status(state.tourYawFlip ? 'Зеркало: направление FOV инвертировано' : 'Зеркало выкл');
+}
+function renderTourSections(){
+  const panels = state.tourPanels || (state.tourPanels = { link:true, sync:true, info:true });
+  $$('.tsec').forEach(sec => {
+    const key = sec.dataset.sec;
+    if(!key) return;
+    sec.classList.toggle('closed', panels[key] === false);
+    const head = sec.querySelector('.tsec-head');
+    if(head) head.setAttribute('aria-expanded', panels[key] === false ? 'false' : 'true');
+  });
+  const sync = $('#tsecSync'); if(sync) sync.classList.toggle('live', !!tourApi.ready);
+  /* Когда секция свёрнута, главное о ней всё равно видно в заголовке. */
+  const view = tourViewPath();
+  setText('#tourHost', state.tour ? (view ? view.path : state.tour) : 'не задана');
+  setText('#tourHeadNote', !state.tour ? '' : (tourApi.ready ? (tourApi.pano ? 'точка ' + tourApi.pano : 'подключён') : 'нет связи'));
+  const floors = state.tourSummary || [];
+  setText('#tourInfoNote', floors.length ? (floors.length + ' эт. · ' + floors.reduce((n, f) => n + f.rooms.length, 0) + ' комн.') : '');
+  const infoSec = $('#tsecInfo'); if(infoSec) infoSec.hidden = !floors.length;
+}
+function toggleTourSection(key){
+  if(!key) return;
+  if(!state.tourPanels) state.tourPanels = { link:true, sync:true, info:true };
+  state.tourPanels[key] = state.tourPanels[key] === false;
+  touch();
+  renderTourSections();
+}
+function renderTourBar(){
+  const bar = $('#tourBar'); if(!bar) return; /* панель связи с планом убрана */
+  const l = level();
+  const m = (l && l.selected != null) ? l.markers[l.selected] : null;
+  bar.classList.toggle('live', !!tourApi.ready);
+  let text;
+  if(!state.tour) text = 'Ссылка на тур не задана';
+  else if(tourApi.gaveUp()) text = 'Плеер не отвечает — проверьте, что в ссылке есть флаг api';
+  else if(!tourApi.ready) text = 'Подключение к туру…';
+  else if(tourApi.pano){
+    const hereN = (state.levels || []).reduce((n, l) => n + ((l && l.markers) ? l.markers.filter(x => x && String(x.pano) === String(tourApi.pano) && x.camera).length : 0), 0);
+    text = 'Точка тура: ' + tourApi.pano +
+           (tourApi.camera ? (' · угол ' + Math.round(Number(tourApi.camera.angle) || 0) + '°') : ' · нет угла камеры') +
+           ' · привязано здесь: ' + hereN +
+           (m && String(m.pano) === String(tourApi.pano) ? ' · выбранный локус здесь' : '');
+  }
+  else text = 'Тур подключён · перейдите в нужную точку';
+  setText('#tourState', text);
+  const dataBtn = $('#tourData');
+  if(dataBtn) dataBtn.disabled = !state.tour;
+  const bind = $('#tourBind'), unbind = $('#tourUnbind');
+  if(bind) bind.disabled = !(tourApi.ready && m && state.mode === 'edit');
+  if(unbind) unbind.disabled = !(m && m.pano && state.mode === 'edit');
+  const go = $('#tourGo');
+  if(go) go.disabled = !(tourApi.ready && m && m.pano);
+  const follow = $('#tourFollow');
+  if(follow && document.activeElement !== follow) follow.checked = state.tourFollow !== false;
+  const auto = $('#tourAutoBind');
+  if(auto && document.activeElement !== auto) auto.checked = state.tourAutoBind === true;
+  const tags = $('#tourTags');
+  if(tags && document.activeElement !== tags) tags.checked = state.tourTags !== false;
+  renderTourSections();
+}
+function clampTourWidth(w){
+  const v = Number(w);
+  const max = Math.max(TOUR_WIDTH_MIN, (typeof innerWidth === 'number' ? innerWidth : 1280) - 340);
+  if(!isFinite(v) || v <= 0) return Math.min(TOUR_WIDTH_DEFAULT, max);
+  return Math.round(Math.max(TOUR_WIDTH_MIN, Math.min(v, max)));
+}
+function applyTourWidth(){
+  const panel = $('#tourPanel'); if(!panel) return;
+  state.tourWidth = clampTourWidth(state.tourWidth);
+  panel.style.width = panel.classList.contains('open') ? state.tourWidth + 'px' : '';
+}
+
+function ensureTourFrame(){
+  const body = $('#tourBody');
+  if(!body) return null;
+  let frame = body.querySelector('#tourFrame') || body.querySelector('iframe');
+  if(!frame){
+    frame = document.createElement('iframe');
+    frame.id = 'tourFrame';
+    frame.setAttribute('allowfullscreen', '');
+    frame.setAttribute('allow', 'fullscreen; xr-spatial-tracking; accelerometer; gyroscope');
+    frame.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+    frame.title = '3D-тур iGUIDE';
+    body.appendChild(frame);
+  }
+  return frame;
+}
+function setTourFrameSrc(url){
+  const frame = ensureTourFrame();
+  if(!frame) return;
+  const next = String(url || '');
+  /* Не трогаем src, если URL тот же — иначе iframe перезагружается */
+  if(frame.dataset.tourUrl === next && frame.getAttribute('src')) return;
+  frame.dataset.tourUrl = next;
+  if(next) frame.src = next;
+  else{
+    frame.removeAttribute('src');
+    delete frame.dataset.tourUrl;
+  }
+}
+function renderTour(){
+  const panel = $('#tourPanel'), body = $('#tourBody'), empty = $('#tourEmpty');
+  if(!panel || !body) return;
+  const field = $('#tourUrl');
+  if(field && document.activeElement !== field) field.value = state.tour || '';
+  const view = tourViewPath();
+  setText('#tourHost', state.tour ? (view ? view.path : state.tour) : '');
+  const frame = body.querySelector('#tourFrame') || body.querySelector('iframe');
+  if(state.tour){
+    ensureTourFrame();
+    setTourFrameSrc(state.tour);
+    if(empty) empty.style.display = 'none';
+  }else{
+    if(frame){
+      frame.removeAttribute('src');
+      delete frame.dataset.tourUrl;
+      /* iframe оставляем в DOM, чтобы при новой ссылке не плодить элементы */
+    }
+    if(empty) empty.style.display = '';
+  }
+}
+function applyTourUrl(raw){
+  const field = $('#tourUrl');
+  const value = raw != null ? raw : (field ? field.value : '');
+  if(!String(value).trim()){
+    state.tour = '';
+    setTourFrameSrc('');
+    touch(); renderTour();
+    status('Ссылка на 3D-тур очищена');
+    return;
+  }
+  try{
+    state.tour = normalizeTourUrl(value);
+  }catch(err){
+    notify('Не удалось разобрать ссылку: ' + err.message + '. Нужна ссылка вида youriguide.com/адрес_объекта.');
+    return;
+  }
+  touch();
+  setUiMode('tour');
+  renderTour();
+  status('3D-тур открыт');
+}
+function openTourDownloadHelp(){
+  const view = tourViewPath();
+  if(!state.tour){
+    notify('Сначала вставьте ссылку на тур iGUIDE.');
+    return;
+  }
+  /* Полный Offline ZIP доступен только владельцу тура в портале iGUIDE — из публичного embed скачать 3D нельзя. */
+  const msg =
+    'Скачать полный 3D-тур (Offline iGUIDE) можно только из кабинета iGUIDE:\n\n' +
+    '1. Откройте iGUIDE Report / Details этого объекта\n' +
+    '2. Download → Offline iGUIDE (ZIP)\n' +
+    '3. Распакуйте ZIP и откройте index.html\n\n' +
+    'Из встроенного просмотра браузер не даёт выгрузить панорамы (чужой сайт, CORS).\n\n' +
+    'Открыть публичную страницу тура сейчас?';
+  if(confirm(msg)){
+    try{ window.open(state.tour, '_blank', 'noopener'); }catch(e){}
+  }
+  status('Offline-тур: только через портал iGUIDE (Report → Download)');
+}
+function openTour(force, silent){
+  const panel = $('#tourPanel');
+  if(!panel) return;
+  const open = force != null ? !!force : !panel.classList.contains('open');
+  panel.classList.toggle('open', open);
+  state.tourOpen = open;
+  /* iframe не трогаем — только видимость вкладки через data-ui */
+  if(open){
+    renderTour();
+    if(!state.tour){ const f = $('#tourUrl'); if(f) setTimeout(() => { try{ f.focus(); }catch(e){} }, 0); }
+  }
+}
+function setUiMode(mode, silent){
+  if(mode !== 'plan' && mode !== 'tour') mode = 'plan';
+  state.uiMode = mode;
+  const root = $('#appRoot') || document.querySelector('.app');
+  if(root) root.setAttribute('data-ui', mode);
+  $$('.activity .abtn[data-ui]').forEach(b => b.classList.toggle('active', b.dataset.ui === mode));
+  $$('.tabs .tab[data-ui]').forEach(b => b.classList.toggle('active', b.dataset.ui === mode));
+  /* Не вызываем openTour(false) так, чтобы сносить iframe — панель скрыта CSS data-ui=plan */
+  const panel = $('#tourPanel');
+  if(panel){
+    panel.classList.toggle('open', mode === 'tour');
+    state.tourOpen = mode === 'tour';
+  }
+  if(mode === 'tour') renderTour();
+  if(!silent) touch();
+  status(mode === 'plan' ? 'Вкладка: план дворца' : 'Вкладка: 3D-тур');
+}
+
 /* ---------- новый дворец ---------- */
 function flash(msg){
   status(msg);
@@ -1003,6 +2316,8 @@ function resetPalace(){
   const f = $('#fileOpen'); if(f) f.value = '';
   setVal('#fileName', '');
   const sm = $('#saveModal'); if(sm) sm.classList.remove('show');
+  setVal('#tourUrl', '');
+  openTour(false);
   clearPlan();
   renderPending();
   render();
@@ -1063,6 +2378,12 @@ on('#modeBtn', 'click', () => { state.mode = state.mode === 'edit' ? 'view' : 'e
 
 /* ---------- модальное окно этажей ---------- */
 on('#uploadBtn', 'click', openPlansModal);
+on('#abUpload', 'click', openPlansModal);
+on('#abUploadMenu', 'click', openPlansModal);
+on('#menuFile', 'click', () => {
+  const m = $('#saveModal');
+  if(m){ syncFileNameField(); m.classList.add('show'); }
+});
 on('#closeModal', 'click', closePlansModal);
 on('#drop', 'click', () => {
   const i = document.createElement('input');
@@ -1108,6 +2429,29 @@ on('#stage', 'click', e => {
   if(e.detail > 1) return; /* второй клик двойного нажатия не создаёт лишний маркер */
   if(state.mode !== 'edit') return;
   const l = level(); if(!l) return;
+  if(placingSpot){
+    const p0 = planPoint(e.clientX, e.clientY);
+    if(!insidePlan(p0)) return;
+    if(!state.panoSpots) state.panoSpots = {};
+    state.panoSpots[tourApi.pano] = { l: state.active, x: Math.round(p0.x), y: Math.round(p0.y) };
+    setPlacingSpot(false);
+    touch(); render(); scheduleTourOverlay();
+    status('Точка съёмки «' + tourApi.pano + '» отмечена на этаже ' + (state.active + 1) +
+           ' — теперь локусы показываются в туре по их настоящему положению');
+    return;
+  }
+  if(state.tool === 'path'){
+    if(state.mode !== 'edit') return;
+    const pt = planPoint(e.clientX, e.clientY);
+    if(!insidePlan(pt)) return;
+    if(insertPathWaypoint(l, pt, 48)){
+      touch(); drawPlan();
+      status('Излом добавлен · перетащите · ПКМ по точке — удалить');
+    }else{
+      status('Кликните ближе к полосе пути, чтобы добавить излом');
+    }
+    return;
+  }
   if(state.tool !== 'marker'){
     if(state.tool === 'select' && l.selected != null){ l.selected = null; drawPlan(); renderRoute(); }
     return;
@@ -1115,28 +2459,36 @@ on('#stage', 'click', e => {
   const pt = planPoint(e.clientX, e.clientY);
   if(!insidePlan(pt)) return;
   if(l.markers.length >= 100){ status('Достигнут предел в 100 локусов на этаже'); return; }
-  l.markers.push({ x: pt.x, y: pt.y, note: '' });
+  const m = { x: pt.x, y: pt.y, note: '' };
+  l.markers.push(m);
   l.selected = l.markers.length - 1;
   touch(); render();
+  status('Локус ' + (l.markers.length + floorOffset()) + ' добавлен');
 });
 on('#stage', 'contextmenu', e => e.preventDefault());
+function startPan(e){
+  pan = { x:e.clientX, y:e.clientY, tx:0, ty:0 };
+  const v = $('#viewport');
+  const m = v ? getComputedStyle(v).transform : 'none';
+  if(m && m !== 'none' && window.DOMMatrix){ const q = new DOMMatrix(m); pan.tx = q.e; pan.ty = q.f; }
+  const st = $('#stage'); if(st) st.classList.add('panning');
+}
 on('#stage', 'mousedown', e => {
-  /* Зажатие ЛКМ по холсту не должно запускать выделение плана и соседних панелей.
-     Элементы управления исключены, иначе они потеряют фокус и набор текста. */
+  /* Левая кнопка: как в iGUIDE — тянем план. Щелчок без движения по-прежнему
+     ставит локус, потому что перемещение отслеживается отдельно (stageDown).
+     Заодно это гасит выделение плана и соседних панелей браузером. */
   if(e.button === 0){
     const t = e.target;
     const interactive = t && t.closest && t.closest('input, textarea, select, button, .canvas-ctl, .floor-overlay, #compass');
     if(!interactive){
       e.preventDefault();
       stageDown = { x:e.clientX, y:e.clientY, moved:false };
+      startPan(e);
     }
     return;
   }
   if(e.button !== 2) return;
-  pan = { x:e.clientX, y:e.clientY, tx:0, ty:0 };
-  const v = $('#viewport');
-  const m = v ? getComputedStyle(v).transform : 'none';
-  if(m && m !== 'none' && window.DOMMatrix){ const q = new DOMMatrix(m); pan.tx = q.e; pan.ty = q.f; }
+  startPan(e);
   e.preventDefault();
 });
 on('#stage', 'wheel', e => { e.preventDefault(); applyZoom(state.zoom * (e.deltaY < 0 ? 1.12 : 0.89), e.clientX, e.clientY); });
@@ -1170,6 +2522,7 @@ window.onmousemove = e => {
   if(drag.target){ drag.target.style.left = drag.m.x + 'px'; drag.target.style.top = drag.m.y + 'px'; }
 };
 window.onmouseup = () => {
+  if(pan){ const st = $('#stage'); if(st) st.classList.remove('panning'); }
   if(drag){
     const moved = drag.moved;
     drag.m.dragging = false;
@@ -1183,10 +2536,17 @@ window.onmouseup = () => {
 };
 window.onkeydown = e => {
   if(e.key === 'Escape'){
+    if(pendingBind){ clearPendingBind(); status('Привязка локуса отменена'); return; }
+    if(placingSpot){ setPlacingSpot(false); status('Отметка точки съёмки отменена'); return; }
     const am = $('#askModal');
     if(am && am.classList.contains('show')){ am.classList.remove('show'); return; }
     const sm = $('#saveModal'); if(sm) sm.classList.remove('show');
     const pm = $('#modal'); if(pm && pm.classList.contains('show')) closePlansModal();
+    return;
+  }
+  if(e.key === 'Enter' && pendingBind){
+    e.preventDefault();
+    confirmPendingBind();
     return;
   }
   const t = e.target && e.target.tagName;
@@ -1201,9 +2561,24 @@ $$('.tool').forEach(b => {
   if(!b.dataset.tool) return;
   b.onclick = () => {
     state.tool = b.dataset.tool;
+    if(state.tool === 'path'){
+      state.showPath = true;
+      status('Путь: клик по полосе — излом · перетащите точку · ПКМ — удалить. Другой инструмент скроет путь.');
+    }else if(state.showPath){
+      /* путь остаётся видимым при select/marker, чтобы видеть маршрут; скрытие — повторный клик по ╱ или Esc */
+    }
     $$('.tool').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
+    drawPlan();
   };
+});
+on('#pathTool', 'dblclick', e => {
+  e.preventDefault();
+  state.showPath = !state.showPath;
+  if(!state.showPath && state.tool === 'path') state.tool = 'select';
+  applyMode();
+  drawPlan();
+  status(state.showPath ? 'Путь показан' : 'Путь скрыт');
 });
 function applyZoom(z, cx, cy){
   const v = $('#viewport'); if(!v) return;
@@ -1329,6 +2704,108 @@ const ROTATE_RATIO = 1;
     });
   });
 })();
+on('#tourData', 'click', () => { loadTourData(); });
+on('#tourHere', 'click', () => {
+  if(!tourApi.ready || !tourApi.pano){ notify('Тур не подключён или точка съёмки ещё не определена'); return; }
+  if(!level()){ notify('Сначала загрузите план этажа'); return; }
+  setPlacingSpot(!placingSpot);
+  status(placingSpot
+    ? 'Щёлкните на плане место, где вы стоите в туре (точка «' + tourApi.pano + '»)'
+    : 'Отметка точки съёмки отменена');
+});
+on('#tourTags', 'change', e => {
+  state.tourTags = !!e.target.checked;
+  touch(); scheduleTourOverlay();
+  status(state.tourTags ? 'Метки в туре включены (по сохранённому ракурсу)' : 'Метки в туре скрыты');
+});
+on('#tourYawFlip', 'click', () => flipTourYaw());
+on('#tourDiag', 'change', e => {
+  setTourDiag(!!e.target.checked);
+  status(tourDiag.enabled ? 'Диагностика API включена — смотрите панель поверх тура' : 'Диагностика API выключена');
+});
+on('#tourDiagClear', 'click', () => {
+  tourDiag.log = [];
+  const logEl = $('#tourDiagLog');
+  if(logEl) logEl.innerHTML = '';
+  tourDiagPush('clear', 'лог очищен');
+});
+on('#tourAutoBind', 'change', e => {
+  state.tourAutoBind = !!e.target.checked;
+  touch(); renderTourBar();
+  status(state.tourAutoBind
+    ? 'Новые локусы привязываются сразу при клике по плану (к текущему виду тура)'
+    : 'Двухшаговый режим: клик по плану → наведите объект в туре → клик по синей зоне');
+});
+on('#tourBindZone', 'click', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  confirmPendingBind();
+});
+on('#tourBindZone', 'keydown', e => {
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); confirmPendingBind(); }
+});
+on('#tourGo', 'click', () => {
+  const l = level();
+  const m = (l && l.selected != null) ? l.markers[l.selected] : null;
+  if(!m || !m.pano){ notify('У выбранного локуса нет привязки к туру'); return; }
+  if(!tourApi.ready){ notify('3D-тур ещё не подключён'); return; }
+  tourApi.move(m.pano, m.camera);
+  status('Тур переведён в точку локуса ' + (l.selected + 1 + floorOffset()));
+});
+$$('.tsec-head').forEach(h => {
+  h.onclick = e => { e.preventDefault(); e.stopPropagation(); toggleTourSection(h.dataset.toggle); };
+});
+on('#tourBind', 'click', bindMarkerToTour);
+on('#tourUnbind', 'click', unbindMarkerFromTour);
+on('#tourFollow', 'change', e => {
+  state.tourFollow = !!e.target.checked;
+  touch(); renderTourBar();
+  status(state.tourFollow ? 'Локусы и тур связаны' : 'Связь локусов с туром выключена');
+});
+on('#tourBtn', 'click', () => setUiMode(state.uiMode === 'tour' ? 'plan' : 'tour'));
+bindAction('#abSave', () => { const m = $('#saveModal'); if(!m) throw new Error('нет окна сохранения'); syncFileNameField(); m.classList.add('show'); }, 'Сохранить');
+$$('.activity .abtn[data-ui], .tabs .tab[data-ui]').forEach(b => {
+  b.addEventListener('click', () => setUiMode(b.dataset.ui));
+});
+(function initTourResizer(){
+  const grip = $('#tourResizer'), panel = $('#tourPanel');
+  if(!grip || !panel) return;
+  let dragging = false;
+  grip.addEventListener('pointerdown', e => {
+    dragging = true;
+    panel.classList.add('resizing');
+    if(grip.setPointerCapture){ try{ grip.setPointerCapture(e.pointerId); }catch(err){} }
+    e.preventDefault(); e.stopPropagation();
+  });
+  grip.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    /* панель прижата к правому краю окна, поэтому ширина — это расстояние от курсора до края */
+    state.tourWidth = clampTourWidth(innerWidth - e.clientX);
+    applyTourWidth();
+    status('Ширина панели 3D-тура: ' + state.tourWidth + ' px');
+    e.preventDefault();
+  });
+  const stop = () => {
+    if(!dragging) return;
+    dragging = false;
+    panel.classList.remove('resizing');
+    touch(); /* новая ширина уедет в файл вместе с проектом */
+  };
+  grip.addEventListener('pointerup', stop);
+  grip.addEventListener('pointercancel', stop);
+  grip.addEventListener('lostpointercapture', stop);
+  grip.addEventListener('dblclick', e => {
+    e.preventDefault(); e.stopPropagation();
+    state.tourWidth = TOUR_WIDTH_DEFAULT;
+    applyTourWidth(); touch();
+    status('Ширина панели 3D-тура сброшена');
+  });
+  addEventListener('resize', applyTourWidth);
+})();
+on('#tourClose', 'click', () => setUiMode('plan'));
+on('#tourApply', 'click', () => applyTourUrl());
+on('#tourDownload', 'click', () => openTourDownloadHelp());
+on('#tourUrl', 'keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); applyTourUrl(); } e.stopPropagation(); });
 on('#markerSize', 'input', e => {
   state.markerSize = Number(e.target.value) || 30;
   setText('#markerSizeVal', markerSize());
