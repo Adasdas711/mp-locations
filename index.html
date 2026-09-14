@@ -407,7 +407,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     </section>
     <aside class="tour" id="tourPanel">
       <div class="tour-toolbar">
-        <input id="tourUrl" placeholder="Ссылка на iGUIDE-тур (youriguide.com/…)" aria-label="Ссылка на 3D-тур"/>
+        <input id="tourUrl" placeholder="iGUIDE или Matterport: my.matterport.com/show/?m=…" aria-label="Ссылка на 3D-тур"/>
         <button class="primary" id="tourApply">Открыть</button>
         <button type="button" id="tourDownload" title="Как скачать Offline iGUIDE">Скачать</button>
         <span class="tour-host" id="tourHost"></span>
@@ -416,7 +416,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <div class="tour-empty" id="tourEmpty">
           <strong>3D-тур</strong>
           Вставьте ссылку на тур iGUIDE и нажмите «Открыть».<br/>
-          <span class="small">Например: youriguide.com/2_kalb_ct_dix_hills_ny</span><br/><br/>
+          <span class="small">iGUIDE: youriguide.com/… · Matterport: my.matterport.com/show/?m=…</span><br/><br/>
           <span class="small">План этажа загружается отдельно на вкладке «План дворца».</span>
         </div>
       </div>
@@ -1464,13 +1464,17 @@ async function exportPdf(){
   status('PDF сохранён: страниц ' + pages.length + ', ' + (fmt === 'fit' ? 'по размеру плана' : fmt.toUpperCase()));
 }
 
-/* ---------- 3D-тур iGUIDE ----------
-   Тур iGUIDE не существует в виде файла: это веб-просмотрщик на youriguide.com.
-   Поэтому единственный честный способ показать 3D-вид дома рядом с планом —
-   официальный код вставки (iframe). План этажа по-прежнему берётся из PDF/JPG,
-   который iGUIDE отдаёт отдельным файлом. */
+/* ---------- 3D-тур: iGUIDE + Matterport ----------
+   Тур — веб-просмотрщик (iframe). Планы этажей загружаются отдельно (PDF/JPG). */
 const IGUIDE_HOSTS = /^(unbranded\.|manage\.)?(youriguide|iguidephotos|iguideradix)\.com$/i;
 const TOUR_HOSTS = /^(unbranded\.)?(youriguide|iguidephotos|iguideradix)\.com$/i;
+const MATTERPORT_HOSTS = /^(my\.|www\.)?matterport\.com$/i;
+function isMatterportHost(host){
+  return MATTERPORT_HOSTS.test(String(host || '').toLowerCase());
+}
+function isIguideHost(host){
+  return TOUR_HOSTS.test(String(host || '').toLowerCase()) || /^manage\.youriguide\.com$/i.test(host);
+}
 function normalizeTourUrl(raw){
   let v = String(raw == null ? '' : raw).trim();
   if(!v) return '';
@@ -1484,28 +1488,58 @@ function normalizeTourUrl(raw){
   let u;
   try{ u = new URL(v); }catch(err){ throw new Error('Это не похоже на ссылку'); }
   let host = u.hostname.toLowerCase();
-  if(host === 'manage.youriguide.com') host = 'youriguide.com'; /* ссылка из конструктора вставки */
-  if(!TOUR_HOSTS.test(host)){
-    throw new Error('Поддерживаются ссылки youriguide.com, iguidephotos.com и iguideradix.com');
-  }
   u.protocol = 'https:';
+
+  /* —— Matterport —— */
+  if(isMatterportHost(host)){
+    host = 'my.matterport.com';
+    u.hostname = host;
+    let id = u.searchParams.get('m') || '';
+    if(!id){
+      const pathId = u.pathname.match(/\/(?:show|embed)\/([A-Za-z0-9_-]{6,})/i);
+      if(pathId) id = pathId[1];
+    }
+    if(!id){
+      /* иногда вставляют только ID модели */
+      const bare = String(raw).trim().match(/^([A-Za-z0-9_-]{8,14})$/);
+      if(bare) id = bare[1];
+    }
+    if(!id) throw new Error('В ссылке Matterport нет id модели (параметр m=…)');
+    /* Канон: Showcase URL. mls и прочие query сохраняем, кроме дублей m */
+    const keep = [];
+    u.searchParams.forEach((val, key) => {
+      if(key.toLowerCase() === 'm') return;
+      keep.push(encodeURIComponent(key) + '=' + encodeURIComponent(val));
+    });
+    let out = 'https://my.matterport.com/show/?m=' + encodeURIComponent(id);
+    if(keep.length) out += '&' + keep.join('&');
+    return out;
+  }
+
+  /* —— iGUIDE —— */
+  if(host === 'manage.youriguide.com') host = 'youriguide.com';
+  if(!TOUR_HOSTS.test(host)){
+    throw new Error('Поддерживаются youriguide.com и my.matterport.com/show/?m=…');
+  }
   u.hostname = host;
   if(!/^\/embed\//.test(u.pathname)){
     u.pathname = '/embed' + (u.pathname.charAt(0) === '/' ? '' : '/') + u.pathname;
   }
   u.pathname = u.pathname.replace(/\/+$/, '') + '/';
-  /* Ключевой момент: без флага api плеер iGUIDE не отвечает на postMessage,
-     и подключение к туру висит бесконечно. */
   const parts = (u.search || '').replace(/^\?/, '').split('&').filter(Boolean);
   if(!parts.some(x => x === 'api' || x.indexOf('api=') === 0)) parts.push('api');
   return u.origin + u.pathname + (parts.length ? '?' + parts.join('&') : '');
 }
-/* Адрес вида (viewPath) нужен публичному View API iGUIDE */
+/* Адрес вида (viewPath) — для View API iGUIDE; у Matterport path = model id */
 function tourViewPath(url){
   try{
     const u = new URL(url || state.tour);
+    if(isMatterportHost(u.hostname)){
+      const id = u.searchParams.get('m');
+      return id ? { host: 'my.matterport.com', path: id, kind: 'matterport' } : null;
+    }
     const m = u.pathname.match(/^\/embed\/([^/?#]+)/);
-    return m ? { host: u.hostname, path: m[1] } : null;
+    return m ? { host: u.hostname, path: m[1], kind: 'iguide' } : null;
   }catch(err){ return null; }
 }
 /* Публичный View API: токен не нужен, отдаёт состав здания — этажи и комнаты. */
@@ -2244,7 +2278,7 @@ function applyTourUrl(raw){
   try{
     state.tour = normalizeTourUrl(value);
   }catch(err){
-    notify('Не удалось разобрать ссылку: ' + err.message + '. Нужна ссылка вида youriguide.com/адрес_объекта.');
+    notify('Не удалось разобрать ссылку: ' + err.message);
     return;
   }
   touch();
