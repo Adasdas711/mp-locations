@@ -41,12 +41,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tool.active{background:rgba(77,163,255,.18);border-color:var(--blue);color:var(--blue)}
 
 /* STAGE */
-.stage{flex:1;position:relative;overflow:hidden;background:#0d0f12;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:24px 24px}
+.stage{flex:1;position:relative;overflow:hidden;cursor:crosshair;user-select:none;-webkit-user-select:none;-ms-user-select:none;background:#0d0f12;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:24px 24px}
 .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;z-index:10}
 .empty strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
 .viewport{position:absolute;inset:0;transform-origin:0 0}
-.plan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 10px 32px #000;user-select:none}
-.plan img{display:block;max-width:none}
+.plan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 10px 32px #000;user-select:none;cursor:crosshair}
+.stage.mode-view{cursor:default}
+.plan img{display:block;max-width:none;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 .marker{position:absolute;width:28px;height:28px;border-radius:50%;background:#ffb800;color:#16110a;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;transform:translate(-50%,-50%) rotate(var(--mrot,0deg));cursor:grab;box-shadow:0 2px 10px #000;z-index:3}
 .marker.dragging{cursor:grabbing;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.18);box-shadow:0 0 0 4px #4da3ff66,0 6px 18px #000;z-index:20}
 .marker.selected{outline:2px solid var(--blue)}
@@ -93,6 +94,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
 .modal.show{display:flex}
 #askModal{z-index:40;background:#000c}
+#askInput{width:100%;margin:0 0 14px;padding:8px 9px;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:5px}
+#askInput:focus{outline:none;border-color:var(--blue)}
+#askInput[hidden]{display:none}
 .dialog{width:min(960px,96vw);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column}
 .dialog.narrow{width:min(560px,96vw)}
 .dialog.wide{width:min(1240px,98vw)}
@@ -100,6 +104,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 /* ЭЛЕМЕНТЫ УПРАВЛЕНИЯ НА ХОЛСТЕ */
 .canvas-ctl{position:absolute;z-index:11;display:flex;align-items:center;gap:8px;background:#191c20ee;border:1px solid var(--line);border-radius:8px;padding:7px 10px;box-shadow:0 6px 18px #0009}
 .canvas-ctl label{color:var(--muted);font-size:10.5px;white-space:nowrap}
+.canvas-ctl input,.canvas-ctl output{user-select:auto;-webkit-user-select:auto}
 .canvas-ctl input[type=range]{width:120px;accent-color:var(--blue)}
 .canvas-ctl output{font-size:11px;font-weight:700;min-width:26px;text-align:right}
 #markerCtl{left:12px;bottom:12px}
@@ -260,7 +265,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 <div class="modal" id="askModal"><div class="dialog narrow">
   <h2 id="askTitle">Подтверждение</h2>
-  <p id="askText" style="margin:6px 0 14px"></p>
+  <p id="askText" style="margin:6px 0 10px"></p>
+  <input id="askInput" hidden="" type="text"/>
   <div style="text-align:right"><button id="askNo">Отмена</button> <button class="primary" id="askYes">Да</button></div>
 </div></div>
 
@@ -308,19 +314,43 @@ bindAction('#saveBtn', () => { const m = $('#saveModal'); if(!m) throw new Error
 function ask(text, onYes, opts){
   opts = opts || {};
   const m = $('#askModal'), yes = $('#askYes'), no = $('#askNo');
+  const wantsInput = opts.input != null;
   if(!m || !yes){
     if(opts.notice){ window.alert(text); return; }
+    if(wantsInput){
+      const v = window.prompt ? window.prompt(text, opts.input) : opts.input;
+      if(v !== null && onYes) onYes(v);
+      return;
+    }
     if(window.confirm(text) && onYes) onYes();
     return;
   }
   setText('#askTitle', opts.title || (opts.notice ? 'Сообщение' : 'Подтверждение'));
   setText('#askText', text);
   yes.textContent = opts.yes || (opts.notice ? 'Понятно' : 'Да');
-  if(no) no.style.display = opts.notice ? 'none' : '';
+  if(no){ no.style.display = opts.notice ? 'none' : ''; no.textContent = opts.no || 'Отмена'; }
+  const field = $('#askInput');
+  if(field){
+    field.hidden = !wantsInput;
+    if(wantsInput){ field.value = String(opts.input); field.placeholder = opts.placeholder || ''; }
+  }
+  const close = () => { m.classList.remove('show'); if(field) field.hidden = true; };
+  const accept = () => { const v = (wantsInput && field) ? field.value : undefined; close(); if(onYes) onYes(v); };
   m.classList.add('show');
-  yes.onclick = () => { m.classList.remove('show'); if(onYes) onYes(); };
-  if(no) no.onclick = () => { m.classList.remove('show'); };
-  setTimeout(() => { try{ yes.focus(); }catch(e){} }, 0);
+  yes.onclick = accept;
+  if(no) no.onclick = () => { close(); if(opts.onNo) opts.onNo(); };
+  if(field){
+    field.onkeydown = e => {
+      e.stopPropagation();
+      if(e.key === 'Enter'){ e.preventDefault(); accept(); }
+    };
+  }
+  setTimeout(() => {
+    try{
+      if(wantsInput && field){ field.focus(); if(field.select) field.select(); }
+      else yes.focus();
+    }catch(e){}
+  }, 0);
 }
 function notify(text, title){ ask(text, null, { notice:true, title:title || 'Сообщение' }); }
 function floorColor(i){
@@ -337,6 +367,7 @@ function blankState(){
 }
 const state = blankState();
 let pending = [], drag = null, pan = null, planRenderToken = 0, suppressMarkerClick = false;
+let stageDown = null; /* нажатие ЛКМ по холсту: нужно отличать щелчок от протяжки */
 
 function level(){ return state.levels[state.active] || null; }
 function touch(){ state.edited = new Date().toISOString(); state.dirty = true; }
@@ -413,6 +444,9 @@ function drawPlan(){
     const rot = Number(state.rotation) || 0;
     p.style.transform = 'translate(-50%,-50%) rotate(' + rot + 'deg)';
     p.style.setProperty('--mrot', (-rot) + 'deg');
+    im.draggable = false;
+    im.setAttribute('draggable', 'false');
+    im.ondragstart = e => e.preventDefault();
     p.appendChild(im);
     const size = markerSize(), off = floorOffset();
     (l.markers || []).forEach((m, i) => {
@@ -538,6 +572,7 @@ function applyMode(){
   $$('.left button[data-tool], #saveModal .props input, #saveModal .props textarea').forEach(x => { x.disabled = view; });
   const c = $('#compass'); if(c) c.style.display = view ? 'none' : '';
   const mc = $('#markerCtl'); if(mc) mc.style.display = view ? 'none' : '';
+  const st = $('#stage'); if(st) st.classList.toggle('mode-view', view);
 }
 
 /* Координаты точки в системе координат плана — с учётом масштаба и поворота. */
@@ -954,11 +989,6 @@ async function exportPdf(){
 }
 
 /* ---------- новый дворец ---------- */
-function isBlankPalace(){
-  return !state.levels.length && !state.dirty &&
-         state.name === 'Новый дворец памяти' &&
-         !state.purpose && !state.source && !state.explain && !state.notes;
-}
 function flash(msg){
   status(msg);
   const t = document.querySelector('.title');
@@ -977,26 +1007,31 @@ function resetPalace(){
   renderPending();
   render();
 }
-function finishNewPalace(){
+function finishNewPalace(name){
   resetPalace();
-  flash('Создан новый дворец');
-  const n = $('#palaceName');
-  if(n && !n.disabled){ n.focus(); if(n.select) n.select(); }
+  state.name = String(name == null ? '' : name).trim() || 'Новый дворец памяти';
+  render();
+  flash('Дворец «' + state.name + '» создан — добавьте планы этажей');
+  openPlansModal();
+}
+/* Создание дворца идёт по шагам: сначала название, сразу после него — окно
+   добавления этажей, чтобы не оставлять пользователя перед пустым холстом. */
+function askNewPalaceName(){
+  ask('Как назвать новый дворец памяти?', finishNewPalace, {
+    title: 'Новый дворец',
+    yes: 'Далее',
+    no: 'Отмена',
+    input: 'Новый дворец памяти',
+    placeholder: 'Название дворца',
+    onNo: () => status('Создание нового дворца отменено')
+  });
 }
 function newPalace(){
-  /* Дворец уже пустой — сбрасывать нечего, поэтому сразу ведём к загрузке планов:
-     иначе нажатие выглядит как «кнопка не работает». */
-  if(isBlankPalace()){
-    resetPalace();
-    flash('Новый дворец готов — загрузите планы этажей');
-    openPlansModal();
-    return;
-  }
   if(state.dirty){
-    ask('Есть несохранённые изменения. Создать новый дворец?', finishNewPalace, { yes:'Создать новый' });
+    ask('Есть несохранённые изменения. Создать новый дворец?', askNewPalaceName, { yes:'Создать новый' });
     return;
   }
-  finishNewPalace();
+  askNewPalaceName();
 }
 
 /* ---------- обработчики верхней панели ----------
@@ -1065,6 +1100,11 @@ on('#applyPlans', 'click', () => {
 /* ---------- холст ---------- */
 on('#stage', 'dblclick', e => { e.preventDefault(); });
 on('#stage', 'click', e => {
+  /* Маркер появляется только от щелчка. Если между нажатием и отпусканием мышь
+     проехала по холсту, это была протяжка — ставить ничего не нужно. */
+  const dragged = !!(stageDown && stageDown.moved);
+  stageDown = null;
+  if(dragged) return;
   if(e.detail > 1) return; /* второй клик двойного нажатия не создаёт лишний маркер */
   if(state.mode !== 'edit') return;
   const l = level(); if(!l) return;
@@ -1081,6 +1121,17 @@ on('#stage', 'click', e => {
 });
 on('#stage', 'contextmenu', e => e.preventDefault());
 on('#stage', 'mousedown', e => {
+  /* Зажатие ЛКМ по холсту не должно запускать выделение плана и соседних панелей.
+     Элементы управления исключены, иначе они потеряют фокус и набор текста. */
+  if(e.button === 0){
+    const t = e.target;
+    const interactive = t && t.closest && t.closest('input, textarea, select, button, .canvas-ctl, .floor-overlay, #compass');
+    if(!interactive){
+      e.preventDefault();
+      stageDown = { x:e.clientX, y:e.clientY, moved:false };
+    }
+    return;
+  }
   if(e.button !== 2) return;
   pan = { x:e.clientX, y:e.clientY, tx:0, ty:0 };
   const v = $('#viewport');
@@ -1090,7 +1141,21 @@ on('#stage', 'mousedown', e => {
 });
 on('#stage', 'wheel', e => { e.preventDefault(); applyZoom(state.zoom * (e.deltaY < 0 ? 1.12 : 0.89), e.clientX, e.clientY); });
 
+/* Если выделение всё же успело начаться (например, быстрый рывок мышью),
+   снимаем его, пока идёт перетаскивание по холсту. */
+function clearSelection(){
+  try{
+    const sel = window.getSelection && window.getSelection();
+    if(sel && !sel.isCollapsed && sel.removeAllRanges) sel.removeAllRanges();
+  }catch(err){}
+}
 window.onmousemove = e => {
+  if(drag || pan) clearSelection();
+  if(stageDown && !stageDown.moved &&
+     (Math.abs(e.clientX - stageDown.x) > 4 || Math.abs(e.clientY - stageDown.y) > 4)){
+    stageDown.moved = true;
+    clearSelection();
+  }
   if(pan){
     const v = $('#viewport'); if(!v) return;
     v.style.transform = 'translate(' + (pan.tx + e.clientX - pan.x) + 'px,' + (pan.ty + e.clientY - pan.y) + 'px) scale(' + state.zoom + ')';
