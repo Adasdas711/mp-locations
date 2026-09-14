@@ -148,9 +148,23 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .welcome-actions .wa-d{font-size:12px;color:var(--vscode-fg-dim);margin-top:2px}
 .crop-stage{position:relative;max-height:55vh;overflow:auto;background:#111;text-align:center;user-select:none}
 .crop-stage img{max-width:100%;display:block;margin:0 auto}
-.crop-box{position:absolute;border:2px solid var(--vscode-focus);background:rgba(0,127,212,.15);cursor:move;box-shadow:0 0 0 9999px rgba(0,0,0,.45)}
+.crop-box{position:absolute;border:2px solid var(--vscode-focus);background:rgba(0,127,212,.12);cursor:move;box-shadow:0 0 0 9999px rgba(0,0,0,.45);touch-action:none}
+.crop-handle{position:absolute;width:12px;height:12px;background:#fff;border:2px solid var(--vscode-focus);border-radius:2px;z-index:2}
+.crop-handle.nw{left:-6px;top:-6px;cursor:nwse-resize}
+.crop-handle.ne{right:-6px;top:-6px;cursor:nesw-resize}
+.crop-handle.sw{left:-6px;bottom:-6px;cursor:nesw-resize}
+.crop-handle.se{right:-6px;bottom:-6px;cursor:nwse-resize}
+.crop-handle.n{left:50%;top:-6px;margin-left:-6px;cursor:ns-resize}
+.crop-handle.s{left:50%;bottom:-6px;margin-left:-6px;cursor:ns-resize}
+.crop-handle.w{left:-6px;top:50%;margin-top:-6px;cursor:ew-resize}
+.crop-handle.e{right:-6px;top:50%;margin-top:-6px;cursor:ew-resize}
 .field-row{display:flex;gap:8px;align-items:center;margin:8px 0}
 .field-row input[type=text],.field-row input:not([type]){flex:1}
+.page-card{position:relative}
+.page-card .drag-handle,.floor-overlay .drag-handle{cursor:grab;opacity:.7;font-size:11px;padding:0 4px}
+.page-card.dragging-card,.floor-overlay button.dragging-floor{opacity:.45}
+.floor-overlay{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.floor-overlay button{display:inline-flex;align-items:center;gap:4px}
 .tour-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--vscode-sidebar-bg);border-bottom:1px solid var(--vscode-tab-border);flex-shrink:0}
 .tour-toolbar input{flex:1;min-width:0;background:var(--vscode-input-bg);color:var(--text);border:1px solid var(--vscode-input-border);border-radius:2px;padding:6px 10px;font-size:13px}
 .tour-toolbar input:focus{border-color:var(--vscode-focus);outline:none}
@@ -159,8 +173,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tour{display:none;flex-direction:column;background:var(--vscode-editor-bg);min-width:0}
 .tour-body{flex:1;position:relative;min-height:0;background:#1f1f1f}
 .tour-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#1f1f1f}
-.tour-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;color:var(--vscode-fg-dim);font-size:13px;line-height:1.6}
+.tour-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;color:var(--vscode-fg-dim);font-size:13px;line-height:1.6;z-index:2}
 .tour-empty strong{display:block;color:var(--vscode-fg);font-size:20px;margin-bottom:12px;font-weight:400}
+.tour-status{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;z-index:3;background:var(--vscode-editor-bg);color:var(--vscode-fg-dim);font-size:13px;line-height:1.55}
+.tour-status.show{display:flex}
+.tour-status strong{display:block;font-size:18px;font-weight:500;margin-bottom:10px;color:var(--vscode-fg)}
+.tour-status.err strong{color:#f14c4c}
+.tour-status .ts-url{margin-top:10px;font-size:11px;word-break:break-all;opacity:.75;max-width:90%}
+.tour-status .ts-actions{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.tour-body iframe.is-loading{opacity:.35}
+.tour-body iframe.has-error{opacity:0;pointer-events:none}
 
 /* STAGE */
 .stage{flex:1;position:relative;overflow:hidden;cursor:crosshair;user-select:none;-webkit-user-select:none;-ms-user-select:none;background:#0d0f12;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:24px 24px}
@@ -460,7 +482,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     </section>
     <aside class="tour" id="tourPanel">
       <div class="tour-toolbar">
-        <input id="tourUrl" placeholder="iGUIDE или Matterport: my.matterport.com/show/?m=…" aria-label="Ссылка на 3D-тур"/>
+        <input id="tourUrl" placeholder="Любая https-ссылка на 3D: Matterport, iGUIDE, Zillow…" aria-label="Ссылка на 3D-тур"/>
         <button class="primary" id="tourApply">Открыть</button>
         <button type="button" id="tourDownload" title="Как скачать Offline iGUIDE">Скачать</button>
         <span class="tour-host" id="tourHost"></span>
@@ -468,10 +490,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="tour-body" id="tourBody">
         <div class="tour-empty" id="tourEmpty">
           <strong>3D-тур</strong>
-          Вставьте ссылку на тур iGUIDE и нажмите «Открыть».<br/>
-          <span class="small">iGUIDE: youriguide.com/… · Matterport: my.matterport.com/show/?m=…</span><br/><br/>
-          <span class="small">План этажа загружается отдельно на вкладке «План дворца».</span>
+          Вставьте ссылку на тур и нажмите «Открыть».<br/>
+          <span class="small">Любая https-ссылка: Matterport, iGUIDE, Zillow, Kuula…</span><br/><br/>
+          <span class="small">Планы этажей — вкладка «План» или форма нового файла.</span>
         </div>
+        <div class="tour-status" id="tourStatus" hidden></div>
       </div>
     </aside>
   </main>
@@ -547,9 +570,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <div class="modal" id="modal"><div class="dialog wide">
   <h2 id="modalTitle">Новый дворец</h2>
   <p class="small" id="planHint">Загрузите планы этажей и при желании укажите 3D-тур.</p>
-  <div class="field"><label for="wizardTourUrl">Ссылка на 3D-тур (iGUIDE / Matterport)</label>
-    <input id="wizardTourUrl" placeholder="https://my.matterport.com/show/?m=… или youriguide.com/…"/>
+  <div class="field"><label for="wizardTourUrl">Ссылка на 3D-тур (любой сервис)</label>
+    <input id="wizardTourUrl" placeholder="https://… Matterport, iGUIDE, Zillow, Kuula, CloudPano…"/>
   </div>
+  <p class="small">Этажи можно менять местами (⋮⋮). Вставка плана из буфера: Ctrl+V. Обрезка — ✂ с изменением размера рамки.</p>
   <div id="pending"></div>
   <div class="drop" id="drop" tabindex="0">Перетащите PNG/JPG/PDF сюда<br/>или выберите файлы</div>
   <div style="text-align:right"><button id="closeModal">Отмена</button> <button class="primary" id="applyPlans">Создать / добавить</button></div>
@@ -557,7 +581,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 <div class="modal" id="cropModal"><div class="dialog wide">
   <h2>Обрезать изображение</h2>
-  <p class="small">Потяните рамку · затем «Применить»</p>
+  <p class="small">Перемещайте рамку и тяните за углы/края, чтобы изменить область · затем «Применить»</p>
   <div class="crop-stage" id="cropStage"></div>
   <div style="text-align:right;margin-top:10px"><button id="cropCancel">Отмена</button> <button class="primary" id="cropApply">Применить</button></div>
 </div></div>
@@ -762,12 +786,29 @@ function render(){
 function renderFloorOverlay(){
   const box = $('#floorOverlay'); if(!box) return;
   box.innerHTML = '';
+  let dragLi = null;
   state.levels.forEach((l, i) => {
     const b = document.createElement('button');
     b.className = (i === state.active ? 'active' : '');
-    b.textContent = 'Этаж #' + (i + 1);
-    b.title = l && l.name ? l.name : 'Этаж #' + (i + 1);
+    b.draggable = true;
+    b.dataset.li = String(i);
+    b.innerHTML = '<span class="drag-handle" title="Перетащить этаж">⋮⋮</span> Этаж #' + (i + 1);
+    b.title = (l && l.name ? l.name : 'Этаж #' + (i + 1)) + ' · перетащите, чтобы изменить порядок';
     b.onclick = e => { e.stopPropagation(); selectLevel(i); };
+    b.ondragstart = e => {
+      dragLi = i;
+      b.classList.add('dragging-floor');
+      try{ e.dataTransfer.setData('text/plain', String(i)); e.dataTransfer.effectAllowed = 'move'; }catch(err){}
+      e.stopPropagation();
+    };
+    b.ondragend = () => b.classList.remove('dragging-floor');
+    b.ondragover = e => { e.preventDefault(); e.stopPropagation(); };
+    b.ondrop = e => {
+      e.preventDefault(); e.stopPropagation();
+      const from = dragLi != null ? dragLi : Number(e.dataTransfer.getData('text/plain'));
+      moveLevel(from, i);
+      dragLi = null;
+    };
     box.appendChild(b);
   });
   const add = document.createElement('button');
@@ -1102,18 +1143,35 @@ function closePlansModal(){
   const m = $('#modal'); if(m) m.classList.remove('show');
   pending = []; renderPending();
 }
+function movePending(from, to){
+  if(from === to || from < 0 || to < 0 || from >= pending.length || to >= pending.length) return;
+  const [item] = pending.splice(from, 1);
+  pending.splice(to, 0, item);
+  renderPending();
+}
+function moveLevel(from, to){
+  if(from === to || from < 0 || to < 0 || from >= state.levels.length || to >= state.levels.length) return;
+  const [item] = state.levels.splice(from, 1);
+  state.levels.splice(to, 0, item);
+  if(state.active === from) state.active = to;
+  else if(from < state.active && to >= state.active) state.active--;
+  else if(from > state.active && to <= state.active) state.active++;
+  touch(); render();
+}
 function renderPending(){
   const box = $('#pending'); if(!box) return;
-  if(!pending.length){ box.innerHTML = '<div class="small">Страницы пока не добавлены.</div>'; return; }
+  if(!pending.length){ box.innerHTML = '<div class="small">Страницы пока не добавлены. Перетащите файлы, выберите или нажмите Ctrl+V.</div>'; return; }
   box.innerHTML = pending.map((x, i) =>
-    '<div class="page-card">' +
+    '<div class="page-card" draggable="true" data-pi="' + i + '">' +
+      '<div class="page-name"><span class="drag-handle" title="Перетащить">⋮⋮</span> ' + esc(x.name) + ' <span class="small">#' + (i + 1) + '</span></div>' +
       '<img alt="" src="' + x.src + '">' +
-      '<div class="page-name">' + esc(x.name) + '</div>' +
       '<div class="page-ops">' +
-        '<button class="icon-action" data-act="crop" data-i="' + i + '" title="Обрезать" aria-label="Обрезать">✂</button>' +
-        '<button class="icon-action" data-act="rotate" data-i="' + i + '" title="Повернуть страницу" aria-label="Повернуть">↻</button>' +
-        '<button class="icon-action" data-act="flip" data-i="' + i + '" title="Отразить по горизонтали" aria-label="Отразить">⇄</button>' +
-        '<button class="icon-action danger" data-act="delete" data-i="' + i + '" title="Удалить страницу" aria-label="Удалить">🗑</button>' +
+        '<button class="icon-action" data-act="up" data-i="' + i + '" title="Выше" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
+        '<button class="icon-action" data-act="down" data-i="' + i + '" title="Ниже" ' + (i >= pending.length - 1 ? 'disabled' : '') + '>↓</button>' +
+        '<button class="icon-action" data-act="crop" data-i="' + i + '" title="Обрезать">✂</button>' +
+        '<button class="icon-action" data-act="rotate" data-i="' + i + '" title="Повернуть">↻</button>' +
+        '<button class="icon-action" data-act="flip" data-i="' + i + '" title="Отразить">⇄</button>' +
+        '<button class="icon-action danger" data-act="delete" data-i="' + i + '" title="Удалить">🗑</button>' +
       '</div>' +
       '<div class="page-adj">' +
         '<label>Яркость <input type="range" min="50" max="150" value="' + (x.brightness || 100) + '" data-adj="brightness" data-i="' + i + '"></label>' +
@@ -1121,10 +1179,34 @@ function renderPending(){
       '</div>' +
     '</div>'
   ).join('');
-  $$('#pending [data-act]').forEach(b => { b.onclick = () => pageEdit(Number(b.dataset.i), b.dataset.act); });
+  $$('#pending [data-act]').forEach(b => {
+    b.onclick = () => {
+      const i = Number(b.dataset.i);
+      if(b.dataset.act === 'up'){ movePending(i, i - 1); return; }
+      if(b.dataset.act === 'down'){ movePending(i, i + 1); return; }
+      pageEdit(i, b.dataset.act);
+    };
+  });
   $$('#pending [data-adj]').forEach(inp => {
     inp.oninput = () => previewAdjust(Number(inp.dataset.i), inp.dataset.adj, inp.value, inp);
     inp.onchange = () => pageEdit(Number(inp.dataset.i), inp.dataset.adj, inp.value);
+  });
+  let dragPi = null;
+  $$('#pending .page-card').forEach(card => {
+    card.ondragstart = e => {
+      dragPi = Number(card.dataset.pi);
+      card.classList.add('dragging-card');
+      try{ e.dataTransfer.setData('text/plain', String(dragPi)); e.dataTransfer.effectAllowed = 'move'; }catch(err){}
+    };
+    card.ondragend = () => card.classList.remove('dragging-card');
+    card.ondragover = e => { e.preventDefault(); try{ e.dataTransfer.dropEffect = 'move'; }catch(err){} };
+    card.ondrop = e => {
+      e.preventDefault();
+      const to = Number(card.dataset.pi);
+      const from = dragPi != null ? dragPi : Number(e.dataTransfer.getData('text/plain'));
+      movePending(from, to);
+      dragPi = null;
+    };
   });
 }
 function previewAdjust(i, kind, value, input){
@@ -1139,59 +1221,65 @@ function openCropEditor(i){
   const x = pending[i]; if(!x) return;
   const modal = $('#cropModal'), stage = $('#cropStage');
   if(!modal || !stage) return;
-  cropState = { i: i, x: 0.1, y: 0.1, w: 0.8, h: 0.8, dragging: null };
+  cropState = { i: i, x: 0.1, y: 0.1, w: 0.8, h: 0.8 };
   stage.innerHTML = '';
   const img = document.createElement('img');
   img.src = x.src;
+  img.draggable = false;
   img.onload = () => {
     stage.appendChild(img);
     const box = document.createElement('div');
     box.className = 'crop-box';
     box.id = 'cropBox';
+    ['nw','n','ne','e','se','s','sw','w'].forEach(h => {
+      const d = document.createElement('div');
+      d.className = 'crop-handle ' + h;
+      d.dataset.handle = h;
+      box.appendChild(d);
+    });
     stage.appendChild(box);
+    const clamp = () => {
+      cropState.w = Math.max(0.04, Math.min(1, cropState.w));
+      cropState.h = Math.max(0.04, Math.min(1, cropState.h));
+      cropState.x = Math.max(0, Math.min(1 - cropState.w, cropState.x));
+      cropState.y = Math.max(0, Math.min(1 - cropState.h, cropState.y));
+    };
     const sync = () => {
-      const r = img.getBoundingClientRect(), sr = stage.getBoundingClientRect();
-      const left = img.offsetLeft + cropState.x * img.offsetWidth;
-      const top = img.offsetTop + cropState.y * img.offsetHeight;
-      box.style.left = left + 'px';
-      box.style.top = top + 'px';
+      clamp();
+      box.style.left = (img.offsetLeft + cropState.x * img.offsetWidth) + 'px';
+      box.style.top = (img.offsetTop + cropState.y * img.offsetHeight) + 'px';
       box.style.width = (cropState.w * img.offsetWidth) + 'px';
       box.style.height = (cropState.h * img.offsetHeight) + 'px';
     };
     sync();
-    let start = null;
-    box.onmousedown = e => {
+    const startDrag = (mode, e) => {
       e.preventDefault(); e.stopPropagation();
-      start = { mx: e.clientX, my: e.clientY, x: cropState.x, y: cropState.y };
+      const st = { mx: e.clientX, my: e.clientY, x: cropState.x, y: cropState.y, w: cropState.w, h: cropState.h };
       const move = ev => {
-        if(!start) return;
-        const dx = (ev.clientX - start.mx) / img.offsetWidth;
-        const dy = (ev.clientY - start.my) / img.offsetHeight;
-        cropState.x = Math.max(0, Math.min(1 - cropState.w, start.x + dx));
-        cropState.y = Math.max(0, Math.min(1 - cropState.h, start.y + dy));
-        sync();
-      };
-      const up = () => { start = null; window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
-      window.addEventListener('mousemove', move);
-      window.addEventListener('mouseup', up);
-    };
-    img.onmousedown = e => {
-      e.preventDefault();
-      const r = img.getBoundingClientRect();
-      const x0 = (e.clientX - r.left) / r.width, y0 = (e.clientY - r.top) / r.height;
-      const move = ev => {
-        const x1 = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
-        const y1 = Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height));
-        cropState.x = Math.min(x0, x1); cropState.y = Math.min(y0, y1);
-        cropState.w = Math.abs(x1 - x0); cropState.h = Math.abs(y1 - y0);
-        if(cropState.w < 0.05) cropState.w = 0.05;
-        if(cropState.h < 0.05) cropState.h = 0.05;
+        const dx = (ev.clientX - st.mx) / Math.max(1, img.offsetWidth);
+        const dy = (ev.clientY - st.my) / Math.max(1, img.offsetHeight);
+        if(mode === 'move'){
+          cropState.x = st.x + dx; cropState.y = st.y + dy;
+        }else{
+          let x = st.x, y = st.y, w = st.w, h = st.h;
+          if(mode.indexOf('w') >= 0){ x = st.x + dx; w = st.w - dx; }
+          if(mode.indexOf('e') >= 0){ w = st.w + dx; }
+          if(mode.indexOf('n') >= 0){ y = st.y + dy; h = st.h - dy; }
+          if(mode.indexOf('s') >= 0){ h = st.h + dy; }
+          if(w < 0.04){ if(mode.indexOf('w') >= 0) x = st.x + st.w - 0.04; w = 0.04; }
+          if(h < 0.04){ if(mode.indexOf('n') >= 0) y = st.y + st.h - 0.04; h = 0.04; }
+          cropState.x = x; cropState.y = y; cropState.w = w; cropState.h = h;
+        }
         sync();
       };
       const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
       window.addEventListener('mousemove', move);
       window.addEventListener('mouseup', up);
     };
+    box.addEventListener('mousedown', e => {
+      if(e.target && e.target.dataset && e.target.dataset.handle) startDrag(e.target.dataset.handle, e);
+      else startDrag('move', e);
+    });
   };
   modal.classList.add('show');
 }
@@ -1638,25 +1726,17 @@ function normalizeTourUrl(raw){
   if(!/^https?:\/\//i.test(v)) v = 'https://' + v;
   let u;
   try{ u = new URL(v); }catch(err){ throw new Error('Это не похоже на ссылку'); }
+  if(u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('Нужна http(s)-ссылка');
   let host = u.hostname.toLowerCase();
-  u.protocol = 'https:';
 
-  /* —— Matterport —— */
+  /* Matterport — канонический showcase */
   if(isMatterportHost(host)){
-    host = 'my.matterport.com';
-    u.hostname = host;
     let id = u.searchParams.get('m') || '';
     if(!id){
       const pathId = u.pathname.match(/\/(?:show|embed)\/([A-Za-z0-9_-]{6,})/i);
       if(pathId) id = pathId[1];
     }
-    if(!id){
-      /* иногда вставляют только ID модели */
-      const bare = String(raw).trim().match(/^([A-Za-z0-9_-]{8,14})$/);
-      if(bare) id = bare[1];
-    }
-    if(!id) throw new Error('В ссылке Matterport нет id модели (параметр m=…)');
-    /* Канон: Showcase URL. mls и прочие query сохраняем, кроме дублей m */
+    if(!id) throw new Error('В ссылке Matterport нет id модели (m=…)');
     const keep = [];
     u.searchParams.forEach((val, key) => {
       if(key.toLowerCase() === 'm') return;
@@ -1667,19 +1747,22 @@ function normalizeTourUrl(raw){
     return out;
   }
 
-  /* —— iGUIDE —— */
-  if(host === 'manage.youriguide.com') host = 'youriguide.com';
-  if(!TOUR_HOSTS.test(host)){
-    throw new Error('Поддерживаются youriguide.com и my.matterport.com/show/?m=…');
+  /* iGUIDE — embed + api */
+  if(isIguideHost(host) || TOUR_HOSTS.test(host)){
+    if(host === 'manage.youriguide.com') host = 'youriguide.com';
+    u.protocol = 'https:';
+    u.hostname = host;
+    if(!/^\/embed\//.test(u.pathname)){
+      u.pathname = '/embed' + (u.pathname.charAt(0) === '/' ? '' : '/') + u.pathname;
+    }
+    u.pathname = u.pathname.replace(/\/+$/, '') + '/';
+    const parts = (u.search || '').replace(/^\?/, '').split('&').filter(Boolean);
+    if(!parts.some(x => x === 'api' || x.indexOf('api=') === 0)) parts.push('api');
+    return u.origin + u.pathname + (parts.length ? '?' + parts.join('&') : '');
   }
-  u.hostname = host;
-  if(!/^\/embed\//.test(u.pathname)){
-    u.pathname = '/embed' + (u.pathname.charAt(0) === '/' ? '' : '/') + u.pathname;
-  }
-  u.pathname = u.pathname.replace(/\/+$/, '') + '/';
-  const parts = (u.search || '').replace(/^\?/, '').split('&').filter(Boolean);
-  if(!parts.some(x => x === 'api' || x.indexOf('api=') === 0)) parts.push('api');
-  return u.origin + u.pathname + (parts.length ? '?' + parts.join('&') : '');
+
+  /* Любой другой сервис (Zillow, Kuula, CloudPano, …): URL как есть */
+  return u.href;
 }
 /* Адрес вида (viewPath) — для View API iGUIDE; у Matterport path = model id */
 function tourViewPath(url){
@@ -2367,6 +2450,32 @@ function applyTourWidth(){
   panel.style.width = panel.classList.contains('open') ? state.tourWidth + 'px' : '';
 }
 
+let tourLoadTimer = null;
+let tourLoadToken = 0;
+function showTourStatus(kind, title, detail, url){
+  const el = $('#tourStatus');
+  if(!el) return;
+  if(!kind || kind === 'ok' || kind === 'hide'){
+    el.classList.remove('show', 'err');
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  el.classList.add('show');
+  el.classList.toggle('err', kind === 'error');
+  const safeUrl = url ? '<div class="ts-url">' + esc(url) + '</div>' : '';
+  const actions = kind === 'error'
+    ? '<div class="ts-actions"><button type="button" class="primary" id="tourRetryBtn">Повторить</button>' +
+      '<button type="button" id="tourOpenExtBtn">Открыть в новой вкладке</button></div>'
+    : '';
+  el.innerHTML = '<strong>' + esc(title || '') + '</strong>' +
+    (detail ? '<div>' + detail + '</div>' : '') + safeUrl + actions;
+  const retry = $('#tourRetryBtn');
+  if(retry) retry.onclick = () => { if(state.tour){ const f = ensureTourFrame(); if(f){ delete f.dataset.tourUrl; setTourFrameSrc(state.tour); } } };
+  const ext = $('#tourOpenExtBtn');
+  if(ext) ext.onclick = () => { try{ window.open(state.tour || url || '', '_blank', 'noopener'); }catch(e){} };
+}
 function ensureTourFrame(){
   const body = $('#tourBody');
   if(!body) return null;
@@ -2377,7 +2486,61 @@ function ensureTourFrame(){
     frame.setAttribute('allowfullscreen', '');
     frame.setAttribute('allow', 'fullscreen; xr-spatial-tracking; accelerometer; gyroscope');
     frame.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-    frame.title = '3D-тур iGUIDE';
+    frame.title = '3D-тур';
+    frame.addEventListener('load', () => {
+      const token = Number(frame.dataset.loadToken || 0);
+      frame.classList.remove('is-loading');
+      if(token !== tourLoadToken || !frame.dataset.tourUrl) return;
+      try{
+        /* same-origin only: about:blank / пустой документ = сбой */
+        const doc = frame.contentDocument;
+        if(doc && (!doc.body || !String(doc.body.innerHTML || '').trim())){
+          frame.classList.add('has-error');
+          showTourStatus('error', 'Ссылка не работает',
+            'Страница в окне пустая. Проверьте URL.',
+            frame.dataset.tourUrl);
+          status('3D-тур: пустой ответ');
+          return;
+        }
+      }catch(err){
+        /* cross-origin — норма для чужих туров */
+      }
+      frame.classList.remove('has-error');
+      showTourStatus('hide');
+      status('3D-тур загружен');
+      /* Подсказка для сервисов, часто блокирующих iframe */
+      try{
+        const h = new URL(frame.dataset.tourUrl).hostname;
+        if(/zillow\.|realtor\.|redfin\./i.test(h)){
+          setTimeout(() => {
+            if(Number(frame.dataset.loadToken) !== token) return;
+            if(frame.classList.contains('has-error')) return;
+            showTourStatus('loading', 'Если экран пустой — ссылка, скорее всего, не встраивается',
+              'Сайт может запрещать iframe. Нажмите «Открыть в новой вкладке».',
+              frame.dataset.tourUrl);
+            const el = $('#tourStatus');
+            if(el){
+              el.classList.add('show');
+              el.classList.remove('err');
+              el.innerHTML = '<strong>Если 3D пустой</strong><div>Этот сайт часто блокирует встраивание. Откройте тур снаружи или возьмите другую ссылку (Matterport / iGUIDE).</div>' +
+                '<div class="ts-url">' + esc(frame.dataset.tourUrl) + '</div>' +
+                '<div class="ts-actions"><button type="button" class="primary" id="tourOpenExtBtn2">Открыть в новой вкладке</button>' +
+                '<button type="button" id="tourDismissHint">Скрыть</button></div>';
+              const b = $('#tourOpenExtBtn2'); if(b) b.onclick = () => { try{ window.open(frame.dataset.tourUrl, '_blank', 'noopener'); }catch(e){} };
+              const d = $('#tourDismissHint'); if(d) d.onclick = () => showTourStatus('hide');
+            }
+          }, 2500);
+        }
+      }catch(e){}
+    });
+    frame.addEventListener('error', () => {
+      frame.classList.remove('is-loading');
+      frame.classList.add('has-error');
+      showTourStatus('error', 'Ссылка не работает',
+        'Не удалось загрузить страницу в окне 3D. Проверьте адрес или откройте тур во внешней вкладке.',
+        frame.dataset.tourUrl || state.tour || '');
+      status('3D-тур: ошибка загрузки');
+    });
     body.appendChild(frame);
   }
   return frame;
@@ -2386,14 +2549,45 @@ function setTourFrameSrc(url){
   const frame = ensureTourFrame();
   if(!frame) return;
   const next = String(url || '');
-  /* Не трогаем src, если URL тот же — иначе iframe перезагружается */
-  if(frame.dataset.tourUrl === next && frame.getAttribute('src')) return;
-  frame.dataset.tourUrl = next;
-  if(next) frame.src = next;
-  else{
+  if(!next){
+    if(tourLoadTimer){ clearTimeout(tourLoadTimer); tourLoadTimer = null; }
     frame.removeAttribute('src');
     delete frame.dataset.tourUrl;
+    frame.classList.remove('is-loading', 'has-error');
+    showTourStatus('hide');
+    return;
   }
+  /* Не трогаем src, если URL тот же и уже без ошибки */
+  if(frame.dataset.tourUrl === next && frame.getAttribute('src') && !frame.classList.contains('has-error')) return;
+
+  tourLoadToken++;
+  const token = tourLoadToken;
+  frame.dataset.loadToken = String(token);
+  frame.dataset.tourUrl = next;
+  frame.classList.add('is-loading');
+  frame.classList.remove('has-error');
+  showTourStatus('loading', 'Загрузка 3D…', 'Если долго не открывается — ссылка может быть недоступна или сайт запрещает встраивание.', next);
+
+  if(tourLoadTimer) clearTimeout(tourLoadTimer);
+  tourLoadTimer = setTimeout(() => {
+    if(token !== tourLoadToken) return;
+    if(frame.classList.contains('is-loading') || frame.classList.contains('has-error')){
+      frame.classList.remove('is-loading');
+      frame.classList.add('has-error');
+      showTourStatus('error', 'Ссылка не работает или не открывается здесь',
+        'Таймаут загрузки. Частые причины: неверный URL, сайт недоступен, запрет iframe (X-Frame-Options) — например у части Zillow-ссылок.',
+        next);
+      status('3D-тур: ссылка не загрузилась');
+    }
+  }, 12000);
+
+  try{ frame.src = next; }
+  catch(err){
+    frame.classList.remove('is-loading');
+    frame.classList.add('has-error');
+    showTourStatus('error', 'Ссылка не работает', esc(String(err && err.message ? err.message : err)), next);
+  }
+
 }
 function renderTour(){
   const panel = $('#tourPanel'), body = $('#tourBody'), empty = $('#tourEmpty');
@@ -2402,17 +2596,13 @@ function renderTour(){
   if(field && document.activeElement !== field) field.value = state.tour || '';
   const view = tourViewPath();
   setText('#tourHost', state.tour ? (view ? view.path : state.tour) : '');
-  const frame = body.querySelector('#tourFrame') || body.querySelector('iframe');
   if(state.tour){
+    if(empty) empty.style.display = 'none';
     ensureTourFrame();
     setTourFrameSrc(state.tour);
-    if(empty) empty.style.display = 'none';
   }else{
-    if(frame){
-      frame.removeAttribute('src');
-      delete frame.dataset.tourUrl;
-      /* iframe оставляем в DOM, чтобы при новой ссылке не плодить элементы */
-    }
+    setTourFrameSrc('');
+    showTourStatus('hide');
     if(empty) empty.style.display = '';
   }
 }
@@ -2560,33 +2750,22 @@ function resetPalace(){
   renderPending();
   render();
 }
-function finishNewPalace(name){
+function startNewPalaceWizard(){
   resetPalace();
-  state.name = String(name == null ? '' : name).trim() || 'Новый дворец памяти';
+  state.name = 'Новый дворец памяти';
   state.uiMode = 'editor';
   state.layout = 'plan';
+  setVal('#palaceName', state.name);
   render();
-  flash('Дворец «' + state.name + '» — загрузите планы и 3D');
+  status('Загрузите планы и 3D · имя файла задаётся при сохранении');
   openPlansModal(true);
-}
-/* Создание дворца идёт по шагам: сначала название, сразу после него — окно
-   добавления этажей, чтобы не оставлять пользователя перед пустым холстом. */
-function askNewPalaceName(){
-  ask('Как назвать новый дворец памяти?', finishNewPalace, {
-    title: 'Новый дворец',
-    yes: 'Далее',
-    no: 'Отмена',
-    input: 'Новый дворец памяти',
-    placeholder: 'Название дворца',
-    onNo: () => status('Создание нового дворца отменено')
-  });
 }
 function newPalace(){
   if(state.dirty){
-    ask('Есть несохранённые изменения. Создать новый дворец?', askNewPalaceName, { yes:'Создать новый' });
+    ask('Есть несохранённые изменения. Создать новый дворец?', startNewPalaceWizard, { yes:'Создать новый' });
     return;
   }
-  askNewPalaceName();
+  startNewPalaceWizard();
 }
 
 /* ---------- обработчики верхней панели ----------
@@ -2820,6 +2999,25 @@ window.onkeydown = e => {
     if(l && l.selected != null){ e.preventDefault(); deleteMarker(l.selected); }
   }
 };
+window.addEventListener('paste', async e => {
+  try{
+    const items = e.clipboardData && e.clipboardData.items;
+    if(!items || !items.length) return;
+    const files = [];
+    for(let i = 0; i < items.length; i++){
+      if(items[i].kind === 'file' && items[i].type && items[i].type.indexOf('image/') === 0){
+        const f = items[i].getAsFile();
+        if(f) files.push(f);
+      }
+    }
+    if(!files.length) return;
+    e.preventDefault();
+    const modal = $('#modal');
+    if(!modal || !modal.classList.contains('show')) openPlansModal(false);
+    await addFiles(files);
+    status('Из буфера добавлено изображений: ' + files.length);
+  }catch(err){ console.error('paste', err); }
+});
 
 $$('.tool').forEach(b => {
   if(!b.dataset.tool) return;
