@@ -31,12 +31,14 @@
   --bg:var(--vscode-editor-bg);--panel:var(--vscode-sidebar-bg);--elev:#2d2d2d;--line:var(--vscode-tab-border);
   --blue:var(--vscode-status-bg);--blue2:var(--vscode-button-hover);--text:var(--vscode-fg);--muted:var(--vscode-fg-dim);--green:#89d185;--red:#f14c4c;
   --top:30px;--tabs:35px;--bottom:35px;--status:22px;--activity:48px;--tool:32px;
+  --gap-pane:8px;--split-grip:10px;--r-pane:12px;--r-lg:12px;--r-md:8px;--r-sm:6px;
+  --split-a:50%;--split-b:50%;
   --sidebar:var(--vscode-sidebar-bg);--editor:var(--vscode-editor-bg);--tab-active:var(--vscode-tab-active-bg);--tab:var(--vscode-tab-bg)
 }
 html,body{margin:0;height:100%;overflow:hidden;background:var(--vscode-titlebar-bg);color:var(--text);
   font:13px/1.4 "Segoe WPC","Segoe UI",sans-serif}
 button,input,textarea,select{font:inherit}
-button{color:var(--text);background:var(--vscode-input-bg);border:1px solid transparent;border-radius:2px;padding:4px 10px;cursor:pointer}
+button{color:var(--text);background:var(--vscode-input-bg);border:1px solid transparent;border-radius:var(--r-sm);padding:4px 10px;cursor:pointer}
 button:hover{background:#3a3a3a}
 button:disabled{opacity:.45;cursor:not-allowed}
 button.primary{background:var(--vscode-button-bg);color:#fff;border-color:transparent;font-weight:500}
@@ -54,14 +56,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .dot{display:none}
 .title{flex:1;min-width:0;text-align:center;display:flex;justify-content:center}
 .title input{width:100%;max-width:420px;background:transparent;border:1px solid transparent;color:var(--vscode-fg-dim);
-  text-align:center;font-size:12px;padding:2px 10px;border-radius:2px;height:22px}
+  text-align:center;font-size:12px;padding:2px 10px;border-radius:var(--r-sm);height:22px}
 .title input:hover{background:rgba(255,255,255,.04)}
 .title input:focus{outline:none;border-color:var(--vscode-focus);background:var(--vscode-input-bg);color:var(--vscode-fg)}
 .title.flash input{animation:flash .5s ease-out}
 @keyframes flash{from{border-color:var(--vscode-focus);background:rgba(0,127,212,.2)}to{border-color:transparent;background:transparent}}
 @media (prefers-reduced-motion:reduce){.title.flash input{animation:none}}
 .top-actions{display:flex;align-items:center;gap:2px;-webkit-app-region:no-drag}
-.top-actions button{padding:0 10px;height:24px;font-size:12px;background:transparent;border-radius:2px;color:var(--vscode-fg)}
+.top-actions button{padding:0 10px;height:24px;font-size:12px;background:transparent;border-radius:var(--r-sm);color:var(--vscode-fg)}
 .top-actions button:hover{background:rgba(255,255,255,.08)}
 .top-actions button.primary{background:var(--vscode-button-bg);color:#fff}
 .top-actions button.primary:hover{background:var(--vscode-button-hover)}
@@ -74,7 +76,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   padding:0;flex-shrink:0;border-right:1px solid var(--vscode-tab-border)}
 .abtn{width:48px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
   background:transparent;border:0;border-radius:0;color:var(--vscode-activity-inactive);cursor:pointer;position:relative;padding:0}
-.abtn .ico{font-size:22px;line-height:1;font-weight:300}
 .abtn .albl{display:none}
 .abtn:hover{color:var(--vscode-activity-fg)}
 .abtn.active{color:var(--vscode-activity-fg)}
@@ -85,71 +86,80 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* EDITOR GROUP + TABS */
 .main-wrap{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--vscode-editor-bg)}
-.tabs{height:var(--tabs);background:var(--vscode-tab-bg);display:flex;align-items:stretch;flex-shrink:0;
+.tabs{height:var(--tabs);background:var(--vscode-tab-bg);display:flex;align-items:center;justify-content:flex-end;flex-shrink:0;
   border-bottom:1px solid var(--vscode-tab-border);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{display:flex;align-items:center;gap:6px;padding:0 12px;font-size:13px;color:var(--vscode-fg-dim);
   background:var(--vscode-tab-bg);border-right:1px solid var(--vscode-tab-border);cursor:pointer;white-space:nowrap;
   user-select:none;border:0;border-radius:0;height:100%;border-top:1px solid transparent;min-width:0}
+.tab{border-radius:var(--r-md) var(--r-md) 0 0}
 .tab:hover{color:var(--vscode-fg)}
 .tab.active{background:var(--vscode-tab-active-bg);color:var(--vscode-fg);border-top-color:var(--vscode-focus)}
-.tab .tab-ico{opacity:.85;font-size:14px}
-.tab .tab-close{opacity:0;margin-left:6px;font-size:14px;width:18px;height:18px;line-height:16px;text-align:center;border-radius:3px}
+.tab .ic{opacity:.8}
+.tab .tab-close{opacity:0;margin-left:6px;font-size:14px;width:18px;height:18px;line-height:16px;text-align:center;border-radius:var(--r-sm)}
 .tab:hover .tab-close,.tab.active .tab-close{opacity:.7}
 .tab .tab-close:hover{opacity:1;background:rgba(255,255,255,.12)}
 .main{flex:1;display:flex;min-height:0;position:relative;background:var(--vscode-editor-bg)}
 
 /* Plan tools — floating, VS Code widget look */
 .left{position:absolute;z-index:9;left:12px;top:50%;transform:translateY(-50%);width:40px;
-  background:var(--vscode-sidebar-bg);border:1px solid var(--vscode-widget-border);border-radius:6px;padding:4px;
+  background:var(--vscode-sidebar-bg);border:1px solid var(--vscode-widget-border);border-radius:var(--r-lg);padding:4px;
   display:flex;flex-direction:column;gap:2px;box-shadow:0 2px 8px rgba(0,0,0,.36)}
 .left span{display:block;height:4px}
 .tool{width:var(--tool);height:var(--tool);padding:0;font-size:14px;display:flex;align-items:center;justify-content:center;
-  border-radius:4px;background:transparent;border:0;color:var(--vscode-fg-dim)}
+  border-radius:var(--r-md);background:transparent;border:0;color:var(--vscode-fg-dim)}
 .tool:hover{background:var(--vscode-list-hover);color:var(--vscode-fg)}
 .tool.active{background:rgba(0,127,212,.28);color:#fff}
 
 /* ui modes */
 /* Layout: single plan / single tour / split (VS Code style) */
-.app[data-ui=welcome] .workbench{display:none}
-.app[data-ui=welcome] .bottom{display:none}
-.app:not([data-ui=welcome]) #welcome{display:none !important}
 .main{display:flex;min-height:0;position:relative;background:var(--vscode-editor-bg);flex:1}
 .app[data-layout=plan] #tourPanel{display:none !important}
 .app[data-layout=plan] #stage{flex:1;min-width:0}
+/* Одиночная панель отделена от краёв так же, как панели в режиме двух экранов */
+.main{padding:var(--gap-pane)}
+.app[data-layout=plan] #stage,
+.app[data-layout=tour] #tourPanel{border:1px solid var(--vscode-tab-border) !important;border-radius:var(--r-pane) !important;overflow:hidden !important}
 .app[data-layout=tour] #stage{display:none !important}
-.app[data-layout=tour] #tourPanel{display:flex !important;flex:1 !important;width:auto !important;margin:0 !important;border:0 !important;border-radius:0 !important;flex-direction:column !important;position:relative !important;overflow:hidden !important}
+.app[data-layout=tour] #tourPanel{display:flex !important;flex:1 !important;width:auto !important;margin:0 !important;flex-direction:column !important;position:relative !important;overflow:hidden !important}
 .app[data-layout=tour] .left{display:none}
 .app[data-layout=tour] .bottom{display:none}
 .app[data-layout=split] #stage,
-.app[data-layout=split] #tourPanel{display:flex !important;flex:1 1 50% !important;width:auto !important;min-width:0 !important;margin:0 !important;border:0 !important;border-radius:0 !important}
-.app[data-layout=split] #tourPanel{flex-direction:column !important;position:relative !important;overflow:hidden !important;border-left:1px solid var(--vscode-tab-border) !important}
-.app[data-layout=split] .left{display:flex}
-.app[data-layout=split-rev] #stage{order:2;border-left:1px solid var(--vscode-tab-border)}
-.app[data-layout=split-rev] #tourPanel{order:1;border-left:0 !important;border-right:1px solid var(--vscode-tab-border) !important}
-.app[data-layout=split] .bottom,.app[data-layout=split-rev] .bottom{display:flex}
 .app[data-layout=split-rev] #stage,
-.app[data-layout=split-rev] #tourPanel{display:flex !important;flex:1 1 50% !important;width:auto !important;min-width:0 !important;margin:0 !important;border-radius:0 !important}
-.app[data-layout=split-rev] #tourPanel{flex-direction:column !important;position:relative !important;overflow:hidden !important}
-.app[data-layout=split-rev] .left{display:flex}
+.app[data-layout=split] #tourPanel,
+.app[data-layout=split-rev] #tourPanel{display:flex !important;min-width:0 !important;margin:0 !important;
+  border:1px solid var(--vscode-tab-border) !important;border-radius:var(--r-pane) !important;overflow:hidden !important}
+.app[data-layout=split] #tourPanel,
+.app[data-layout=split-rev] #tourPanel{flex-direction:column !important;position:relative !important}
+/* доли панелей задаются переменными, поэтому ширину можно тянуть мышью */
+.app[data-layout=split] #stage{flex:1 1 var(--split-a,50%) !important;order:1}
+.app[data-layout=split] #splitter{order:2}
+.app[data-layout=split] #tourPanel{flex:1 1 var(--split-b,50%) !important;order:3}
+.app[data-layout=split-rev] #tourPanel{flex:1 1 var(--split-a,50%) !important;order:1}
+.app[data-layout=split-rev] #splitter{order:2}
+.app[data-layout=split-rev] #stage{flex:1 1 var(--split-b,50%) !important;order:3}
+.app[data-layout=split] .left,.app[data-layout=split-rev] .left{display:flex}
+.app[data-layout=split] .bottom,.app[data-layout=split-rev] .bottom{display:flex}
+/* отступ вокруг панелей — «воздух» между планом и 3D */
+.app[data-layout=split] .main,.app[data-layout=split-rev] .main{padding:var(--gap-pane);gap:0}
+
+/* РАЗДЕЛИТЕЛЬ */
+.splitter{display:none;flex:0 0 var(--split-grip);align-self:stretch;position:relative;cursor:col-resize;
+  touch-action:none;user-select:none;background:transparent;z-index:8}
+.app[data-layout=split] #splitter,.app[data-layout=split-rev] #splitter{display:flex;align-items:center;justify-content:center}
+.splitter span{width:2px;height:34px;border-radius:var(--r-sm);background:var(--vscode-widget-border);transition:background .12s,height .12s}
+.splitter:hover span,.splitter.dragging span{background:var(--vscode-focus);height:64px}
+.splitter:focus-visible{outline:2px solid var(--vscode-focus);outline-offset:-2px}
+.app.resizing{cursor:col-resize}
+.app.resizing .tour-body,.app.resizing iframe{pointer-events:none}
 .tabs-actions{margin-left:auto;display:flex;align-items:center;gap:2px;padding-right:6px}
-.tabs-actions button{height:28px;padding:0 8px;font-size:12px;background:transparent;border:0;color:var(--vscode-fg-dim);border-radius:2px}
+.tabs-actions button{height:28px;padding:0 8px;font-size:12px;background:transparent;border:0;color:var(--vscode-fg-dim);border-radius:var(--r-sm)}
 .tabs-actions button:hover{background:rgba(255,255,255,.08);color:var(--vscode-fg)}
 .tabs-actions button.on{color:var(--vscode-fg);background:rgba(255,255,255,.06)}
-.welcome{flex:1;display:flex;align-items:center;justify-content:center;background:var(--vscode-editor-bg);min-height:0}
-.welcome-card{max-width:520px;width:90%;text-align:left;padding:32px 28px}
-.welcome-card h1{font-size:26px;font-weight:300;color:var(--vscode-fg);margin:0 0 8px}
-.welcome-card .sub{color:var(--vscode-fg-dim);margin-bottom:28px;font-size:13px}
-.welcome-actions{display:flex;flex-direction:column;gap:10px}
-.welcome-actions button{text-align:left;padding:14px 16px;background:var(--vscode-sidebar-bg);border:1px solid var(--vscode-tab-border);border-radius:6px;display:flex;align-items:flex-start;gap:12px}
-.welcome-actions button:hover{background:var(--vscode-list-hover);border-color:var(--vscode-focus)}
-.welcome-actions .wa-ico{font-size:22px;line-height:1;width:28px;text-align:center}
-.welcome-actions .wa-t{font-size:14px;color:var(--vscode-fg);font-weight:500}
-.welcome-actions .wa-d{font-size:12px;color:var(--vscode-fg-dim);margin-top:2px}
 .crop-stage{position:relative;max-height:55vh;overflow:auto;background:#111;text-align:center;user-select:none}
 .crop-stage img{max-width:100%;display:block;margin:0 auto}
 .crop-box{position:absolute;border:2px solid var(--vscode-focus);background:rgba(0,127,212,.12);cursor:move;box-shadow:0 0 0 9999px rgba(0,0,0,.45);touch-action:none}
-.crop-handle{position:absolute;width:12px;height:12px;background:#fff;border:2px solid var(--vscode-focus);border-radius:2px;z-index:2}
+.crop-handle{position:absolute;width:12px;height:12px;background:#fff;border:2px solid var(--vscode-focus);border-radius:var(--r-sm);z-index:2}
 .crop-handle.nw{left:-6px;top:-6px;cursor:nwse-resize}
 .crop-handle.ne{right:-6px;top:-6px;cursor:nesw-resize}
 .crop-handle.sw{left:-6px;bottom:-6px;cursor:nesw-resize}
@@ -164,9 +174,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .page-card .drag-handle,.floor-overlay .drag-handle{cursor:grab;opacity:.7;font-size:11px;padding:0 4px}
 .page-card.dragging-card,.floor-overlay button.dragging-floor{opacity:.45}
 .floor-overlay{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.floor-overlay button{display:inline-flex;align-items:center;gap:4px}
+.floor-overlay button{display:inline-flex;align-items:center;gap:4px;position:relative;padding-right:6px}
+.floor-del{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:2px;border-radius:var(--r-sm);
+  color:var(--vscode-fg-mute);opacity:0;transition:opacity .12s,background .12s;cursor:pointer}
+.floor-overlay button:hover .floor-del,.floor-overlay button.active .floor-del{opacity:.75}
+.floor-del:hover{opacity:1 !important;background:rgba(241,76,76,.22);color:#f14c4c}
 .tour-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--vscode-sidebar-bg);border-bottom:1px solid var(--vscode-tab-border);flex-shrink:0}
-.tour-toolbar input{flex:1;min-width:0;background:var(--vscode-input-bg);color:var(--text);border:1px solid var(--vscode-input-border);border-radius:2px;padding:6px 10px;font-size:13px}
+.tour-toolbar input{flex:1;min-width:0;background:var(--vscode-input-bg);color:var(--text);border:1px solid var(--vscode-input-border);border-radius:var(--r-sm);padding:6px 10px;font-size:13px}
 .tour-toolbar input:focus{border-color:var(--vscode-focus);outline:none}
 .tour-toolbar .primary{padding:6px 14px}
 .tour-host{font-size:12px;color:var(--vscode-fg-mute);max-width:28%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -174,7 +188,30 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tour-body{flex:1;position:relative;min-height:0;background:#1f1f1f}
 .tour-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#1f1f1f}
 .tour-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;color:var(--vscode-fg-dim);font-size:13px;line-height:1.6;z-index:2}
-.tour-empty strong{display:block;color:var(--vscode-fg);font-size:20px;margin-bottom:12px;font-weight:400}
+.tour-empty strong{display:block;color:var(--vscode-fg);font-size:20px;margin-bottom:10px;font-weight:400}
+.tour-empty{overflow:auto}
+.guide{max-width:560px;text-align:left;margin:auto}
+.guide-lead{margin:0 0 14px;font-size:12.5px;color:var(--vscode-fg-dim)}
+.guide-steps{margin:0 0 14px;padding-left:20px;font-size:12.5px;line-height:1.75}
+.guide-steps li{margin-bottom:3px}
+.guide-steps b{color:var(--vscode-fg);font-weight:600}
+.guide kbd{display:inline-block;padding:1px 5px;border:1px solid var(--vscode-widget-border);border-bottom-width:2px;
+  border-radius:var(--r-sm);background:var(--vscode-sidebar-bg);color:var(--vscode-fg);font-size:11px;font-family:inherit}
+.guide code{background:rgba(255,255,255,.07);border-radius:var(--r-sm);padding:1px 5px;font-size:11.5px;color:var(--vscode-fg)}
+.guide code.copy{cursor:pointer;border:1px solid transparent;transition:background .12s,border-color .12s}
+.guide code.copy:hover{background:rgba(0,127,212,.2);border-color:var(--vscode-focus)}
+.guide code.copy:focus-visible{outline:2px solid var(--vscode-focus);outline-offset:1px}
+.guide code.copy.copied{background:rgba(137,209,133,.22);border-color:#89d185;color:#cfeecd}
+.guide-hint{float:right;text-transform:none;letter-spacing:0;font-size:10.5px;opacity:.7}
+.guide code i{font-style:normal;opacity:.55}
+.guide-title{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--vscode-fg-mute);margin:0 0 6px}
+.guide-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+.guide-table td{padding:5px 8px 5px 0;border-bottom:1px solid var(--vscode-tab-border);vertical-align:middle}
+.guide-table td:first-child{color:var(--vscode-fg);white-space:nowrap;width:1%}
+.guide-table td.ok,.guide-table td.no{text-align:right;white-space:nowrap;font-size:11px}
+.guide-table td.ok{color:#89d185}
+.guide-table td.no{color:#e0a24a}
+.guide-note{margin:0;font-size:11.5px;line-height:1.65;color:var(--vscode-fg-mute)}
 .tour-status{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;z-index:3;background:var(--vscode-editor-bg);color:var(--vscode-fg-dim);font-size:13px;line-height:1.55}
 .tour-status.show{display:flex}
 .tour-status strong{display:block;font-size:18px;font-weight:500;margin-bottom:10px;color:var(--vscode-fg)}
@@ -188,6 +225,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .stage{flex:1;position:relative;overflow:hidden;cursor:crosshair;user-select:none;-webkit-user-select:none;-ms-user-select:none;background:#0d0f12;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:24px 24px}
 .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;z-index:10}
 .empty strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
+.empty-actions{display:flex;gap:8px;justify-content:center;margin-top:16px}
+.empty-actions button{display:inline-flex;align-items:center;gap:7px;padding:9px 14px}
 .viewport{position:absolute;inset:0;transform-origin:0 0}
 .plan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 10px 32px #000;user-select:none;cursor:crosshair}
 .stage.mode-view{cursor:default}
@@ -203,24 +242,24 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .section h3{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:0 0 7px}
 .field{margin:6px 0}
 .field label{display:block;color:var(--muted);font-size:10px;margin-bottom:3px}
-.field input,.field textarea,.field select{width:100%;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:6px 7px}
+.field input,.field textarea,.field select{width:100%;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:var(--r-md);padding:6px 7px}
 .field textarea{min-height:72px;resize:vertical}
 .row{display:flex;gap:5px}
 .row>*{flex:1}
 
 /* FLOOR OVERLAY — compact chips */
-.floor-overlay{position:absolute;right:10px;top:10px;z-index:11;display:flex;flex-direction:column;gap:3px;background:#191c20ee;padding:4px;border:1px solid var(--line);border-radius:6px;max-height:calc(100% - 20px);overflow:auto}
+.floor-overlay{position:absolute;right:10px;top:10px;z-index:11;display:flex;flex-direction:column;gap:3px;background:#191c20ee;padding:4px;border:1px solid var(--line);border-radius:var(--r-lg);max-height:calc(100% - 20px);overflow:auto}
 .floor-overlay button{padding:4px 8px;font-size:11px}
 .floor-overlay button.active{color:var(--blue);border-color:var(--blue)}
 .floor-overlay .add{border-style:dashed}
 
 /* 3D-ТУР iGUIDE */
 .tour{position:relative;width:0;flex-shrink:0;background:var(--panel);display:flex;flex-direction:column;transition:width .2s,margin .2s;overflow:hidden}
-.tour.open{margin:8px 8px 8px 10px;border:1px solid var(--line);border-radius:10px}
+.tour.open{margin:8px 8px 8px 10px;border:1px solid var(--line);border-radius:14px}
 .tour.resizing{transition:none;user-select:none}
 .tour-resizer{position:absolute;left:-10px;top:0;bottom:0;width:12px;z-index:3;cursor:col-resize;touch-action:none;display:none}
 .tour.open .tour-resizer{display:block}
-.tour-resizer::before{content:'';position:absolute;left:3px;top:50%;width:2px;height:34px;margin-top:-17px;border-radius:2px;background:var(--line)}
+.tour-resizer::before{content:'';position:absolute;left:3px;top:50%;width:2px;height:34px;margin-top:-17px;border-radius:var(--r-sm);background:var(--line)}
 .tour-resizer:hover::before,.tour.resizing .tour-resizer::before{background:var(--blue)}
 .tour.resizing .tour-body{pointer-events:none}
 .tsec{border-bottom:1px solid var(--line);flex-shrink:0}
@@ -232,7 +271,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tsec.closed .tsec-body{display:none}
 .tsec-note{margin-left:auto;text-transform:none;letter-spacing:0;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
 .tour-head{display:flex;align-items:center;gap:6px;padding:7px 8px}
-.tour-head input{flex:1;min-width:0;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:5px 7px;font-size:11px}
+.tour-head input{flex:1;min-width:0;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:var(--r-md);padding:5px 7px;font-size:11px}
 .tour-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 8px;font-size:10.5px;color:var(--muted)}
 .tour-bar button{padding:4px 7px;font-size:11px}
 .tour-bar label{display:flex;align-items:center;gap:5px;white-space:nowrap}
@@ -241,13 +280,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .marker.pinned::after{content:'';position:absolute;right:-3px;bottom:-3px;width:8px;height:8px;border-radius:50%;background:#4da3ff;border:1.5px solid #0d0f12}
 .tour-info{max-height:190px;overflow:auto;padding:2px 8px 8px;font-size:10.5px}
 .tour-info[hidden]{display:none}
-.ti-floor{padding:4px 5px;border-radius:5px;cursor:pointer}
+.ti-floor{padding:4px 5px;border-radius:var(--r-md);cursor:pointer}
 .ti-floor:hover{background:#ffffff08}
 .ti-floor.cur{background:rgba(77,163,255,.14)}
 .ti-floor b{font-size:11px}
 .ti-floor span{color:var(--muted)}
 .ti-rooms{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.ti-room{padding:2px 6px;border:1px solid var(--line);border-radius:10px;color:var(--muted);white-space:nowrap}
+.ti-room{padding:2px 6px;border:1px solid var(--line);border-radius:14px;color:var(--muted);white-space:nowrap}
 .ti-room i{font-style:normal;opacity:.7}
 .tour-body{flex:1;position:relative;min-height:0}
 .tour-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#0d0f12}
@@ -277,13 +316,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .path-stroke{fill:none;stroke:#ffb800;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
 .path-stroke-soft{fill:none;stroke:rgba(0,0,0,.45);stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
 .path-hit{fill:none;stroke:transparent;stroke-width:14;stroke-linecap:round;stroke-linejoin:round;pointer-events:stroke;cursor:crosshair}
-.path-way{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:2px;background:#ffb800;border:2px solid #fff;
+.path-way{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:var(--r-sm);background:#ffb800;border:2px solid #fff;
   box-shadow:0 1px 6px #000a;z-index:4;cursor:grab;transform:rotate(var(--mrot,0deg))}
 .path-way:hover,.path-way.dragging{background:#fff;border-color:#ffb800}
 .tool.on-path{color:#ffb800!important}
 /* Диагностика postMessage от iGUIDE */
 .tour-diag{position:absolute;left:8px;right:8px;bottom:8px;z-index:4;max-height:42%;overflow:auto;
-  background:#0d0f12f2;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:10.5px/1.4 ui-monospace,Menlo,monospace;color:var(--muted);
+  background:#0d0f12f2;border:1px solid var(--line);border-radius:var(--r-lg);padding:8px 10px;font:10.5px/1.4 ui-monospace,Menlo,monospace;color:var(--muted);
   pointer-events:auto;display:none;box-shadow:0 6px 18px #000a}
 .tour-diag.show{display:block}
 .tour-diag .td-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;color:var(--text);font-weight:700}
@@ -292,11 +331,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tour-diag .td-log{max-height:160px;overflow:auto;border-top:1px solid var(--line);padding-top:4px}
 .tour-diag .td-log div{border-bottom:1px solid #ffffff08;padding:2px 0;white-space:pre-wrap;word-break:break-all}
 .tour-hint{position:absolute;left:8px;right:8px;top:8px;z-index:3;padding:8px 10px;background:#191c20ee;border:1px solid var(--blue);
-  border-radius:8px;font-size:11px;line-height:1.4;color:var(--text);pointer-events:none;display:none}
+  border-radius:var(--r-lg);font-size:11px;line-height:1.4;color:var(--text);pointer-events:none;display:none}
 .tour-hint.show{display:block}
 /* Двухшаговая привязка: клик по плану → навести объект → клик по зоне над туром */
 .tour-bind-zone{position:absolute;left:10px;right:10px;bottom:10px;z-index:5;display:none;
-  padding:12px 14px;border-radius:10px;border:2px solid var(--blue);background:rgba(13,15,18,.92);
+  padding:12px 14px;border-radius:14px;border:2px solid var(--blue);background:rgba(13,15,18,.92);
   color:var(--text);font-size:12.5px;line-height:1.35;cursor:pointer;text-align:center;
   box-shadow:0 6px 22px #000c;pointer-events:auto;user-select:none}
 .tour-bind-zone.show{display:block}
@@ -314,13 +353,32 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .bottom>b{display:none}
 .route{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;scroll-behavior:smooth;padding:2px}
 .route::-webkit-scrollbar{display:none}
-.route .r{min-width:34px;height:34px;border-radius:50%;background:#ffb800;color:#16110a;border:2px solid #fff;font-weight:800;font-size:12px;cursor:grab;transition:transform .18s,box-shadow .18s}
+.route .r{position:relative;flex-shrink:0;width:34px;min-width:34px;height:34px;padding:0;border-radius:50%;background:#ffb800;color:#16110a;
+  border:2px solid #fff;font-weight:800;font-size:12px;cursor:grab;display:inline-flex;align-items:center;justify-content:center;
+  transition:transform .18s,box-shadow .18s}
+/* значок привязки к туру — точкой в углу, а не внутри числа */
+.route .r .rb{position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;border-radius:50%;background:var(--vscode-editor-bg);
+  display:flex;align-items:center;justify-content:center;color:var(--vscode-focus);pointer-events:none}
+.route .r .rb .ic{width:9px;height:9px;stroke-width:2}
 .route .r:hover{transform:translateY(-2px) scale(1.06);box-shadow:0 4px 12px #0008}
 .route .r:active{cursor:grabbing;transform:scale(.95)}
-.route .r.dragging{opacity:.45}
-.route .r.drop-before::before,.route .r.drop-after::before{content:'';position:absolute;top:-3px;bottom:-3px;width:3px;border-radius:2px;background:var(--blue);box-shadow:0 0 8px var(--blue)}
-.route .r.drop-before::before{left:-6px}
-.route .r.drop-after::before{right:-6px}
+.route .r.dragging{display:none}          /* переносимый локус уходит с ленты — его место показывает просвет */
+.route.dnd .r:hover,.route.dnd .r:active{transform:none;box-shadow:none}
+.route.dnd .r{cursor:grabbing}
+/* Место вставки — не полоска, а настоящий просвет между фишками с номером
+   перетаскиваемого локуса: видно, куда он встанет. */
+.rslot{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:34px;height:34px;border-radius:50%;
+  border:2px dashed var(--fc,#ffb800);color:var(--fc,#ffb800);font-size:12px;font-weight:800;
+  background:rgba(255,255,255,.05);animation:slotIn .16s cubic-bezier(.16,1,.3,1)}
+@keyframes slotIn{from{width:0;opacity:0;margin-left:-6px;margin-right:-6px}to{width:34px;opacity:1;margin:0}}
+/* Соседи, между которыми встанет локус */
+.route .r.neighbor{outline:2px dashed var(--vscode-focus);outline-offset:3px}
+.rgroup.no-drop{opacity:.45;cursor:not-allowed}
+.rgroup.drop-target{border-color:var(--vscode-focus);background:rgba(0,127,212,.1)}
+/* Те же роли на плане: что переносим и между чем оно встанет */
+.marker.route-moving{outline:3px solid var(--vscode-focus);outline-offset:3px;animation:routePulse 1.1s ease-out infinite}
+@keyframes routePulse{0%{box-shadow:0 0 0 0 rgba(0,127,212,.6)}70%,100%{box-shadow:0 0 0 14px rgba(0,127,212,0)}}
+.marker.route-neighbor{outline:2px dashed #fff;outline-offset:3px;filter:brightness(1.15)}
 .route .r.sel{outline:2px solid var(--blue);outline-offset:2px}
 .rgroup{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:3px 9px 3px 7px;border:1px solid rgba(255,255,255,.09);border-radius:22px}
 .rgroup.current{border-color:var(--fc);background:rgba(255,255,255,.05)}
@@ -347,17 +405,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
 .modal.show{display:flex}
 #askModal{z-index:40;background:#000c}
-#askInput{width:100%;margin:0 0 14px;padding:8px 9px;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:5px}
+#askInput{width:100%;margin:0 0 14px;padding:8px 9px;background:#111316;color:var(--text);border:1px solid var(--line);border-radius:var(--r-md)}
 #askInput:focus{outline:none;border-color:var(--blue)}
 #askInput[hidden]{display:none}
-.dialog{width:min(960px,96vw);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column}
+.dialog{width:min(960px,96vw);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column}
 .dialog.narrow{width:min(560px,96vw)}
 .dialog.wide{width:min(1240px,98vw)}
 
 /* ЭЛЕМЕНТЫ УПРАВЛЕНИЯ НА ХОЛСТЕ */
-.canvas-ctl{position:absolute;z-index:11;display:flex;align-items:center;gap:8px;background:#191c20ee;border:1px solid var(--line);border-radius:8px;padding:7px 10px;box-shadow:0 6px 18px #0009}
+.canvas-ctl{position:absolute;z-index:11;display:flex;align-items:center;gap:8px;background:#191c20ee;border:1px solid var(--line);border-radius:var(--r-lg);padding:7px 10px;box-shadow:0 6px 18px #0009}
 .canvas-ctl label{color:var(--muted);font-size:10.5px;white-space:nowrap}
 .canvas-ctl input,.canvas-ctl output{user-select:auto;-webkit-user-select:auto}
+.ctl-sep{width:1px;align-self:stretch;background:var(--vscode-widget-border);margin:0 2px}
+.ctl-check{display:flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer}
+.ctl-check input{width:auto}
 .canvas-ctl input[type=range]{width:120px;accent-color:var(--blue)}
 .canvas-ctl output{font-size:11px;font-weight:700;min-width:26px;text-align:right}
 #markerCtl{left:12px;bottom:12px}
@@ -369,20 +430,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .compass svg{display:block;width:100%;height:100%}
 .compass .needle{transform-box:fill-box;transform-origin:50% 50%}
 .compass-val{position:absolute;left:0;right:0;bottom:7px;display:flex;align-items:center;justify-content:center;gap:1px;font-size:10.5px;color:var(--muted)}
-.compass-val input{width:30px;padding:1px 2px;background:transparent;border:1px solid transparent;border-radius:4px;color:var(--text);font:inherit;font-weight:700;text-align:right}
+.compass-val input{width:30px;padding:1px 2px;background:transparent;border:1px solid transparent;border-radius:var(--r-md);color:var(--text);font:inherit;font-weight:700;text-align:right}
 .compass-val input:hover{border-color:var(--line)}
 .compass-val input:focus{outline:none;border-color:var(--blue);background:#0d0f12}
 .dialog h2{font-size:16px;margin:0 0 4px}
 .dialog #pending{display:flex;flex-direction:column;gap:10px;overflow:auto;flex:1;margin:10px 0}
-.drop{border:1px dashed var(--line);padding:16px;text-align:center;color:var(--muted);margin:8px 0 0;border-radius:6px;cursor:pointer;flex:0 0 auto;transition:background .15s,color .15s,border-color .15s}
+.drop{border:1px dashed var(--line);padding:16px;text-align:center;color:var(--muted);margin:8px 0 0;border-radius:var(--r-lg);cursor:pointer;flex:0 0 auto;transition:background .15s,color .15s,border-color .15s}
 .drop:hover,.drop:focus-visible{background:rgba(77,163,255,.12);border-color:var(--blue);color:var(--blue)}
 .drop.over{background:rgba(77,163,255,.2);border-color:var(--blue);color:var(--text)}
 /* PAGE CARDS — во всю ширину, друг под другом, управление поверх изображения */
-.page-card{position:relative;width:100%;flex:0 0 auto;background:#0d0f12;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.page-card{position:relative;width:100%;flex:0 0 auto;background:#0d0f12;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
 .page-card img{display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;background:#0d0f12}
-.page-name{position:absolute;left:8px;top:8px;max-width:50%;padding:4px 8px;background:#191c20e6;border:1px solid var(--line);border-radius:5px;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.page-ops{position:absolute;right:8px;top:8px;display:flex;gap:6px;background:#191c20e6;border:1px solid var(--line);border-radius:6px;padding:4px}
-.page-adj{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;background:#191c20e6;border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+.page-name{position:absolute;left:8px;top:8px;max-width:50%;padding:4px 8px;background:#191c20e6;border:1px solid var(--line);border-radius:var(--r-md);font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page-ops{position:absolute;right:8px;top:8px;display:flex;gap:6px;background:#191c20e6;border:1px solid var(--line);border-radius:var(--r-lg);padding:4px}
+.page-adj{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;background:#191c20e6;border:1px solid var(--line);border-radius:var(--r-lg);padding:7px 9px}
 .page-adj label{display:flex;align-items:center;gap:7px;justify-content:space-between;font-size:10.5px;color:var(--muted)}
 .page-adj input[type=range]{width:120px}
 .page-card button{padding:4px 7px;font-size:11px}
@@ -393,9 +454,42 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .save-grid button{text-align:left;padding:9px 11px}
 .check{display:flex;align-items:center;gap:7px;margin:5px 0;font-size:11.5px;color:var(--text)}
 .check input{width:auto}
+
+/* ИКОНКИ: плоская 2D-графика одной толщины, без подписей */
+.ic{width:16px;height:16px;display:block;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.ic.lg{width:20px;height:20px}
+.ic.sm{width:13px;height:13px}
+button .ic{pointer-events:none}
 </style></head>
 <body>
-<div class="app" data-ui="welcome" data-layout="plan" id="appRoot">
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><defs>
+<symbol id="i-plan" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M6.4 2.5v11"/></symbol>
+<symbol id="i-cube" viewBox="0 0 16 16"><path d="M8 1.8 13.8 5v6L8 14.2 2.2 11V5z"/><path d="M2.2 5 8 8l5.8-3M8 8v6.2"/></symbol>
+<symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.2v9.6M3.2 8h9.6"/></symbol>
+<symbol id="i-minus" viewBox="0 0 16 16"><path d="M3.2 8h9.6"/></symbol>
+<symbol id="i-folder" viewBox="0 0 16 16"><path d="M1.8 12.8V3.2h4.3l1.5 2h6.6v7.6z"/></symbol>
+<symbol id="i-save" viewBox="0 0 16 16"><path d="M2.5 2.5h8.1l2.9 2.9v8.1h-11z"/><path d="M5.2 2.5v4h5.1v-4M5.2 13.5V9.7h5.6v3.8"/></symbol>
+<symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.6V2.4M4.9 5.5 8 2.4l3.1 3.1"/><path d="M2.6 10.4v3.2h10.8v-3.2"/></symbol>
+<symbol id="i-split" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M8 3v10"/></symbol>
+<symbol id="i-window" viewBox="0 0 16 16"><rect x="2" y="2.6" width="11" height="11" rx="1.5"/><path d="M2 5.8h11"/><path d="M9.4 9.6 13.8 5.2M11 5.2h2.8V8"/></symbol>
+<symbol id="i-swap" viewBox="0 0 16 16"><path d="M2.8 5.6h9.4M9.8 3.2 12.2 5.6 9.8 8"/><path d="M13.2 10.4H3.8M6.2 8 3.8 10.4 6.2 12.8"/></symbol>
+<symbol id="i-cursor" viewBox="0 0 16 16"><path d="M4 2.6 12.2 8 8.4 8.7 7 12.4z"/></symbol>
+<symbol id="i-pin" viewBox="0 0 16 16"><circle cx="8" cy="6.4" r="2.9"/><path d="M8 9.3v4.1"/></symbol>
+<symbol id="i-path" viewBox="0 0 16 16"><path d="M3 12.4 6.3 7.2l3.3 2.6 3.4-6"/><circle cx="3" cy="12.4" r="1.2"/><circle cx="13" cy="3.8" r="1.2"/></symbol>
+<symbol id="i-fit" viewBox="0 0 16 16"><path d="M2.4 5.6V2.6h3M13.6 5.6V2.6h-3M2.4 10.4v3h3M13.6 10.4v3h-3"/></symbol>
+<symbol id="i-arrow-up" viewBox="0 0 16 16"><path d="M8 13V3.4M4.5 6.9 8 3.4l3.5 3.5"/></symbol>
+<symbol id="i-arrow-down" viewBox="0 0 16 16"><path d="M8 3v9.6M4.5 9.1 8 12.6l3.5-3.5"/></symbol>
+<symbol id="i-crop" viewBox="0 0 16 16"><path d="M4.6 1.6v10h10M1.6 4.6h10v10"/></symbol>
+<symbol id="i-rotate" viewBox="0 0 16 16"><path d="M13.2 8a5.2 5.2 0 1 1-1.7-3.9"/><path d="M13.4 1.9v3.2h-3.2"/></symbol>
+<symbol id="i-flip" viewBox="0 0 16 16"><path d="M8 1.8v12.4"/><path d="M6.2 4.8 3 8l3.2 3.2z"/><path d="M9.8 4.8 13 8l-3.2 3.2z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.8 4.4h10.4M6.4 4.4V2.8h3.2v1.6M4.4 4.4l.7 9h5.8l.7-9"/></symbol>
+<symbol id="i-grip" viewBox="0 0 16 16"><path d="M6 3.6h.01M6 8h.01M6 12.4h.01M10 3.6h.01M10 8h.01M10 12.4h.01" stroke-width="2.2"/></symbol>
+<symbol id="i-dot" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.2"/><circle cx="8" cy="8" r="6.6" opacity=".45"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 16 16"><path d="M2.8 8h10.4M9.8 4.6 13.2 8l-3.4 3.4"/></symbol>
+<symbol id="i-turn-cw" viewBox="0 0 16 16"><path d="M3.4 8.6a4.6 4.6 0 1 0 1.5-3.5"/><path d="M4.6 1.8v3.5h3.5"/></symbol>
+<symbol id="i-turn-ccw" viewBox="0 0 16 16"><path d="M12.6 8.6a4.6 4.6 0 1 1-1.5-3.5"/><path d="M11.4 1.8v3.5H7.9"/></symbol>
+</defs></svg>
+<div class="app" data-ui="editor" data-layout="plan" id="appRoot">
   <header class="top">
     <div class="menubar">
       <button type="button" class="menu-item" id="menuFile" title="Файл">Файл</button>
@@ -408,55 +502,42 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     </div>
     <input accept=".mplace,.zip" hidden="" id="fileOpen" type="file"/>
   </header>
-  <div class="welcome" id="welcome">
-    <div class="welcome-card">
-      <h1>PALACE</h1>
-      <div class="sub">Редактор дворцов памяти · план + 3D-тур</div>
-      <div class="welcome-actions">
-        <button type="button" id="welcomeNew">
-          <span class="wa-ico">＋</span>
-          <span><div class="wa-t">Новый файл</div><div class="wa-d">Создать дворец: загрузить планы и ссылку на 3D</div></span>
-        </button>
-        <button type="button" id="welcomeOpen">
-          <span class="wa-ico">📂</span>
-          <span><div class="wa-t">Открыть файл</div><div class="wa-d">Открыть проект .mplace</div></span>
-        </button>
-      </div>
-    </div>
-  </div>
   <div class="workbench">
     <nav class="activity" aria-label="Режимы">
-      <button type="button" class="abtn active" data-ui="plan" id="abPlan" title="План дворца"><span class="ico">◫</span><span class="albl">План</span></button>
-      <button type="button" class="abtn" data-ui="tour" id="abTour" title="3D-тур"><span class="ico">◉</span><span class="albl">3D</span></button>
+      <button type="button" class="abtn active" data-ui="plan" id="abPlan" title="План дворца"><svg class="ic"><use href="#i-plan"/></svg></button>
+      <button type="button" class="abtn" data-ui="tour" id="abTour" title="3D-тур"><svg class="ic"><use href="#i-cube"/></svg></button>
       <div class="ab-sep"></div>
-      <button type="button" class="abtn" id="newBtn" title="Новый дворец"><span class="ico">＋</span></button>
-      <button type="button" class="abtn" id="openBtn" title="Открыть .mplace"><span class="ico">📂</span></button>
-      <button type="button" class="abtn primary-act" id="abSave" title="Сохранить"><span class="ico">💾</span></button>
+      <button type="button" class="abtn" id="newBtn" title="Новый дворец"><svg class="ic"><use href="#i-plus"/></svg></button>
+      <button type="button" class="abtn" id="openBtn" title="Открыть .mplace"><svg class="ic"><use href="#i-folder"/></svg></button>
+      <button type="button" class="abtn primary-act" id="abSave" title="Сохранить"><svg class="ic"><use href="#i-save"/></svg></button>
       <div class="ab-spacer"></div>
-      <button type="button" class="abtn" id="abUpload" title="Загрузить планы"><span class="ico">⬆</span></button>
+      <button type="button" class="abtn" id="abUpload" title="Загрузить планы"><svg class="ic"><use href="#i-upload"/></svg></button>
     </nav>
     <div class="main-wrap">
       <div class="tabs" role="tablist">
-        <button type="button" class="tab active" data-ui="plan" id="tabPlan"><span class="tab-ico">◫</span> План дворца</button>
-        <button type="button" class="tab" data-ui="tour" id="tabTour"><span class="tab-ico">◉</span> 3D-тур</button>
         <div class="tabs-actions">
-          <button type="button" id="btnSplit" title="Разделить редактор справа (как в VS Code)">⊟ Разделить</button>
-          <button type="button" id="btnSwapPanes" title="Поменять панели местами" hidden>⇄</button>
+          <button type="button" id="btnSplit" title="Разделить: план и 3D рядом" aria-label="Разделить"><svg class="ic"><use href="#i-split"/></svg></button>
+          <button type="button" id="btnSwapPanes" title="Поменять панели местами" aria-label="Поменять панели местами" hidden><svg class="ic"><use href="#i-swap"/></svg></button>
         </div>
       </div>
   <main class="main">
     <aside class="left" id="planTools">
-      <button class="tool active" data-tool="select" title="Выбор">⌁</button>
-      <button class="tool" data-tool="marker" title="Маркер">●</button>
-      <button class="tool" data-tool="path" title="Путь: показать и править изломы" id="pathTool">╱</button>
+      <button class="tool active" data-tool="select" title="Выбор" aria-label="Выбор"><svg class="ic"><use href="#i-cursor"/></svg></button>
+      <button class="tool" data-tool="marker" title="Маркер" aria-label="Маркер"><svg class="ic"><use href="#i-pin"/></svg></button>
+      <button class="tool" data-tool="path" title="Путь: показать и править изломы" id="pathTool" aria-label="Путь"><svg class="ic"><use href="#i-path"/></svg></button>
       <span style="flex:1"></span>
-      <button class="tool" id="zoomOut" title="Уменьшить">−</button>
-      <button class="tool" id="zoomIn" title="Увеличить">＋</button>
-      <button class="tool" id="resetView" title="Сбросить вид">⌂</button>
+      <button class="tool" id="zoomOut" title="Уменьшить" aria-label="Уменьшить"><svg class="ic"><use href="#i-minus"/></svg></button>
+      <button class="tool" id="zoomIn" title="Увеличить" aria-label="Увеличить"><svg class="ic"><use href="#i-plus"/></svg></button>
+      <button class="tool" id="resetView" title="Сбросить вид" aria-label="Сбросить вид"><svg class="ic"><use href="#i-fit"/></svg></button>
     </aside>
     <section class="stage" id="stage">
       <div class="floor-overlay" id="floorOverlay"></div>
-      <div class="empty" id="empty"><div><strong>Холст готов</strong>Загрузите план этажа, чтобы начать<br/><button class="primary" id="uploadBtn" style="margin-top:14px">Загрузить планы</button></div></div>
+      <div class="empty" id="empty"><div><strong>Холст пуст</strong>Откройте сохранённый дворец или добавьте планы этажей
+        <div class="empty-actions">
+          <button class="primary" id="emptyOpenFile" type="button"><svg class="ic"><use href="#i-folder"/></svg>Открыть файл</button>
+          <button id="uploadBtn" type="button"><svg class="ic"><use href="#i-upload"/></svg>Загрузить планы</button>
+        </div>
+      </div></div>
       <div class="viewport" id="viewport"><div class="plan" id="plan"></div></div>
       <div class="compass" id="compass" tabindex="0" role="slider" aria-label="Поворот плана" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0" title="Тяните по кругу, чтобы повернуть план. Двойной щелчок — сброс">
         <svg viewBox="0 0 100 100" aria-hidden="true">
@@ -478,21 +559,44 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <label for="markerSize">Размер маркера</label>
         <input id="markerSize" type="range" min="16" max="72" value="30"/>
         <output id="markerSizeVal" for="markerSize">30</output>
+        <span class="ctl-sep"></span>
+        <label class="ctl-check" title="Линия маршрута обходит стены по планировке этажа"><input checked id="routeAuto" type="checkbox"/> маршрут по плану</label>
       </div>
     </section>
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0"
+         title="Тяните, чтобы изменить ширину панелей. Двойной щелчок — поровну"><span></span></div>
     <aside class="tour" id="tourPanel">
       <div class="tour-toolbar">
         <input id="tourUrl" placeholder="Любая https-ссылка на 3D: Matterport, iGUIDE, Zillow…" aria-label="Ссылка на 3D-тур"/>
         <button class="primary" id="tourApply">Открыть</button>
+        <button type="button" id="tourWindowBtn" title="Открыть тур отдельным окном справа" aria-label="Открыть в отдельном окне"><svg class="ic"><use href="#i-window"/></svg></button>
         <button type="button" id="tourDownload" title="Как скачать Offline iGUIDE">Скачать</button>
         <span class="tour-host" id="tourHost"></span>
       </div>
       <div class="tour-body" id="tourBody">
         <div class="tour-empty" id="tourEmpty">
-          <strong>3D-тур</strong>
-          Вставьте ссылку на тур и нажмите «Открыть».<br/>
-          <span class="small">Любая https-ссылка: Matterport, iGUIDE, Zillow, Kuula…</span><br/><br/>
-          <span class="small">Планы этажей — вкладка «План» или форма нового файла.</span>
+          <div class="guide">
+            <strong>3D-тур</strong>
+            <p class="guide-lead">Вставьте ссылку на тур в поле сверху и нажмите «Открыть». Ниже — как найти эту ссылку на почти любом сайте.</p>
+            <ol class="guide-steps">
+              <li><b>Откройте страницу объявления</b> с 3D-туром (Zillow, Redfin, сайт агентства).</li>
+              <li><b>Посмотрите, чей это тур.</b> Логотип обычно виден в углу самого тура: Matterport, iGUIDE, Kuula, CloudPano.</li>
+              <li><b>Откройте инструменты разработчика</b> — <kbd>F12</kbd> или <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> (на Mac <kbd>⌥</kbd>+<kbd>⌘</kbd>+<kbd>I</kbd>), вкладка <b>Elements</b>.</li>
+              <li><b>Найдите тур в разметке:</b> <kbd>Ctrl</kbd>+<kbd>F</kbd> внутри панели и поиск по слову <code>iframe</code>, либо по названию сервиса — <code>matterport</code>, <code>youriguide</code>, <code>kuula</code>.</li>
+              <li><b>Скопируйте адрес</b> из атрибута <code>src</code> найденного <code>&lt;iframe&gt;</code> и вставьте сюда.</li>
+            </ol>
+            <p class="guide-lead">Быстрые способы без консоли: правый клик по туру → «Открыть фрейм в новой вкладке»; либо кнопка «Поделиться» у самого тура — там часто есть готовый код вставки.</p>
+            <div class="guide-title">Как выглядят ссылки <span class="guide-hint">щёлкните по образцу — скопируется</span></div>
+            <table class="guide-table">
+              <tr><td>Matterport</td><td><code class="copy" role="button" tabindex="0" data-copy="https://my.matterport.com/show/?m=ID" title="Щёлкните — образец скопируется в буфер обмена">my.matterport.com/show/?m=<i>ID</i></code></td><td class="ok">встраивается</td></tr>
+              <tr><td>iGUIDE</td><td><code class="copy" role="button" tabindex="0" data-copy="https://youriguide.com/адрес_объекта" title="Щёлкните — образец скопируется в буфер обмена">youriguide.com/<i>адрес</i></code></td><td class="ok">встраивается</td></tr>
+              <tr><td>Kuula</td><td><code class="copy" role="button" tabindex="0" data-copy="https://kuula.co/share/ID" title="Щёлкните — образец скопируется в буфер обмена">kuula.co/share/<i>ID</i></code></td><td class="ok">встраивается</td></tr>
+              <tr><td>CloudPano</td><td><code class="copy" role="button" tabindex="0" data-copy="https://app.cloudpano.com/tours/ID" title="Щёлкните — образец скопируется в буфер обмена">app.cloudpano.com/tours/<i>ID</i></code></td><td class="ok">встраивается</td></tr>
+              <tr><td>Asteroom</td><td><code class="copy" role="button" tabindex="0" data-copy="https://my.asteroom.com/player/?id=ID" title="Щёлкните — образец скопируется в буфер обмена">my.asteroom.com/player/?id=<i>ID</i></code></td><td class="ok">встраивается</td></tr>
+              <tr><td>EyeSpy360</td><td><code class="copy" role="button" tabindex="0" data-copy="https://eyespy360.com/en-gb/tour/ID" title="Щёлкните — образец скопируется в буфер обмена">eyespy360.com/…/tour/<i>ID</i></code></td><td class="ok">встраивается</td></tr>
+              <tr><td>Zillow 3D Home</td><td><code class="copy" role="button" tabindex="0" data-copy="https://www.zillow.com/view-imx/ID" title="Щёлкните — образец скопируется в буфер обмена">zillow.com/view-imx/<i>ID</i></code></td><td class="no">только отдельным окном</td></tr>
+            </table>
+</div>
         </div>
         <div class="tour-status" id="tourStatus" hidden></div>
       </div>
@@ -573,7 +677,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   <div class="field"><label for="wizardTourUrl">Ссылка на 3D-тур (любой сервис)</label>
     <input id="wizardTourUrl" placeholder="https://… Matterport, iGUIDE, Zillow, Kuula, CloudPano…"/>
   </div>
-  <p class="small">Этажи можно менять местами (⋮⋮). Вставка плана из буфера: Ctrl+V. Обрезка — ✂ с изменением размера рамки.</p>
+  <p class="small">Этажи можно менять местами перетаскиванием. Вставка плана из буфера: Ctrl+V. Обрезка — ✂ с изменением размера рамки.</p>
   <div id="pending"></div>
   <div class="drop" id="drop" tabindex="0">Перетащите PNG/JPG/PDF сюда<br/>или выберите файлы</div>
   <div style="text-align:right"><button id="closeModal">Отмена</button> <button class="primary" id="applyPlans">Создать / добавить</button></div>
@@ -688,14 +792,113 @@ function blankState(){
   const now = new Date().toISOString();
   return { version:FORMAT_VERSION, name:'Новый дворец памяти', purpose:'', source:'', explain:'', notes:'',
            created:now, edited:now, levels:[], active:0, mode:'edit', tool:'select',
-           zoom:1, rotation:0, markerSize:30, showPath:false, tour:'', tourWidth:TOUR_WIDTH_DEFAULT, tourOpen:false, uiMode:'welcome', layout:'plan', tourFollow:true, tourAutoBind:false, tourTags:true, tourYawFlip:false, tourSummary:null, panoSpots:{},
+           zoom:1, rotation:0, markerSize:30, showPath:false, routeAuto:true, wallLevel:0, splitRatio:0.5, tourForceEmbed:false, tour:'', tourWidth:TOUR_WIDTH_DEFAULT, tourOpen:false, uiMode:'editor', layout:'plan', tourFollow:true, tourAutoBind:false, tourTags:true, tourYawFlip:false, tourSummary:null, panoSpots:{},
            tourPanels:{ link:true, sync:true, info:true }, dirty:false };
 }
 const state = blankState();
 let pending = [], drag = null, pan = null, planRenderToken = 0, suppressMarkerClick = false;
 let routeDrag = null;
+/* Сквозной номер локуса — тот же, что виден на фишке и на плане */
+function routeNum(li, i){
+  return state.levels.slice(0, li).reduce((n, f) => n + ((f && f.markers) ? f.markers.length : 0), 0) + i + 1;
+}
+/* Подводит холст к локусу: считаем по фактическому положению маркера,
+   поэтому работает при любом масштабе, повороте и в разделённом экране. */
+function centerOnMarker(li, idx, animate){
+  if(li !== state.active) return false;
+  const st = $('#stage'), v = $('#viewport');
+  const el = document.querySelector('#plan .marker[data-mi="' + idx + '"]');
+  if(!st || !v || !el) return false;
+  const sr = st.getBoundingClientRect(), mr = el.getBoundingClientRect();
+  if(!sr.width || !mr.width) return false;
+  const dx = (sr.left + sr.width / 2) - (mr.left + mr.width / 2);
+  const dy = (sr.top + sr.height / 2) - (mr.top + mr.height / 2);
+  if(Math.abs(dx) < 1 && Math.abs(dy) < 1) return true;
+  let tx = 0, ty = 0;
+  const cur = getComputedStyle(v).transform;
+  if(cur && cur !== 'none' && window.DOMMatrix){
+    try{ const q = new DOMMatrix(cur); tx = q.e; ty = q.f; }catch(err){}
+  }
+  if(animate) v.style.transition = 'transform .25s ease-out';
+  v.style.transform = 'translate(' + (tx + dx) + 'px,' + (ty + dy) + 'px) scale(' + (state.zoom || 1) + ')';
+  if(animate) setTimeout(() => { v.style.transition = ''; }, 300);
+  return true;
+}
+function routeSlotEl(){
+  let el = document.getElementById('routeSlot');
+  if(!el){
+    el = document.createElement('span');
+    el.id = 'routeSlot';
+    el.className = 'rslot';
+    el.setAttribute('aria-hidden', 'true');
+  }
+  return el;
+}
+/* Подсветка на плане: что переносим и между какими локусами встанет */
+function highlightPlanForRoute(li, prevEl, nextEl){
+  $$('#plan .marker').forEach(x => x.classList.remove('route-moving', 'route-neighbor'));
+  if(!routeDrag || li !== state.active) return;
+  const moving = document.querySelector('#plan .marker[data-mi="' + routeDrag.index + '"]');
+  if(moving) moving.classList.add('route-moving');
+  [prevEl, nextEl].forEach(el => {
+    if(!el || !el.classList || !el.classList.contains('r')) return;
+    const n = document.querySelector('#plan .marker[data-mi="' + Number(el.dataset.i) + '"]');
+    if(n) n.classList.add('route-neighbor');
+  });
+}
+/* Ставит просвет в нужное место и объясняет словами, что произойдёт */
+function placeRouteSlot(li, insert, ref, after){
+  if(!routeDrag) return;
+  routeDrag.insert = insert;
+  const slot = routeSlotEl();
+  slot.textContent = String(routeNum(routeDrag.level, routeDrag.index));
+  if(ref){
+    if(after) ref.parentNode.insertBefore(slot, ref.nextSibling);
+    else ref.parentNode.insertBefore(slot, ref);
+  }
+  $$('#route .r').forEach(x => x.classList.remove('neighbor'));
+  const prev = slot.previousElementSibling, next = slot.nextElementSibling;
+  [prev, next].forEach(el => { if(el && el.classList && el.classList.contains('r')) el.classList.add('neighbor'); });
+  highlightPlanForRoute(li, prev, next);
+  const moved = routeNum(routeDrag.level, routeDrag.index);
+  const nameOf = el => (el && el.classList && el.classList.contains('r')) ? el.textContent.trim().replace(/\D+$/, '') : null;
+  const a = nameOf(prev), b = nameOf(next);
+  if(a && b) status('Локус ' + moved + ' встанет между ' + a + ' и ' + b);
+  else if(b) status('Локус ' + moved + ' встанет первым на этаже ' + (li + 1));
+  else if(a) status('Локус ' + moved + ' встанет последним на этаже ' + (li + 1));
+}
+/* Общий обработчик броска: позиция берётся из просвета, а не из классов */
+function dropRouteHere(li){
+  if(!routeDrag || routeDrag.level !== li){
+    status('Порядок меняется только внутри одного этажа');
+    clearRouteHints(); routeDrag = null;
+    return;
+  }
+  const arr = state.levels[li] && state.levels[li].markers;
+  const fi = routeDrag.index;
+  let to = routeDrag.insert == null ? fi : routeDrag.insert;
+  clearRouteHints();
+  routeDrag = null;
+  if(!arr || !arr[fi]) return;
+  if(fi < to) to--;                         /* после изъятия элемента индексы справа сдвигаются */
+  to = Math.max(0, Math.min(arr.length - 1, to));
+  if(to === fi){ status('Локус остался на месте'); return; }
+  const moved = arr.splice(fi, 1)[0];
+  arr.splice(to, 0, moved);
+  state.levels[li].selected = to;
+  touch(); render();
+  status('Локус ' + routeNum(li, to) + ' теперь ' + (to + 1) + '-й на этаже ' + (li + 1));
+  requestAnimationFrame(() => $$('#route .r').forEach((x, i) => {
+    if(x.animate) x.animate([{transform:'translateY(-10px) scale(1.18)',filter:'brightness(1.35)'},{transform:'translateY(0) scale(1)',filter:'brightness(1)'}],{duration:420,delay:i*35,easing:'cubic-bezier(.16,1,.3,1)'});
+  }));
+}
 function clearRouteHints(){
-  $$('#route .r').forEach(x => x.classList.remove('drop-before', 'drop-after', 'dragging'));
+  $$('#route .r').forEach(x => x.classList.remove('drop-before', 'drop-after', 'dragging', 'neighbor'));
+  $$('#route .rgroup').forEach(g => g.classList.remove('no-drop', 'drop-target'));
+  const routeBox = $('#route'); if(routeBox) routeBox.classList.remove('dnd');
+  $$('#plan .marker').forEach(x => x.classList.remove('route-moving', 'route-neighbor'));
+  const slot = document.getElementById('routeSlot');
+  if(slot && slot.parentNode) slot.parentNode.removeChild(slot);
 }
 let placingSpot = false;
 function setPlacingSpot(on){
@@ -792,9 +995,17 @@ function renderFloorOverlay(){
     b.className = (i === state.active ? 'active' : '');
     b.draggable = true;
     b.dataset.li = String(i);
-    b.innerHTML = '<span class="drag-handle" title="Перетащить этаж">⋮⋮</span> Этаж #' + (i + 1);
+    b.innerHTML = '<span class="drag-handle" title="Перетащить этаж"><svg class="ic sm"><use href="#i-grip"/></svg></span>Этаж #' + (i + 1);
     b.title = (l && l.name ? l.name : 'Этаж #' + (i + 1)) + ' · перетащите, чтобы изменить порядок';
     b.onclick = e => { e.stopPropagation(); selectLevel(i); };
+    b.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if(state.mode === 'edit') deleteLevel(i); };
+    const del = document.createElement('span');
+    del.className = 'floor-del';
+    del.title = 'Удалить этаж';
+    del.setAttribute('role', 'button');
+    del.innerHTML = '<svg class="ic sm"><use href="#i-trash"/></svg>';
+    del.onclick = e => { e.preventDefault(); e.stopPropagation(); deleteLevel(i); };
+    b.appendChild(del);
     b.ondragstart = e => {
       dragLi = i;
       b.classList.add('dragging-floor');
@@ -813,7 +1024,7 @@ function renderFloorOverlay(){
   });
   const add = document.createElement('button');
   add.className = 'add';
-  add.textContent = '＋ Планы';
+  add.innerHTML = '<svg class="ic sm"><use href="#i-plus"/></svg>Планы';
   add.title = 'Добавить этажи (PNG / JPG / PDF)';
   add.onclick = e => { e.stopPropagation(); openPlansModal(); };
   box.appendChild(add);
@@ -826,6 +1037,186 @@ function clearPlan(){
 }
 
 /* Точки полилинии пути: локусы + изломы toNext между ними */
+/* ---------- Маршрут, повторяющий планировку ----------
+   План разбирается на сетку проходимости: изображение уменьшается так, что одна
+   клетка ≈ 10 px плана, и усредняется. Стены — тёмные и толстые, поэтому клетка
+   с ними темнеет целиком; подписи комнат тонкие и после усреднения остаются
+   светлыми, так что текст пути не перекрывает. Дверные проёмы — разрывы в стенах,
+   они светлые и проходимы сами по себе. */
+const GRID_CELL = 10, GRID_MAX = 260;
+function buildWalkGrid(l){
+  if(!l || !l.src || !l.w || !l.h) return null;
+  const sig = (l.src.length + ':' + l.w + 'x' + l.h + ':' + (state.wallLevel || 0));
+  if(l.__grid && l.__grid.sig === sig) return l.__grid;
+  let cols = Math.max(8, Math.min(GRID_MAX, Math.round(l.w / GRID_CELL)));
+  let rows = Math.max(8, Math.min(GRID_MAX, Math.round(l.h / GRID_CELL)));
+  const c = document.createElement('canvas');
+  c.width = cols; c.height = rows;
+  const g = c.getContext('2d');
+  if(!g || !l.__img) return null;
+  try{
+    g.drawImage(l.__img, 0, 0, cols, rows);
+  }catch(err){ return null; }
+  let data;
+  try{ data = g.getImageData(0, 0, cols, rows).data; }catch(err){ return null; }
+  const n = cols * rows;
+  const blocked = new Uint8Array(n);
+  const lum = new Float32Array(n);
+  let sum = 0;
+  for(let i = 0; i < n; i++){
+    const o = i * 4;
+    const a = data[o + 3] / 255;
+    /* прозрачный фон считаем светлым, иначе PNG с альфой был бы сплошной стеной */
+    const v = a < 0.15 ? 255 : (0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2]) * a + 255 * (1 - a);
+    lum[i] = v; sum += v;
+  }
+  /* Порог от средней яркости плана: работает и на белых, и на цветных планах. */
+  const mean = sum / n;
+  const thr = Math.max(60, Math.min(200, mean * 0.72 - (Number(state.wallLevel) || 0) * 12));
+  for(let i = 0; i < n; i++) blocked[i] = lum[i] < thr ? 1 : 0;
+  /* Расстояние до ближайшей стены — чтобы линия шла серединой прохода. */
+  const dist = new Int32Array(n).fill(1e9);
+  const q = new Int32Array(n);
+  let qs = 0, qe = 0;
+  for(let i = 0; i < n; i++) if(blocked[i]){ dist[i] = 0; q[qe++] = i; }
+  while(qs < qe){
+    const i = q[qs++], x = i % cols, y = (i / cols) | 0, d = dist[i] + 1;
+    for(let k = 0; k < 4; k++){
+      const nx = x + (k === 0 ? 1 : k === 1 ? -1 : 0), ny = y + (k === 2 ? 1 : k === 3 ? -1 : 0);
+      if(nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+      const j = ny * cols + nx;
+      if(dist[j] > d){ dist[j] = d; q[qe++] = j; }
+    }
+  }
+  l.__grid = { sig, cols, rows, blocked, dist, sx: l.w / cols, sy: l.h / rows };
+  return l.__grid;
+}
+function gridIndexAt(grid, x, y){
+  const cx = Math.max(0, Math.min(grid.cols - 1, Math.floor(x / grid.sx)));
+  const cy = Math.max(0, Math.min(grid.rows - 1, Math.floor(y / grid.sy)));
+  return cy * grid.cols + cx;
+}
+/* Локус может стоять вплотную к стене — берём ближайшую свободную клетку. */
+function nearestFree(grid, idx){
+  if(!grid.blocked[idx]) return idx;
+  const cols = grid.cols, rows = grid.rows;
+  const x0 = idx % cols, y0 = (idx / cols) | 0;
+  for(let r = 1; r < 14; r++){
+    for(let dy = -r; dy <= r; dy++){
+      for(let dx = -r; dx <= r; dx++){
+        if(Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const x = x0 + dx, y = y0 + dy;
+        if(x < 0 || y < 0 || x >= cols || y >= rows) continue;
+        const j = y * cols + x;
+        if(!grid.blocked[j]) return j;
+      }
+    }
+  }
+  return -1;
+}
+/* A* по сетке: диагонали разрешены, близость к стене штрафуется. */
+function findWalkPath(grid, ax, ay, bx, by, wide){
+  const start = nearestFree(grid, gridIndexAt(grid, ax, ay));
+  const goal = nearestFree(grid, gridIndexAt(grid, bx, by));
+  if(start < 0 || goal < 0) return null;
+  if(start === goal) return [];
+  const cols = grid.cols, rows = grid.rows, n = cols * rows;
+  /* Поиск ограничен рамкой вокруг концов — на больших планах это решает скорость. */
+  const sxC = start % cols, syC = (start / cols) | 0, gxC = goal % cols, gyC = (goal / cols) | 0;
+  const pad = wide ? Math.max(cols, rows) : Math.max(12, Math.round(Math.hypot(gxC - sxC, gyC - syC) * 0.6) + 8);
+  const minX = Math.max(0, Math.min(sxC, gxC) - pad), maxX = Math.min(cols - 1, Math.max(sxC, gxC) + pad);
+  const minY = Math.max(0, Math.min(syC, gyC) - pad), maxY = Math.min(rows - 1, Math.max(syC, gyC) + pad);
+  const gScore = new Float32Array(n).fill(Infinity);
+  const came = new Int32Array(n).fill(-1);
+  const open = [start];
+  const inOpen = new Uint8Array(n);
+  const fScore = new Float32Array(n).fill(Infinity);
+  const gx = goal % cols, gy = (goal / cols) | 0;
+  const h = i => { const x = i % cols, y = (i / cols) | 0; return Math.hypot(x - gx, y - gy); };
+  gScore[start] = 0; fScore[start] = h(start); inOpen[start] = 1;
+  let guard = 0;
+  while(open.length && guard++ < 200000){
+    let bi = 0;
+    for(let k = 1; k < open.length; k++) if(fScore[open[k]] < fScore[open[bi]]) bi = k;
+    const cur = open.splice(bi, 1)[0];
+    inOpen[cur] = 0;
+    if(cur === goal){
+      const out = [];
+      let i = cur;
+      while(i !== -1){ out.push({ x: (i % cols + 0.5) * grid.sx, y: (((i / cols) | 0) + 0.5) * grid.sy }); i = came[i]; }
+      return out.reverse();
+    }
+    const cx = cur % cols, cy = (cur / cols) | 0;
+    for(let dy = -1; dy <= 1; dy++){
+      for(let dx = -1; dx <= 1; dx++){
+        if(!dx && !dy) continue;
+        const nx = cx + dx, ny = cy + dy;
+        if(nx < minX || ny < minY || nx > maxX || ny > maxY) continue;
+        const j = ny * cols + nx;
+        if(grid.blocked[j]) continue;
+        /* по диагонали нельзя «протискиваться» между двумя стенами */
+        if(dx && dy && (grid.blocked[cy * cols + nx] || grid.blocked[ny * cols + cx])) continue;
+        const step = (dx && dy) ? 1.414 : 1;
+        const clearance = 1 + 1.6 / (1 + Math.min(grid.dist[j], 6));
+        const t = gScore[cur] + step * clearance;
+        if(t < gScore[j]){
+          came[j] = cur; gScore[j] = t; fScore[j] = t + h(j);
+          if(!inOpen[j]){ inOpen[j] = 1; open.push(j); }
+        }
+      }
+    }
+  }
+  return null;
+}
+function segmentFree(grid, a, b){
+  const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / Math.min(grid.sx, grid.sy));
+  for(let i = 0; i <= steps; i++){
+    const t = steps ? i / steps : 0;
+    const idx = gridIndexAt(grid, a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+    if(grid.blocked[idx]) return false;
+  }
+  return true;
+}
+/* Убираем лишние изломы: пока видно напрямую — идём напрямую. */
+function smoothWalkPath(grid, pts){
+  if(pts.length < 3) return pts;
+  const out = [pts[0]];
+  let i = 0;
+  while(i < pts.length - 1){
+    let j = pts.length - 1;
+    for(; j > i + 1; j--) if(segmentFree(grid, pts[i], pts[j])) break;
+    out.push(pts[j]);
+    i = j;
+  }
+  return out;
+}
+/* Готовый маршрут по этажу с кэшем: пересчитывается, только когда
+   изменились локусы, ручные изломы или сам план. */
+function autoRouteFor(l){
+  if(!state.routeAuto || !l || !l.src) return null;
+  const ms = l.markers || [];
+  if(ms.length < 2) return null;
+  const sig = ms.map(m => Math.round(m.x) + ',' + Math.round(m.y) + ':' + ((m.toNext || []).length)).join('|') +
+              '#' + (l.__grid ? l.__grid.sig : '') + '#' + (state.wallLevel || 0);
+  if(l.__route && l.__route.sig === sig) return l.__route;
+  const grid = buildWalkGrid(l);
+  if(!grid) return null;
+  const segs = [];
+  let detours = 0, failed = 0;
+  for(let i = 0; i < ms.length - 1; i++){
+    const a = ms[i], b = ms[i + 1];
+    if(Array.isArray(a.toNext) && a.toNext.length){ segs.push(null); continue; } /* ручные изломы важнее */
+    if(segmentFree(grid, a, b)){ segs.push(null); continue; }                    /* и так видно напрямую */
+    let pts = findWalkPath(grid, a.x, a.y, b.x, b.y);
+    if(!pts) pts = findWalkPath(grid, a.x, a.y, b.x, b.y, true);   /* вторая попытка по всему плану */
+    if(!pts){ segs.push('none'); failed++; continue; }
+    pts = smoothWalkPath(grid, [{ x:a.x, y:a.y }].concat(pts).concat([{ x:b.x, y:b.y }]));
+    segs.push(pts.slice(1, -1));
+    detours++;
+  }
+  l.__route = { sig, segs, detours, failed };
+  return l.__route;
+}
 function buildPathNodes(l){
   const ms = (l && l.markers) ? l.markers : [];
   const nodes = [];
@@ -833,9 +1224,15 @@ function buildPathNodes(l){
     nodes.push({ x: ms[i].x, y: ms[i].y, kind: 'locus', mi: i });
     if(i < ms.length - 1){
       const mid = Array.isArray(ms[i].toNext) ? ms[i].toNext : [];
-      mid.forEach((w, wi) => {
-        if(w && isFinite(w.x) && isFinite(w.y)) nodes.push({ x: w.x, y: w.y, kind: 'way', mi: i, wi: wi });
-      });
+      if(mid.length){
+        mid.forEach((w, wi) => {
+          if(w && isFinite(w.x) && isFinite(w.y)) nodes.push({ x: w.x, y: w.y, kind: 'way', mi: i, wi: wi });
+        });
+      }else{
+        const route = autoRouteFor(l);
+        const seg = route && route.segs[i];
+        if(Array.isArray(seg)) seg.forEach(w => nodes.push({ x: w.x, y: w.y, kind: 'auto', mi: i }));
+      }
     }
   }
   return nodes;
@@ -953,6 +1350,7 @@ function drawPlan(){
     im.draggable = false;
     im.setAttribute('draggable', 'false');
     im.ondragstart = e => e.preventDefault();
+    l.__img = im;   /* нужен для разбора планировки при построении маршрута */
     p.appendChild(im);
     drawPathLayer(p, l, im.naturalWidth, im.naturalHeight);
     const size = markerSize(), off = floorOffset();
@@ -1011,7 +1409,7 @@ function renderRoute(){
       num++;
       html += '<button class="r' + (cur && l.selected === i ? ' sel' : '') + '" draggable="true" data-l="' + li + '" data-i="' + i + '"' +
               ' title="' + esc('Этаж ' + (li + 1) + ', локус ' + num + (m.pano ? ' · привязан к туру' : '')) + '">' + num +
-              (m.pano ? '<span class="rb" title="Привязан к 3D-туру">◉</span>' : '') + '</button>';
+              (m.pano ? '<span class="rb" title="Привязан к 3D-туру"><svg class="ic sm"><use href="#i-dot"/></svg></span>' : '') + '</button>';
     });
     html += '</div>';
   });
@@ -1020,48 +1418,87 @@ function renderRoute(){
   setText('#count', total + ' локусов · этаж ' + (state.active + 1) + ': ' + (cur ? (cur.markers || []).length : 0));
 
   $$('#route .rlabel').forEach(s => { s.onclick = () => selectLevel(Number(s.dataset.floor)); });
+  /* Бросок в свободное место группы ставит локус в конец этажа,
+     а чужой этаж честно показывает, что туда нельзя. */
+  $$('#route .rgroup').forEach((g, gi) => {
+    const li = Number((g.querySelector('.rlabel') || {}).dataset ? g.querySelector('.rlabel').dataset.floor : gi);
+    g.ondragover = e => {
+      if(!routeDrag) return;
+      e.preventDefault();
+      if(routeDrag.level !== li){
+        try{ e.dataTransfer.dropEffect = 'none'; }catch(err){}
+        g.classList.add('no-drop');
+        status('Порядок меняется только внутри своего этажа');
+        return;
+      }
+      g.classList.add('drop-target');
+      if(e.target && e.target.closest && e.target.closest('.r')) return; /* фишка решает сама */
+      if(document.getElementById('routeSlot') && document.getElementById('routeSlot').parentNode === g) return;
+      const chips = Array.prototype.slice.call(g.querySelectorAll('.r'));
+      const last = chips[chips.length - 1];
+      if(last) placeRouteSlot(li, chips.length, last, true);
+    };
+    g.ondragleave = e => {
+      if(e.target === g){ g.classList.remove('no-drop', 'drop-target'); }
+    };
+    g.ondrop = e => { e.preventDefault(); dropRouteHere(li); };
+  });
   $$('#route .r').forEach(b => {
     const li = Number(b.dataset.l), idx = Number(b.dataset.i);
     b.ondragstart = e => {
-      e.dataTransfer.setData('text/plain', li + ':' + idx);
-      e.dataTransfer.effectAllowed = 'move';
-      routeDrag = { level: li, index: idx };
-      b.classList.add('dragging');
+      try{
+        e.dataTransfer.setData('text/plain', li + ':' + idx);
+        e.dataTransfer.effectAllowed = 'move';
+      }catch(err){}
+      routeDrag = { level: li, index: idx, insert: idx };
+      const box = $('#route'); if(box) box.classList.add('dnd');
+      /* Холст подъезжает к переносимому локусу — видно, что именно двигаем. */
+      if(li !== state.active) selectLevel(li);
+      centerOnMarker(li, idx, true);
+      highlightPlanForRoute(li, null, null);
+      /* Прячем фишку после старта переноса, иначе браузер теряет её «призрак».
+         Ищем заново: при переходе на другой этаж лента успевает перерисоваться. */
+      setTimeout(() => {
+        if(!routeDrag) return;
+        const live = document.querySelector('#route .r[data-l="' + routeDrag.level + '"][data-i="' + routeDrag.index + '"]') || b;
+        live.classList.add('dragging');
+        const box2 = $('#route'); if(box2) box2.classList.add('dnd');
+      }, 0);
+      status('Перетащите локус ' + routeNum(li, idx) + ' на новое место в маршруте');
     };
-    b.ondragend = () => { routeDrag = null; clearRouteHints(); };
-    /* Локус встаёт МЕЖДУ фишками: сторона определяется по положению курсора
-       относительно середины фишки, туда же показывается вертикальная метка вставки. */
+    b.ondragend = () => { clearRouteHints(); routeDrag = null; };
+    b.ondragenter = e => { if(routeDrag) e.preventDefault(); };
+    /* Курсор в левой половине фишки — встать перед ней, в правой — после. */
     b.ondragover = e => {
-      e.preventDefault();
-      if(routeDrag && routeDrag.level !== li) return;
+      if(!routeDrag) return;
+      e.preventDefault(); e.stopPropagation();
+      if(routeDrag.level !== li){
+        try{ e.dataTransfer.dropEffect = 'none'; }catch(err){}
+        return;
+      }
+      try{ e.dataTransfer.dropEffect = 'move'; }catch(err){}
       const r = b.getBoundingClientRect();
-      const after = (e.clientX - r.left) > r.width/2;
-      clearRouteHints();
-      b.classList.add(after ? 'drop-after' : 'drop-before');
+      const after = (e.clientX - r.left) > r.width / 2;
+      placeRouteSlot(li, idx + (after ? 1 : 0), b, after);
     };
-    b.ondragleave = () => { b.classList.remove('drop-before', 'drop-after'); };
-    b.ondrop = e => {
-      e.preventDefault();
-      const after = b.classList.contains('drop-after');
-      clearRouteHints();
-      routeDrag = null;
-      const from = String(e.dataTransfer.getData('text/plain')).split(':');
-      const fl = Number(from[0]), fi = Number(from[1]);
-      if(fl !== li){ status('Порядок меняется только внутри одного этажа'); return; }
+    b.ondrop = e => { e.preventDefault(); e.stopPropagation(); dropRouteHere(li); };
+    /* Клавиатурная альтернатива перетаскиванию */
+    b.onkeydown = e => {
+      if(!e.altKey) return;
       const arr = state.levels[li] && state.levels[li].markers;
-      if(!arr || !arr[fi]) return;
-      let to = idx + (after ? 1 : 0);
-      if(fi < to) to--;                       /* после изъятия элемента индексы справа сдвигаются */
-      to = Math.max(0, Math.min(arr.length - 1, to));
-      if(to === fi) return;
-      const moved = arr.splice(fi, 1)[0];
+      if(!arr) return;
+      let to = null;
+      if(e.key === 'ArrowLeft') to = idx - 1;
+      else if(e.key === 'ArrowRight') to = idx + 1;
+      if(to == null || to < 0 || to >= arr.length) return;
+      e.preventDefault();
+      const moved = arr.splice(idx, 1)[0];
       arr.splice(to, 0, moved);
-      state.levels[li].selected = to;         /* перенесённый локус остаётся выбранным */
+      state.levels[li].selected = to;
       touch(); render();
-      status('Локус перемещён на позицию ' + (to + 1) + ' в этаже ' + (li + 1));
-      requestAnimationFrame(() => $$('#route .r').forEach((x, i) => {
-        if(x.animate) x.animate([{transform:'translateY(-10px) scale(1.18)',filter:'brightness(1.35)'},{transform:'translateY(0) scale(1)',filter:'brightness(1)'}],{duration:420,delay:i*35,easing:'cubic-bezier(.16,1,.3,1)'});
-      }));
+      status('Локус ' + routeNum(li, to) + ' теперь ' + (to + 1) + '-й на этаже ' + (li + 1));
+      const next = document.querySelector('#route .r[data-l="' + li + '"][data-i="' + to + '"]');
+      if(next) try{ next.focus(); }catch(err){}
     };
     b.onclick = () => {
       if(li !== state.active) selectLevel(li);
@@ -1069,8 +1506,7 @@ function renderRoute(){
       const m = l && l.markers[idx];
       if(!m) return;
       selectMarker(idx);
-      const v = $('#viewport');
-      if(v) v.style.transform = 'translate(' + (innerWidth/2 - m.x*state.zoom) + 'px,' + (innerHeight/2 - m.y*state.zoom) + 'px) scale(' + state.zoom + ')';
+      requestAnimationFrame(() => centerOnMarker(li, idx, true));
     };
   });
 }
@@ -1090,6 +1526,10 @@ function deleteMarker(i){
   touch(); render();
 }
 
+function deleteActiveLevel(){
+  if(!state.levels.length){ notify('Этажей пока нет'); return; }
+  deleteLevel(state.active);
+}
 function selectLevel(i){
   if(!state.levels[i]) return;
   state.active = i;
@@ -1149,6 +1589,24 @@ function movePending(from, to){
   pending.splice(to, 0, item);
   renderPending();
 }
+function deleteLevel(i){
+  const l = state.levels[i];
+  if(!l) return;
+  const name = l.name || ('Этаж #' + (i + 1));
+  const marks = (l.markers || []).length;
+  ask('Удалить «' + name + '»?' + (marks ? ' Вместе с ним пропадут локусы: ' + marks + '.' : ''), () => {
+    state.levels.splice(i, 1);
+    if(!state.levels.length) state.active = 0;
+    else if(state.active > i) state.active--;
+    else if(state.active === i) state.active = Math.min(i, state.levels.length - 1);
+    const cur = state.levels[state.active];
+    if(cur) cur.selected = null;
+    state.zoom = 1;
+    const v = $('#viewport'); if(v) v.style.transform = '';
+    touch(); render();
+    status('Этаж удалён: ' + name + ' · осталось этажей: ' + state.levels.length);
+  }, { yes:'Удалить', title:'Удаление этажа' });
+}
 function moveLevel(from, to){
   if(from === to || from < 0 || to < 0 || from >= state.levels.length || to >= state.levels.length) return;
   const [item] = state.levels.splice(from, 1);
@@ -1163,15 +1621,15 @@ function renderPending(){
   if(!pending.length){ box.innerHTML = '<div class="small">Страницы пока не добавлены. Перетащите файлы, выберите или нажмите Ctrl+V.</div>'; return; }
   box.innerHTML = pending.map((x, i) =>
     '<div class="page-card" draggable="true" data-pi="' + i + '">' +
-      '<div class="page-name"><span class="drag-handle" title="Перетащить">⋮⋮</span> ' + esc(x.name) + ' <span class="small">#' + (i + 1) + '</span></div>' +
+      '<div class="page-name"><span class="drag-handle" title="Перетащить"><svg class="ic sm"><use href="#i-grip"/></svg></span> ' + esc(x.name) + ' <span class="small">#' + (i + 1) + '</span></div>' +
       '<img alt="" src="' + x.src + '">' +
       '<div class="page-ops">' +
-        '<button class="icon-action" data-act="up" data-i="' + i + '" title="Выше" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
-        '<button class="icon-action" data-act="down" data-i="' + i + '" title="Ниже" ' + (i >= pending.length - 1 ? 'disabled' : '') + '>↓</button>' +
-        '<button class="icon-action" data-act="crop" data-i="' + i + '" title="Обрезать">✂</button>' +
-        '<button class="icon-action" data-act="rotate" data-i="' + i + '" title="Повернуть">↻</button>' +
-        '<button class="icon-action" data-act="flip" data-i="' + i + '" title="Отразить">⇄</button>' +
-        '<button class="icon-action danger" data-act="delete" data-i="' + i + '" title="Удалить">🗑</button>' +
+        '<button class="icon-action" data-act="up" data-i="' + i + '" title="Выше" ' + (i === 0 ? 'disabled' : '') + '><svg class="ic sm"><use href="#i-arrow-up"/></svg></button>' +
+        '<button class="icon-action" data-act="down" data-i="' + i + '" title="Ниже" ' + (i >= pending.length - 1 ? 'disabled' : '') + '><svg class="ic sm"><use href="#i-arrow-down"/></svg></button>' +
+        '<button class="icon-action" data-act="crop" data-i="' + i + '" title="Обрезать"><svg class="ic sm"><use href="#i-crop"/></svg></button>' +
+        '<button class="icon-action" data-act="rotate" data-i="' + i + '" title="Повернуть"><svg class="ic sm"><use href="#i-rotate"/></svg></button>' +
+        '<button class="icon-action" data-act="flip" data-i="' + i + '" title="Отразить"><svg class="ic sm"><use href="#i-flip"/></svg></button>' +
+        '<button class="icon-action danger" data-act="delete" data-i="' + i + '" title="Удалить"><svg class="ic sm"><use href="#i-trash"/></svg></button>' +
       '</div>' +
       '<div class="page-adj">' +
         '<label>Яркость <input type="range" min="50" max="150" value="' + (x.brightness || 100) + '" data-adj="brightness" data-i="' + i + '"></label>' +
@@ -1385,9 +1843,12 @@ function buildSerializableState(){
     tour: state.tour || '',
     tourWidth: clampTourWidth(state.tourWidth),
     tourOpen: !!state.tourOpen,
-    uiMode: state.uiMode === 'welcome' ? 'editor' : (state.uiMode || 'editor'),
+    uiMode: 'editor',
     layout: state.layout || 'plan',
+    splitRatio: clampSplit(state.splitRatio),
     showPath: !!state.showPath,
+    routeAuto: state.routeAuto !== false,
+    wallLevel: Number(state.wallLevel) || 0,
     tourFollow: state.tourFollow !== false,
     tourAutoBind: !!state.tourAutoBind,
     tourTags: state.tourTags !== false,
@@ -1515,10 +1976,13 @@ async function loadMplaceBuffer(buffer){
     tourWidth: clampTourWidth(data.tourWidth),
     tourOpen: !!data.tourOpen,
     uiMode: 'editor',
+    splitRatio: clampSplit(data.splitRatio),
     layout: (data.layout === 'tour' || data.layout === 'split' || data.layout === 'split-rev' || data.layout === 'plan')
       ? data.layout
       : (data.uiMode === 'tour' ? 'tour' : 'plan'),
     showPath: !!data.showPath,
+    routeAuto: data.routeAuto !== false,
+    wallLevel: Number(data.wallLevel) || 0,
     tourFollow: data.tourFollow !== false,
     tourAutoBind: data.tourAutoBind === true,
     tourTags: data.tourTags !== false,
@@ -2351,7 +2815,9 @@ function renderTourOverlay(){
   });
   if(away.length){
     html += '<div class="tov-jumps">' + away.slice(0, 20).map(t => {
-      const arrow = t.dir == null ? (t.m.pano != null ? '→' : '○') : (t.dir > 0 ? '↻' : '↺');
+      const arrow = '<svg class="ic sm"><use href="#' +
+        (t.dir == null ? (t.m.pano != null ? 'i-arrow-right' : 'i-dot') : (t.dir > 0 ? 'i-turn-cw' : 'i-turn-ccw')) +
+        '"/></svg>';
       const hint = t.dir != null
         ? ('Локус ' + t.num + ' — ' + (t.dir > 0 ? 'вправо' : 'влево') + ' ' + Math.round(Math.abs(t.dir)) + '°')
         : (t.m.pano != null ? ('Перейти к локусу ' + t.num) : ('Локус ' + t.num + ' не привязан'));
@@ -2452,6 +2918,64 @@ function applyTourWidth(){
 
 let tourLoadTimer = null;
 let tourLoadToken = 0;
+/* Сайты, которые запрещают встраивание заголовком ответа: iframe у них
+   гарантированно останется пустым, поэтому тур сразу открывается окном. */
+const NO_EMBED_HOSTS = /(^|\.)(zillow|redfin|realtor|trulia|homes)\.com$/i;
+function cannotEmbed(url){
+  try{ return NO_EMBED_HOSTS.test(new URL(url).hostname); }catch(err){ return false; }
+}
+let tourWin = null;
+/* Окно прижимается к правой половине экрана, чтобы план и 3D было видно разом. */
+function openTourWindow(url, silent){
+  const target = url || state.tour;
+  if(!target){ notify('Сначала вставьте ссылку на тур'); return null; }
+  try{
+    if(tourWin && !tourWin.closed){
+      tourWin.focus();
+      if(tourWin.location && String(tourWin.location.href) !== target){
+        try{ tourWin.location.href = target; }catch(e){}
+      }
+      if(!silent) status('3D-тур уже открыт в отдельном окне');
+      return tourWin;
+    }
+  }catch(err){ /* окно с чужого домена — читать его нельзя, это нормально */ }
+  const sw = (typeof screen !== 'undefined' && screen.availWidth) ? screen.availWidth : 1280;
+  const sh = (typeof screen !== 'undefined' && screen.availHeight) ? screen.availHeight : 800;
+  const w = Math.max(720, Math.round(sw * 0.52));
+  const h = Math.max(520, Math.round(sh * 0.92));
+  const feats = 'width=' + w + ',height=' + h + ',left=' + Math.round(sw - w) + ',top=0,noopener,resizable=yes,scrollbars=yes';
+  try{ tourWin = window.open(target, 'palace3d', feats); }catch(err){ tourWin = null; }
+  if(!tourWin){
+    notify('Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этой страницы и нажмите «Открыть в окне» ещё раз.');
+    return null;
+  }
+  if(!silent) status('3D-тур открыт в отдельном окне');
+  return tourWin;
+}
+function showTourWindowCard(url){
+  const el = $('#tourStatus');
+  if(!el) return;
+  let host = url;
+  try{ host = new URL(url).hostname.replace(/^www\./, ''); }catch(err){}
+  el.hidden = false;
+  el.classList.add('show');
+  el.classList.remove('err');
+  el.innerHTML = '<strong>Тур открыт в отдельном окне</strong>' +
+    '<div>' + esc(host) + ' запрещает встраивание, поэтому вместо пустого экрана тур открывается окном рядом. ' +
+    'Расположите его справа — план и 3D будут видны одновременно.</div>' +
+    '<div class="ts-url">' + esc(url) + '</div>' +
+    '<div class="ts-actions"><button type="button" class="primary" id="tourWinAgain">Показать окно</button>' +
+    '<button type="button" id="tourWinEmbed">Всё равно попробовать встроить</button></div>';
+  const again = $('#tourWinAgain');
+  if(again) again.onclick = () => openTourWindow(url);
+  const emb = $('#tourWinEmbed');
+  if(emb) emb.onclick = () => {
+    const f = ensureTourFrame();
+    if(f){ delete f.dataset.tourUrl; }
+    state.tourForceEmbed = true;
+    setTourFrameSrc(url);
+  };
+}
 function showTourStatus(kind, title, detail, url){
   const el = $('#tourStatus');
   if(!el) return;
@@ -2598,8 +3122,13 @@ function renderTour(){
   setText('#tourHost', state.tour ? (view ? view.path : state.tour) : '');
   if(state.tour){
     if(empty) empty.style.display = 'none';
-    ensureTourFrame();
-    setTourFrameSrc(state.tour);
+    if(cannotEmbed(state.tour) && !state.tourForceEmbed){
+      setTourFrameSrc('');          /* пустой iframe не показываем вовсе */
+      showTourWindowCard(state.tour);
+    }else{
+      ensureTourFrame();
+      setTourFrameSrc(state.tour);
+    }
   }else{
     setTourFrameSrc('');
     showTourStatus('hide');
@@ -2622,10 +3151,68 @@ function applyTourUrl(raw){
     notify('Не удалось разобрать ссылку: ' + err.message);
     return;
   }
+  state.tourForceEmbed = false;
   touch();
   setUiMode('tour');
   renderTour();
-  status('3D-тур открыт');
+  if(cannotEmbed(state.tour)){
+    openTourWindow(state.tour, true);
+    status('3D-тур открыт отдельным окном: ' + (function(){ try{ return new URL(state.tour).hostname.replace(/^www\./, ''); }catch(e){ return 'сайт'; } })() + ' запрещает встраивание');
+  }else{
+    status('3D-тур открыт');
+  }
+}
+/* Копирование образца ссылки: современный API, с запасным путём для file:// */
+function copyText(text){
+  return new Promise(resolve => {
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(() => resolve(true), () => resolve(fallbackCopy(text)));
+        return;
+      }
+    }catch(err){}
+    resolve(fallbackCopy(text));
+  });
+}
+function fallbackCopy(text){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    const okCopy = document.execCommand ? document.execCommand('copy') : false;
+    ta.remove();
+    return !!okCopy;
+  }catch(err){ return false; }
+}
+function bindGuideCopy(){
+  $$('.guide code.copy').forEach(el => {
+    if(el.dataset.bound) return;
+    el.dataset.bound = '1';
+    const fire = () => {
+      const text = el.dataset.copy || el.textContent;
+      copyText(text).then(done => {
+        if(done){
+          el.classList.add('copied');
+          setTimeout(() => el.classList.remove('copied'), 900);
+          status('Скопировано: ' + text + ' — вставьте в поле ссылки и замените ID');
+        }else{
+          notify('Браузер не дал скопировать. Выделите образец и нажмите Ctrl+C.');
+        }
+      });
+    };
+    el.onclick = e => { e.preventDefault(); e.stopPropagation(); fire(); };
+    el.onkeydown = e => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); fire(); }
+    };
+  });
+}
+function bindTourWindowBtn(){
+  const b = $('#tourWindowBtn');
+  if(b) b.onclick = () => openTourWindow(state.tour);
 }
 function openTourDownloadHelp(){
   const view = tourViewPath();
@@ -2658,15 +3245,77 @@ function openTour(force, silent){
     if(!state.tour){ const f = $('#tourUrl'); if(f) setTimeout(() => { try{ f.focus(); }catch(e){} }, 0); }
   }
 }
+function clampSplit(v){
+  const n = Number(v);
+  if(!isFinite(n) || n <= 0) return 0.5;
+  return Math.max(0.2, Math.min(0.8, n));
+}
+function applySplitRatio(){
+  const root = $('#appRoot') || document.querySelector('.app');
+  if(!root) return;
+  const a = clampSplit(state.splitRatio) * 100;
+  state.splitRatio = a / 100;
+  root.style.setProperty('--split-a', a.toFixed(2) + '%');
+  root.style.setProperty('--split-b', (100 - a).toFixed(2) + '%');
+}
+(function initSplitter(){
+  const grip = $('#splitter');
+  if(!grip) return;
+  const root = $('#appRoot') || document.querySelector('.app');
+  const main = document.querySelector('.main');
+  let dragging = false;
+  const ratioAt = clientX => {
+    const r = main.getBoundingClientRect();
+    if(!r.width) return state.splitRatio;
+    /* доля считается для ЛЕВОЙ панели, какой бы она ни была после «поменять местами» */
+    return clampSplit((clientX - r.left) / r.width);
+  };
+  grip.addEventListener('pointerdown', e => {
+    dragging = true;
+    grip.classList.add('dragging');
+    if(root) root.classList.add('resizing');
+    if(grip.setPointerCapture){ try{ grip.setPointerCapture(e.pointerId); }catch(err){} }
+    e.preventDefault(); e.stopPropagation();
+  });
+  grip.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    state.splitRatio = ratioAt(e.clientX);
+    applySplitRatio();
+    e.preventDefault();
+  });
+  const stop = () => {
+    if(!dragging) return;
+    dragging = false;
+    grip.classList.remove('dragging');
+    if(root) root.classList.remove('resizing');
+    touch();
+    status('Ширина панелей: ' + Math.round(clampSplit(state.splitRatio) * 100) + ' / ' +
+           Math.round(100 - clampSplit(state.splitRatio) * 100));
+  };
+  grip.addEventListener('pointerup', stop);
+  grip.addEventListener('pointercancel', stop);
+  grip.addEventListener('lostpointercapture', stop);
+  grip.addEventListener('dblclick', e => {
+    e.preventDefault(); e.stopPropagation();
+    state.splitRatio = 0.5;
+    applySplitRatio(); touch();
+    status('Панели выровнены поровну');
+  });
+  grip.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 0.1 : 0.02;
+    if(e.key === 'ArrowLeft'){ state.splitRatio = clampSplit(state.splitRatio - step); applySplitRatio(); touch(); e.preventDefault(); }
+    else if(e.key === 'ArrowRight'){ state.splitRatio = clampSplit(state.splitRatio + step); applySplitRatio(); touch(); e.preventDefault(); }
+    else if(e.key === 'Home'){ state.splitRatio = 0.5; applySplitRatio(); touch(); e.preventDefault(); }
+  });
+})();
 function applyLayout(){
   const root = $('#appRoot') || document.querySelector('.app');
   if(!root) return;
   const layout = state.layout || 'plan';
   root.setAttribute('data-layout', layout);
-  const ui = state.uiMode === 'welcome' ? 'welcome' : (layout === 'tour' ? 'tour' : (layout.indexOf('split') === 0 ? 'plan' : 'plan'));
-  /* data-ui: welcome | plan (editor chrome). data-layout manages panes */
-  if(state.uiMode === 'welcome') root.setAttribute('data-ui', 'welcome');
-  else root.setAttribute('data-ui', 'editor');
+  /* Стартового экрана больше нет: приложение всегда открывается на холсте плана. */
+  state.uiMode = 'editor';
+  root.setAttribute('data-ui', 'editor');
   const focus = layout === 'tour' ? 'tour' : (layout === 'plan' ? 'plan' : (layout === 'split-rev' ? 'tour' : 'plan'));
   $$('.activity .abtn[data-ui]').forEach(b => b.classList.toggle('active', b.dataset.ui === focus));
   $$('.tabs .tab[data-ui]').forEach(b => b.classList.toggle('active', b.dataset.ui === focus));
@@ -2679,15 +3328,11 @@ function applyLayout(){
     panel.classList.toggle('open', showTour);
     state.tourOpen = showTour;
   }
+  applySplitRatio();
   if(layout === 'tour' || layout === 'split' || layout === 'split-rev') renderTour();
 }
 function setUiMode(mode, silent){
-  if(mode === 'welcome'){
-    state.uiMode = 'welcome';
-    applyLayout();
-    if(!silent) status('Стартовый экран');
-    return;
-  }
+  if(mode === 'welcome') mode = 'plan';   /* стартовый экран убран */
   if(mode === 'split'){
     state.uiMode = 'editor';
     state.layout = state.layout === 'split-rev' ? 'split-rev' : 'split';
@@ -2708,13 +3353,12 @@ function setUiMode(mode, silent){
   if(!silent){ touch(); status(mode === 'plan' ? 'Редактор: план' : 'Редактор: 3D-тур'); }
 }
 function toggleSplit(){
-  if(state.uiMode === 'welcome') return;
   if(state.layout === 'split' || state.layout === 'split-rev'){
     state.layout = 'plan';
     status('Один экран: план');
   }else{
     state.layout = 'split';
-    status('Два экрана: план | 3D (кнопка ⇄ меняет местами)');
+    status('Два экрана: план и 3D рядом — границу между ними можно тянуть мышью');
   }
   state.uiMode = 'editor';
   applyLayout();
@@ -2797,6 +3441,7 @@ on('#modeBtn', 'click', () => { state.mode = state.mode === 'edit' ? 'view' : 'e
 
 /* ---------- модальное окно этажей ---------- */
 on('#uploadBtn', 'click', openPlansModal);
+on('#emptyOpenFile', 'click', () => { const f = $('#fileOpen'); if(f){ f.value = ''; f.click(); } });
 on('#abUpload', 'click', openPlansModal);
 on('#abUploadMenu', 'click', openPlansModal);
 on('#menuFile', 'click', () => {
@@ -2856,8 +3501,6 @@ on('#applyPlans', 'click', () => {
 });
 on('#cropCancel', 'click', () => { const m = $('#cropModal'); if(m) m.classList.remove('show'); cropState = null; });
 on('#cropApply', 'click', applyCrop);
-on('#welcomeNew', 'click', () => newPalace());
-on('#welcomeOpen', 'click', () => { const f = $('#fileOpen'); if(f) f.click(); });
 on('#btnSplit', 'click', toggleSplit);
 on('#btnSwapPanes', 'click', swapPanes);
 
@@ -3267,7 +3910,20 @@ $$('.activity .abtn[data-ui], .tabs .tab[data-ui]').forEach(b => {
 on('#tourClose', 'click', () => setUiMode('plan'));
 on('#tourApply', 'click', () => applyTourUrl());
 on('#tourDownload', 'click', () => openTourDownloadHelp());
+on('#tourWindowBtn', 'click', () => openTourWindow(state.tour));
+bindGuideCopy();
 on('#tourUrl', 'keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); applyTourUrl(); } e.stopPropagation(); });
+on('#routeAuto', 'change', e => {
+  state.routeAuto = !!e.target.checked;
+  const l = level(); if(l) l.__route = null;
+  touch();
+  if(!state.showPath && state.routeAuto) state.showPath = true;
+  render();
+  const r = l ? l.__route : null;
+  status(state.routeAuto
+    ? ('Маршрут построен по планировке' + (r ? ': обходов ' + r.detours + (r.failed ? ', прямых участков ' + r.failed : '') : ''))
+    : 'Маршрут — прямыми линиями');
+});
 on('#markerSize', 'input', e => {
   state.markerSize = Number(e.target.value) || 30;
   setText('#markerSizeVal', markerSize());
