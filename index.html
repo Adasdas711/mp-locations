@@ -30,7 +30,7 @@
   --vscode-focus:#007fd4;
   --bg:var(--vscode-editor-bg);--panel:var(--vscode-sidebar-bg);--elev:#2d2d2d;--line:var(--vscode-tab-border);
   --blue:var(--vscode-status-bg);--blue2:var(--vscode-button-hover);--text:var(--vscode-fg);--muted:var(--vscode-fg-dim);--green:#89d185;--red:#f14c4c;
-  --top:30px;--tabs:35px;--bottom:35px;--status:22px;--activity:48px;--tool:32px;
+  --top:30px;--tabs:35px;--bottom:62px;--status:22px;--activity:48px;--tool:32px;
   --gap-pane:8px;--split-grip:10px;--r-pane:12px;--r-lg:12px;--r-md:8px;--r-sm:6px;
   --split-a:50%;--split-b:50%;
   --sidebar:var(--vscode-sidebar-bg);--editor:var(--vscode-editor-bg);--tab-active:var(--vscode-tab-active-bg);--tab:var(--vscode-tab-bg)
@@ -313,6 +313,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .marker.in-fov{box-shadow:0 0 0 3px #00d4ff,0 2px 10px #000;z-index:5}
 .marker.in-fov::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(0,212,255,.5);pointer-events:none}
 .path-layer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible}
+.path-stub{stroke:#ffb800;stroke-width:2.5;stroke-linecap:round;opacity:.5;stroke-dasharray:4 5}
 .path-stroke{fill:none;stroke:#ffb800;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
 .path-stroke-soft{fill:none;stroke:rgba(0,0,0,.45);stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
 .path-hit{fill:none;stroke:transparent;stroke-width:14;stroke-linecap:round;stroke-linejoin:round;pointer-events:stroke;cursor:crosshair}
@@ -351,7 +352,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* BOTTOM ROUTE — shorter */
 .bottom>b{display:none}
-.route{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;scroll-behavior:smooth;padding:2px}
+.route{display:flex;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;flex:1 1 auto;min-width:0;scrollbar-width:none;scroll-behavior:smooth;padding:0 2px;height:100%}
 .route::-webkit-scrollbar{display:none}
 .route .r{position:relative;flex-shrink:0;width:34px;min-width:34px;height:34px;padding:0;border-radius:50%;background:#ffb800;color:#16110a;
   border:2px solid #fff;font-weight:800;font-size:12px;cursor:grab;display:inline-flex;align-items:center;justify-content:center;
@@ -380,7 +381,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @keyframes routePulse{0%{box-shadow:0 0 0 0 rgba(0,127,212,.6)}70%,100%{box-shadow:0 0 0 14px rgba(0,127,212,0)}}
 .marker.route-neighbor{outline:2px dashed #fff;outline-offset:3px;filter:brightness(1.15)}
 .route .r.sel{outline:2px solid var(--blue);outline-offset:2px}
-.rgroup{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:3px 9px 3px 7px;border:1px solid rgba(255,255,255,.09);border-radius:22px}
+.rgroup{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:4px 9px 4px 7px;margin:2px 0;border:1px solid rgba(255,255,255,.09);border-radius:22px}
 .rgroup.current{border-color:var(--fc);background:rgba(255,255,255,.05)}
 .rgroup .r{background:var(--fc);opacity:.6}
 .rgroup.current .r{opacity:1}
@@ -391,7 +392,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .status{height:var(--status);background:var(--vscode-status-bg);border-top:0;display:flex;align-items:center;padding:0 10px;color:var(--vscode-status-fg);gap:12px;font-size:12px}
 .badge{color:#fff;opacity:.95}
 .status .small,.status span{color:rgba(255,255,255,.92)}
-.bottom{height:var(--bottom);background:var(--vscode-sidebar-bg);border-top:1px solid var(--vscode-tab-border);display:flex;align-items:center;gap:8px;padding:4px 12px}
+.bottom{height:var(--bottom);min-height:var(--bottom);flex-shrink:0;background:var(--vscode-sidebar-bg);
+  border:1px solid var(--vscode-tab-border);border-radius:var(--r-pane);
+  margin:0 var(--gap-pane) var(--gap-pane);display:flex;align-items:center;gap:10px;padding:0 12px;overflow:hidden}
+.bottom #count{flex:0 0 auto;white-space:nowrap;font-size:11px;color:var(--vscode-fg-dim)}
 .route .r{border-radius:50%}
 .floor-overlay{background:var(--vscode-sidebar-bg)!important;border-color:var(--vscode-widget-border)!important}
 .canvas-ctl{background:var(--vscode-sidebar-bg)!important;border-color:var(--vscode-widget-border)!important}
@@ -463,7 +467,7 @@ button .ic{pointer-events:none}
 </style></head>
 <body>
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><defs>
-<symbol id="i-plan" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M6.4 2.5v11"/></symbol>
+<symbol id="i-plan" viewBox="0 0 16 16"><path d="M1.8 4.2 5.9 2.4v9.4L1.8 13.6z"/><path d="M5.9 2.4 10.1 4.2v9.4L5.9 11.8z"/><path d="M10.1 4.2 14.2 2.4v9.4l-4.1 1.8z"/></symbol>
 <symbol id="i-cube" viewBox="0 0 16 16"><path d="M8 1.8 13.8 5v6L8 14.2 2.2 11V5z"/><path d="M2.2 5 8 8l5.8-3M8 8v6.2"/></symbol>
 <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.2v9.6M3.2 8h9.6"/></symbol>
 <symbol id="i-minus" viewBox="0 0 16 16"><path d="M3.2 8h9.6"/></symbol>
@@ -1043,38 +1047,59 @@ function clearPlan(){
    с ними темнеет целиком; подписи комнат тонкие и после усреднения остаются
    светлыми, так что текст пути не перекрывает. Дверные проёмы — разрывы в стенах,
    они светлые и проходимы сами по себе. */
-const GRID_CELL = 10, GRID_MAX = 260;
+const GRID_CELL = 10, GRID_MAX = 320;
+const WALL_CLEAR_PX = 16;      /* на сколько линия отступает от стен */
+const HUB_RADIUS_PX = 55;      /* как далеко от локуса ищется середина прохода */
+
+/* Порог «стена / не стена» по методу Оцу: сам находит границу между тёмными
+   линиями стен и светлой заливкой комнат, поэтому работает и на белых
+   чертежах, и на цветных, и на планах поверх фотографии. */
+function otsuThreshold(lum){
+  const hist = new Float64Array(256);
+  for(let i = 0; i < lum.length; i++) hist[Math.max(0, Math.min(255, lum[i] | 0))]++;
+  const total = lum.length;
+  let sum = 0;
+  for(let t = 0; t < 256; t++) sum += t * hist[t];
+  let sumB = 0, wB = 0, best = 0, thr = 128;
+  for(let t = 0; t < 256; t++){
+    wB += hist[t];
+    if(!wB) continue;
+    const wF = total - wB;
+    if(!wF) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB, mF = (sum - sumB) / wF;
+    const between = wB * wF * (mB - mF) * (mB - mF);
+    if(between > best){ best = between; thr = t; }
+  }
+  return thr;
+}
 function buildWalkGrid(l){
-  if(!l || !l.src || !l.w || !l.h) return null;
-  const sig = (l.src.length + ':' + l.w + 'x' + l.h + ':' + (state.wallLevel || 0));
+  if(!l || !l.src || !l.w || !l.h || !l.__img) return null;
+  const sig = l.src.length + ':' + l.w + 'x' + l.h + ':' + (state.wallLevel || 0);
   if(l.__grid && l.__grid.sig === sig) return l.__grid;
-  let cols = Math.max(8, Math.min(GRID_MAX, Math.round(l.w / GRID_CELL)));
-  let rows = Math.max(8, Math.min(GRID_MAX, Math.round(l.h / GRID_CELL)));
+  const cols = Math.max(8, Math.min(GRID_MAX, Math.round(l.w / GRID_CELL)));
+  const rows = Math.max(8, Math.min(GRID_MAX, Math.round(l.h / GRID_CELL)));
   const c = document.createElement('canvas');
   c.width = cols; c.height = rows;
   const g = c.getContext('2d');
-  if(!g || !l.__img) return null;
+  if(!g) return null;
+  let data;
   try{
     g.drawImage(l.__img, 0, 0, cols, rows);
+    data = g.getImageData(0, 0, cols, rows).data;
   }catch(err){ return null; }
-  let data;
-  try{ data = g.getImageData(0, 0, cols, rows).data; }catch(err){ return null; }
   const n = cols * rows;
-  const blocked = new Uint8Array(n);
   const lum = new Float32Array(n);
-  let sum = 0;
   for(let i = 0; i < n; i++){
-    const o = i * 4;
-    const a = data[o + 3] / 255;
-    /* прозрачный фон считаем светлым, иначе PNG с альфой был бы сплошной стеной */
-    const v = a < 0.15 ? 255 : (0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2]) * a + 255 * (1 - a);
-    lum[i] = v; sum += v;
+    const o = i * 4, a = data[o + 3] / 255;
+    lum[i] = a < 0.15 ? 255
+      : (0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2]) * a + 255 * (1 - a);
   }
-  /* Порог от средней яркости плана: работает и на белых, и на цветных планах. */
-  const mean = sum / n;
-  const thr = Math.max(60, Math.min(200, mean * 0.72 - (Number(state.wallLevel) || 0) * 12));
+  const thr = Math.max(40, Math.min(220, otsuThreshold(lum) - (Number(state.wallLevel) || 0) * 10));
+  const blocked = new Uint8Array(n);
   for(let i = 0; i < n; i++) blocked[i] = lum[i] < thr ? 1 : 0;
-  /* Расстояние до ближайшей стены — чтобы линия шла серединой прохода. */
+
+  /* Расстояние до ближайшей стены в клетках. */
   const dist = new Int32Array(n).fill(1e9);
   const q = new Int32Array(n);
   let qs = 0, qe = 0;
@@ -1088,7 +1113,15 @@ function buildWalkGrid(l){
       if(dist[j] > d){ dist[j] = d; q[qe++] = j; }
     }
   }
-  l.__grid = { sig, cols, rows, blocked, dist, sx: l.w / cols, sy: l.h / rows };
+  /* Мягкая карта: стены «раздуты» на ширину отступа, по ней и ищется путь,
+     поэтому линия не липнет к стенам и не режет углы. */
+  const sx = l.w / cols, sy = l.h / rows;
+  const pad = 1;                                   /* вплотную к стене линия не идёт никогда */
+  const want = Math.max(1, Math.round(WALL_CLEAR_PX / Math.max(1, (sx + sy) / 2)));
+  const soft = new Uint8Array(n);
+  for(let i = 0; i < n; i++) soft[i] = dist[i] <= pad ? 1 : 0;
+  l.__grid = { sig, cols, rows, blocked, soft, dist, sx, sy, pad, want, thr };
+  l.__route = null;
   return l.__grid;
 }
 function gridIndexAt(grid, x, y){
@@ -1096,46 +1129,88 @@ function gridIndexAt(grid, x, y){
   const cy = Math.max(0, Math.min(grid.rows - 1, Math.floor(y / grid.sy)));
   return cy * grid.cols + cx;
 }
-/* Локус может стоять вплотную к стене — берём ближайшую свободную клетку. */
-function nearestFree(grid, idx){
-  if(!grid.blocked[idx]) return idx;
+function cellCenter(grid, idx){
+  return { x: (idx % grid.cols + 0.5) * grid.sx, y: (((idx / grid.cols) | 0) + 0.5) * grid.sy };
+}
+function nearestFree(grid, idx, map){
+  const m = map || grid.soft;
+  if(!m[idx]) return idx;
   const cols = grid.cols, rows = grid.rows;
   const x0 = idx % cols, y0 = (idx / cols) | 0;
-  for(let r = 1; r < 14; r++){
+  for(let r = 1; r < 20; r++){
     for(let dy = -r; dy <= r; dy++){
       for(let dx = -r; dx <= r; dx++){
         if(Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
         const x = x0 + dx, y = y0 + dy;
         if(x < 0 || y < 0 || x >= cols || y >= rows) continue;
         const j = y * cols + x;
-        if(!grid.blocked[j]) return j;
+        if(!m[j]) return j;
       }
     }
   }
   return -1;
 }
-/* A* по сетке: диагонали разрешены, близость к стене штрафуется. */
+/* «Хаб» локуса — самая открытая точка прохода рядом с ним. Линия идёт по хабам,
+   то есть по коридору, а сам локус цепляется к ней короткой ножкой. Именно это
+   убирает зигзаг, когда локусы стоят по разным сторонам коридора. */
+function hubFor(grid, m){
+  const here = gridIndexAt(grid, m.x, m.y);
+  const cols = grid.cols, rows = grid.rows;
+  const x0 = here % cols, y0 = (here / cols) | 0;
+  const R = Math.max(2, Math.round(HUB_RADIUS_PX / Math.max(1, (grid.sx + grid.sy) / 2)));
+  let best = -1, bestScore = -1e9;
+  for(let dy = -R; dy <= R; dy++){
+    for(let dx = -R; dx <= R; dx++){
+      const x = x0 + dx, y = y0 + dy;
+      if(x < 0 || y < 0 || x >= cols || y >= rows) continue;
+      const j = y * cols + x;
+      if(grid.soft[j]) continue;
+      const away = Math.hypot(dx, dy);
+      const score = Math.min(grid.dist[j], (grid.want || 2) + 2) - away * 0.55;
+      if(score > bestScore){ bestScore = score; best = j; }
+    }
+  }
+  if(best < 0) return { x: m.x, y: m.y, same: true };
+  const c = cellCenter(grid, best);
+  const moved = Math.hypot(c.x - m.x, c.y - m.y);
+  return { x: c.x, y: c.y, same: moved < Math.max(grid.sx, grid.sy) * 0.8 };
+}
+function freeLine(grid, a, b, map){
+  const m = map || grid.soft;
+  const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / Math.min(grid.sx, grid.sy) * 1.5);
+  for(let i = 0; i <= steps; i++){
+    const t = steps ? i / steps : 0;
+    if(m[gridIndexAt(grid, a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)]) return false;
+  }
+  return true;
+}
+function segmentFree(grid, a, b){ return freeLine(grid, a, b, grid.blocked); }
+/* A* с восемью направлениями и штрафом за поворот — линия получается спокойной,
+   без ступенек по клеткам. */
 function findWalkPath(grid, ax, ay, bx, by, wide){
   const start = nearestFree(grid, gridIndexAt(grid, ax, ay));
   const goal = nearestFree(grid, gridIndexAt(grid, bx, by));
   if(start < 0 || goal < 0) return null;
-  if(start === goal) return [];
+  if(start === goal) return [cellCenter(grid, start)];
   const cols = grid.cols, rows = grid.rows, n = cols * rows;
-  /* Поиск ограничен рамкой вокруг концов — на больших планах это решает скорость. */
   const sxC = start % cols, syC = (start / cols) | 0, gxC = goal % cols, gyC = (goal / cols) | 0;
-  const pad = wide ? Math.max(cols, rows) : Math.max(12, Math.round(Math.hypot(gxC - sxC, gyC - syC) * 0.6) + 8);
+  const pad = wide ? Math.max(cols, rows) : Math.max(14, Math.round(Math.hypot(gxC - sxC, gyC - syC) * 0.7) + 10);
   const minX = Math.max(0, Math.min(sxC, gxC) - pad), maxX = Math.min(cols - 1, Math.max(sxC, gxC) + pad);
   const minY = Math.max(0, Math.min(syC, gyC) - pad), maxY = Math.min(rows - 1, Math.max(syC, gyC) + pad);
   const gScore = new Float32Array(n).fill(Infinity);
-  const came = new Int32Array(n).fill(-1);
-  const open = [start];
-  const inOpen = new Uint8Array(n);
   const fScore = new Float32Array(n).fill(Infinity);
-  const gx = goal % cols, gy = (goal / cols) | 0;
-  const h = i => { const x = i % cols, y = (i / cols) | 0; return Math.hypot(x - gx, y - gy); };
+  const came = new Int32Array(n).fill(-1);
+  const dirOf = new Int8Array(n).fill(-1);
+  const inOpen = new Uint8Array(n);
+  const open = [start];
+  const h = i => {
+    const x = i % cols, y = (i / cols) | 0;
+    const dx = Math.abs(x - gxC), dy = Math.abs(y - gyC);
+    return (dx + dy) + (1.414 - 2) * Math.min(dx, dy);
+  };
   gScore[start] = 0; fScore[start] = h(start); inOpen[start] = 1;
   let guard = 0;
-  while(open.length && guard++ < 200000){
+  while(open.length && guard++ < 400000){
     let bi = 0;
     for(let k = 1; k < open.length; k++) if(fScore[open[k]] < fScore[open[bi]]) bi = k;
     const cur = open.splice(bi, 1)[0];
@@ -1143,24 +1218,27 @@ function findWalkPath(grid, ax, ay, bx, by, wide){
     if(cur === goal){
       const out = [];
       let i = cur;
-      while(i !== -1){ out.push({ x: (i % cols + 0.5) * grid.sx, y: (((i / cols) | 0) + 0.5) * grid.sy }); i = came[i]; }
+      while(i !== -1){ out.push(cellCenter(grid, i)); i = came[i]; }
       return out.reverse();
     }
     const cx = cur % cols, cy = (cur / cols) | 0;
+    let d = -1;
     for(let dy = -1; dy <= 1; dy++){
       for(let dx = -1; dx <= 1; dx++){
         if(!dx && !dy) continue;
+        d++;
         const nx = cx + dx, ny = cy + dy;
         if(nx < minX || ny < minY || nx > maxX || ny > maxY) continue;
         const j = ny * cols + nx;
-        if(grid.blocked[j]) continue;
-        /* по диагонали нельзя «протискиваться» между двумя стенами */
-        if(dx && dy && (grid.blocked[cy * cols + nx] || grid.blocked[ny * cols + cx])) continue;
-        const step = (dx && dy) ? 1.414 : 1;
-        const clearance = 1 + 1.6 / (1 + Math.min(grid.dist[j], 6));
-        const t = gScore[cur] + step * clearance;
+        if(grid.soft[j]) continue;
+        if(dx && dy && (grid.soft[cy * cols + nx] || grid.soft[ny * cols + cx])) continue;
+        const step = (dx && dy) ? 1.75 : 1;                    /* диагональ дороже — линия идёт осями */
+        const turn = (dirOf[cur] >= 0 && dirOf[cur] !== d) ? 2.2 : 0; /* повороты дорогие — меньше изломов */
+        /* чем ближе стена, тем дороже клетка — линия сама держится середины прохода */
+        const clear = 1 + 1.8 / (1 + Math.min(grid.dist[j], grid.want || 2));
+        const t = gScore[cur] + step * clear + turn;
         if(t < gScore[j]){
-          came[j] = cur; gScore[j] = t; fScore[j] = t + h(j);
+          came[j] = cur; dirOf[j] = d; gScore[j] = t; fScore[j] = t + h(j);
           if(!inOpen[j]){ inOpen[j] = 1; open.push(j); }
         }
       }
@@ -1168,60 +1246,116 @@ function findWalkPath(grid, ax, ay, bx, by, wide){
   }
   return null;
 }
-function segmentFree(grid, a, b){
-  const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / Math.min(grid.sx, grid.sy));
-  for(let i = 0; i <= steps; i++){
-    const t = steps ? i / steps : 0;
-    const idx = gridIndexAt(grid, a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
-    if(grid.blocked[idx]) return false;
-  }
-  return true;
-}
-/* Убираем лишние изломы: пока видно напрямую — идём напрямую. */
 function smoothWalkPath(grid, pts){
   if(pts.length < 3) return pts;
   const out = [pts[0]];
   let i = 0;
   while(i < pts.length - 1){
     let j = pts.length - 1;
-    for(; j > i + 1; j--) if(segmentFree(grid, pts[i], pts[j])) break;
+    for(; j > i + 1; j--) if(freeLine(grid, pts[i], pts[j])) break;
     out.push(pts[j]);
     i = j;
   }
   return out;
 }
-/* Готовый маршрут по этажу с кэшем: пересчитывается, только когда
-   изменились локусы, ручные изломы или сам план. */
+/* Только два вида отрезков: по горизонтали/вертикали и под 45°.
+   Каждый участок раскладывается на прямой кусок плюс диагональ. */
+function octilinear(grid, a, b){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  if(adx < 1 || ady < 1 || Math.abs(adx - ady) < 1) return [a, b];   /* уже по оси или ровно 45° */
+  const sx = Math.sign(dx), sy = Math.sign(dy);
+  const variants = adx > ady
+    ? [{ x: b.x - sx * ady, y: a.y }, { x: a.x + sx * ady, y: b.y }]
+    : [{ x: a.x, y: b.y - sy * adx }, { x: b.x, y: a.y + sy * adx }];
+  for(const v of variants){
+    if(freeLine(grid, a, v) && freeLine(grid, v, b)) return [a, v, b];
+  }
+  /* Косых отрезков под произвольным углом не бывает: берём вариант,
+     который меньше задевает стены. */
+  const cost = v => {
+    let bad = 0;
+    [[a, v], [v, b]].forEach(pair => {
+      const steps = Math.ceil(Math.hypot(pair[1].x - pair[0].x, pair[1].y - pair[0].y) / Math.min(grid.sx, grid.sy));
+      for(let i = 0; i <= steps; i++){
+        const t = steps ? i / steps : 0;
+        if(grid.blocked[gridIndexAt(grid, pair[0].x + (pair[1].x - pair[0].x) * t, pair[0].y + (pair[1].y - pair[0].y) * t)]) bad++;
+      }
+    });
+    return bad;
+  };
+  return cost(variants[0]) <= cost(variants[1]) ? [a, variants[0], b] : [a, variants[1], b];
+}
+function octilinearPath(grid, pts){
+  if(pts.length < 2) return pts;
+  const out = [pts[0]];
+  for(let i = 0; i < pts.length - 1; i++){
+    const seg = octilinear(grid, pts[i], pts[i + 1]);
+    for(let k = 1; k < seg.length; k++) out.push(seg[k]);
+  }
+  /* Выпрямление: почти вертикальные и почти горизонтальные участки делаем
+     строго вертикальными и горизонтальными — линия читается как на схеме. */
+  const snapPx = Math.max(6, Math.min(grid.sx, grid.sy) * 0.9);
+  for(let i = 1; i < out.length; i++){
+    if(Math.abs(out[i].x - out[i - 1].x) < snapPx) out[i] = { x: out[i - 1].x, y: out[i].y };
+    if(Math.abs(out[i].y - out[i - 1].y) < snapPx) out[i] = { x: out[i].x, y: out[i - 1].y };
+  }
+  /* выкидываем точки, лежащие на одной прямой */
+  const clean = [out[0]];
+  for(let i = 1; i < out.length - 1; i++){
+    const p = clean[clean.length - 1], c = out[i], nx = out[i + 1];
+    const a1 = Math.atan2(c.y - p.y, c.x - p.x), a2 = Math.atan2(nx.y - c.y, nx.x - c.x);
+    if(Math.abs(a1 - a2) > 0.12) clean.push(c);
+  }
+  clean.push(out[out.length - 1]);
+  /* убираем совсем короткие «дрожания» */
+  const tight = [clean[0]];
+  for(let i = 1; i < clean.length; i++){
+    const prev = tight[tight.length - 1];
+    if(Math.hypot(clean[i].x - prev.x, clean[i].y - prev.y) > snapPx * 0.8 || i === clean.length - 1) tight.push(clean[i]);
+  }
+  return tight;
+}
+/* Готовый маршрут этажа: хабы в коридорах + участки между ними. */
 function autoRouteFor(l){
   if(!state.routeAuto || !l || !l.src) return null;
   const ms = l.markers || [];
   if(ms.length < 2) return null;
-  const sig = ms.map(m => Math.round(m.x) + ',' + Math.round(m.y) + ':' + ((m.toNext || []).length)).join('|') +
-              '#' + (l.__grid ? l.__grid.sig : '') + '#' + (state.wallLevel || 0);
-  if(l.__route && l.__route.sig === sig) return l.__route;
   const grid = buildWalkGrid(l);
   if(!grid) return null;
+  const sig = ms.map(m => Math.round(m.x) + ',' + Math.round(m.y) + ':' + ((m.toNext || []).length)).join('|') +
+              '#' + grid.sig;
+  if(l.__route && l.__route.sig === sig) return l.__route;
+  const hubs = ms.map(m => hubFor(grid, m));
   const segs = [];
   let detours = 0, failed = 0;
   for(let i = 0; i < ms.length - 1; i++){
-    const a = ms[i], b = ms[i + 1];
-    if(Array.isArray(a.toNext) && a.toNext.length){ segs.push(null); continue; } /* ручные изломы важнее */
-    if(segmentFree(grid, a, b)){ segs.push(null); continue; }                    /* и так видно напрямую */
-    let pts = findWalkPath(grid, a.x, a.y, b.x, b.y);
-    if(!pts) pts = findWalkPath(grid, a.x, a.y, b.x, b.y, true);   /* вторая попытка по всему плану */
-    if(!pts){ segs.push('none'); failed++; continue; }
-    pts = smoothWalkPath(grid, [{ x:a.x, y:a.y }].concat(pts).concat([{ x:b.x, y:b.y }]));
+    if(Array.isArray(ms[i].toNext) && ms[i].toNext.length){ segs.push(null); continue; }
+    const a = hubs[i], b = hubs[i + 1];
+    let pts;
+    if(freeLine(grid, a, b)){
+      pts = octilinearPath(grid, [a, b]);
+    }else{
+      let raw = findWalkPath(grid, a.x, a.y, b.x, b.y);
+      if(!raw) raw = findWalkPath(grid, a.x, a.y, b.x, b.y, true);
+      if(!raw){ segs.push('none'); failed++; continue; }
+      pts = octilinearPath(grid, smoothWalkPath(grid, [a].concat(raw).concat([b])));
+      detours++;
+    }
     segs.push(pts.slice(1, -1));
-    detours++;
   }
-  l.__route = { sig, segs, detours, failed };
+  l.__route = { sig, segs, hubs, anchors: hubs, detours, failed };
   return l.__route;
 }
 function buildPathNodes(l){
   const ms = (l && l.markers) ? l.markers : [];
   const nodes = [];
+  const auto = autoRouteFor(l);
   for(let i = 0; i < ms.length; i++){
-    nodes.push({ x: ms[i].x, y: ms[i].y, kind: 'locus', mi: i });
+    const anc = (auto && auto.anchors && auto.anchors[i]) ? auto.anchors[i] : null;
+    const usesAuto = anc && !(Array.isArray(ms[i].toNext) && ms[i].toNext.length) &&
+                     !(i > 0 && Array.isArray(ms[i - 1].toNext) && ms[i - 1].toNext.length);
+    nodes.push({ x: usesAuto ? anc.x : ms[i].x, y: usesAuto ? anc.y : ms[i].y, kind: 'locus', mi: i });
     if(i < ms.length - 1){
       const mid = Array.isArray(ms[i].toNext) ? ms[i].toNext : [];
       if(mid.length){
@@ -1229,7 +1363,7 @@ function buildPathNodes(l){
           if(w && isFinite(w.x) && isFinite(w.y)) nodes.push({ x: w.x, y: w.y, kind: 'way', mi: i, wi: wi });
         });
       }else{
-        const route = autoRouteFor(l);
+        const route = auto;
         const seg = route && route.segs[i];
         if(Array.isArray(seg)) seg.forEach(w => nodes.push({ x: w.x, y: w.y, kind: 'auto', mi: i }));
       }
@@ -1267,6 +1401,38 @@ function insertPathWaypoint(l, pt, maxDist){
   ms[best.mi].toNext.splice(idx, 0, { x: best.x, y: best.y });
   return true;
 }
+/* Полилиния со скруглёнными углами: на каждом изломе вставляется дуга. */
+function roundedPathD(pts, r){
+  if(!pts.length) return '';
+  if(pts.length === 1) return 'M' + pts[0].x + ' ' + pts[0].y;
+  let d = 'M' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
+  for(let i = 1; i < pts.length - 1; i++){
+    const p0 = pts[i - 1], c = pts[i], p2 = pts[i + 1];
+    const l1 = Math.hypot(c.x - p0.x, c.y - p0.y), l2 = Math.hypot(p2.x - c.x, p2.y - c.y);
+    if(l1 < 0.5 || l2 < 0.5) continue;
+    const rr = Math.max(2, Math.min(r, l1 / 2, l2 / 2));
+    const a = { x: c.x + (p0.x - c.x) / l1 * rr, y: c.y + (p0.y - c.y) / l1 * rr };
+    const b = { x: c.x + (p2.x - c.x) / l2 * rr, y: c.y + (p2.y - c.y) / l2 * rr };
+    d += ' L' + a.x.toFixed(1) + ' ' + a.y.toFixed(1) +
+         ' Q' + c.x.toFixed(1) + ' ' + c.y.toFixed(1) + ' ' + b.x.toFixed(1) + ' ' + b.y.toFixed(1);
+  }
+  const last = pts[pts.length - 1];
+  d += ' L' + last.x.toFixed(1) + ' ' + last.y.toFixed(1);
+  return d;
+}
+/* Локус не лежит на линии — он соединён с ней короткой ножкой. */
+function routeStubs(l){
+  const route = autoRouteFor(l);
+  if(!route || !route.hubs) return [];
+  const ms = l.markers || [];
+  const out = [];
+  route.hubs.forEach((hub, i) => {
+    if(!hub || hub.same || !ms[i]) return;
+    if(Array.isArray(ms[i].toNext) && ms[i].toNext.length) return;
+    out.push({ from: ms[i], to: hub });
+  });
+  return out;
+}
 function drawPathLayer(p, l, w, h){
   if(!state.showPath) return;
   const nodes = buildPathNodes(l);
@@ -1276,14 +1442,22 @@ function drawPathLayer(p, l, w, h){
   svg.setAttribute('width', String(w));
   svg.setAttribute('height', String(h));
   const pts = nodes.map(n => n.x + ',' + n.y).join(' ');
-  const soft = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  const d = roundedPathD(nodes, Math.max(8, markerSize() * 0.45));
+  const soft = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   soft.setAttribute('class', 'path-stroke-soft');
-  soft.setAttribute('points', pts);
+  soft.setAttribute('d', d);
   svg.appendChild(soft);
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   line.setAttribute('class', 'path-stroke');
-  line.setAttribute('points', pts);
+  line.setAttribute('d', d);
   svg.appendChild(line);
+  routeStubs(l).forEach(st => {
+    const leg = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    leg.setAttribute('class', 'path-stub');
+    leg.setAttribute('x1', st.from.x); leg.setAttribute('y1', st.from.y);
+    leg.setAttribute('x2', st.to.x);   leg.setAttribute('y2', st.to.y);
+    svg.appendChild(leg);
+  });
   if(state.tool === 'path' && state.mode === 'edit'){
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
     hit.setAttribute('class', 'path-hit');
