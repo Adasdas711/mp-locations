@@ -106,6 +106,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   background:var(--vscode-sidebar-bg);border:1px solid var(--vscode-widget-border);border-radius:var(--r-lg);padding:4px;
   display:flex;flex-direction:column;gap:2px;box-shadow:0 2px 8px rgba(0,0,0,.36)}
 .left span{display:block;height:4px}
+.left .tool-sep{display:block;align-self:center;width:22px;height:1px;margin:3px 0;background:var(--vscode-widget-border);opacity:.7}
 .tool{width:var(--tool);height:var(--tool);padding:0;font-size:14px;display:flex;align-items:center;justify-content:center;
   border-radius:var(--r-md);background:transparent;border:0;color:var(--vscode-fg-dim)}
 .tool:hover{background:var(--vscode-list-hover);color:var(--vscode-fg)}
@@ -232,9 +233,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .stage.mode-view{cursor:default}
 .stage.panning,.stage.panning .plan{cursor:grabbing}
 .plan img{display:block;max-width:none;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
-.marker{position:absolute;width:28px;height:28px;border-radius:50%;background:#ffb800;color:#16110a;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;transform:translate(-50%,-50%) rotate(var(--mrot,0deg));cursor:grab;box-shadow:0 2px 10px #000;z-index:3}
+.marker{position:absolute;width:28px;height:28px;border-radius:50%;background:#1c4b8f;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;transform:translate(-50%,-50%) rotate(var(--mrot,0deg));cursor:grab;box-shadow:0 2px 10px #000;z-index:3}
 .marker.dragging{cursor:grabbing;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.18);box-shadow:0 0 0 4px #4da3ff66,0 6px 18px #000;z-index:20}
 .marker.selected{outline:2px solid var(--blue)}
+.marker:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
 /* RIGHT PANEL — narrower + denser */
 .section{border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px}
@@ -295,7 +297,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
      background:#0d0f12cc;border:1px solid #ffffff55;color:#fff;font-size:11px;white-space:nowrap;pointer-events:auto;cursor:pointer;
      box-shadow:0 3px 12px #000a;backdrop-filter:blur(2px);transition:opacity .12s}
 .tov:hover{border-color:var(--blue)}
-.tov .tov-n{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10.5px;color:#16110a;background:var(--fc,#ffb800)}
+.tov .tov-n{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10.5px;color:#fff;background:var(--fc,#1c4b8f)}
 .tov.sel{border-color:#fff;box-shadow:0 0 0 2px #4da3ff,0 3px 12px #000a}
 .tov.edge{opacity:.45}
 .tov-jumps{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:7px;pointer-events:auto}
@@ -312,15 +314,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .fov-arc{fill:none;stroke:rgba(0,200,255,.5);stroke-width:1.5;stroke-dasharray:4 3}
 .marker.in-fov{box-shadow:0 0 0 3px #00d4ff,0 2px 10px #000;z-index:5}
 .marker.in-fov::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(0,212,255,.5);pointer-events:none}
-.path-layer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible}
-.path-stub{stroke:#ffb800;stroke-width:2.5;stroke-linecap:round;opacity:.5;stroke-dasharray:4 5}
-.path-stroke{fill:none;stroke:#ffb800;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
-.path-stroke-soft{fill:none;stroke:rgba(0,0,0,.45);stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
-.path-hit{fill:none;stroke:transparent;stroke-width:14;stroke-linecap:round;stroke-linejoin:round;pointer-events:stroke;cursor:crosshair}
-.path-way{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:var(--r-sm);background:#ffb800;border:2px solid #fff;
-  box-shadow:0 1px 6px #000a;z-index:4;cursor:grab;transform:rotate(var(--mrot,0deg))}
-.path-way:hover,.path-way.dragging{background:#fff;border-color:#ffb800}
-.tool.on-path{color:#ffb800!important}
 /* Диагностика postMessage от iGUIDE */
 .tour-diag{position:absolute;left:8px;right:8px;bottom:8px;z-index:4;max-height:42%;overflow:auto;
   background:#0d0f12f2;border:1px solid var(--line);border-radius:var(--r-lg);padding:8px 10px;font:10.5px/1.4 ui-monospace,Menlo,monospace;color:var(--muted);
@@ -383,7 +376,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .route .r.sel{outline:2px solid var(--blue);outline-offset:2px}
 .rgroup{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:4px 9px 4px 7px;margin:2px 0;border:1px solid rgba(255,255,255,.09);border-radius:22px}
 .rgroup.current{border-color:var(--fc);background:rgba(255,255,255,.05)}
-.rgroup .r{background:var(--fc);opacity:.6}
+.rgroup .r{background:var(--fc);color:#fff;opacity:.7}
 .rgroup.current .r{opacity:1}
 .rlabel{font-size:9.5px;color:var(--muted);white-space:nowrap;letter-spacing:.3px;cursor:pointer}
 .rgroup.current .rlabel{color:var(--fc);font-weight:700}
@@ -426,6 +419,54 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .canvas-ctl input[type=range]{width:120px;accent-color:var(--blue)}
 .canvas-ctl output{font-size:11px;font-weight:700;min-width:26px;text-align:right}
 #markerCtl{left:12px;bottom:12px}
+
+/* ПОВТОРЕНИЕ — плавающая панель сессии над планом */
+.review-bar{position:absolute;left:50%;top:18px;z-index:13;transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:14px;width:min(560px,94%);
+  background:linear-gradient(180deg,#20242afa,#191c20fa);
+  border:1px solid #ffffff14;border-radius:16px;
+  padding:18px 22px 16px;box-shadow:0 20px 48px #000a,0 1px 0 #ffffff0d inset}
+.review-bar[hidden]{display:none}
+.rv-stop{position:absolute;top:12px;right:12px;width:28px;height:28px;padding:0;
+  display:flex;align-items:center;justify-content:center;border-radius:8px;
+  background:transparent;color:var(--vscode-fg-dim);border:none}
+.rv-stop:hover{background:#ffffff14;color:#fff}
+.rv-stop .ic{width:14px;height:14px}
+.rv-head{display:flex;align-items:center;gap:10px;padding-right:30px}
+.rv-dot{width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 4px rgba(77,163,255,.18);flex:none}
+.rv-head-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rv-head-text strong{font-size:16.5px;font-weight:650;color:#fff;letter-spacing:.1px}
+.rv-pill{align-self:flex-start;font-size:11.5px;font-weight:600;color:var(--blue2);
+  background:rgba(77,163,255,.14);border:1px solid rgba(77,163,255,.28);
+  padding:2px 9px;border-radius:999px}
+.rv-instruction{font-size:13.5px;line-height:1.55;color:var(--vscode-fg-dim)}
+.rv-instruction[hidden]{display:none}
+.rv-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-top:12px;border-top:1px solid #ffffff12;flex-wrap:wrap}
+.rv-actions{display:flex;align-items:center;gap:9px}
+.rv-actions button{padding:9px 20px;font-size:13.5px;font-weight:600;border-radius:10px}
+.rv-actions button:disabled{opacity:.4;cursor:not-allowed}
+.rv-actions button.primary{background:var(--blue);box-shadow:0 2px 10px rgba(0,120,212,.35)}
+.rv-actions button.primary:hover:not(:disabled){background:var(--blue2);transform:translateY(-1px)}
+.rv-stats{font-size:11.5px;color:var(--vscode-fg-mute);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.rv-acc-bar{display:inline-block;width:54px;height:5px;border-radius:999px;background:#ffffff1a;overflow:hidden;vertical-align:middle}
+.rv-acc-fill{display:block;height:100%;background:linear-gradient(90deg,var(--blue),#5bd0ff);border-radius:999px;transition:width .3s ease}
+.marker.review-hit{outline:3px solid #2ea043;outline-offset:3px;z-index:9}
+.marker.review-miss{outline:3px solid #f14c4c;outline-offset:3px;z-index:9}
+.guess-mark{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;
+  border:2px dashed #4da3ff;background:rgba(77,163,255,.16);z-index:6;pointer-events:none;cursor:pointer}
+.guess-mark::after{content:'';position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#4da3ff}
+.guess-mark.hit{border-color:#2ea043;background:rgba(46,160,67,.18)}
+.guess-mark.hit::after{background:#2ea043}
+.guess-mark.miss{border-color:#f14c4c;background:rgba(241,76,76,.18)}
+.guess-mark.miss::after{background:#f14c4c}
+.review-guess-layer{position:absolute;left:0;top:0;pointer-events:none;z-index:5;overflow:visible}
+.review-link{stroke:#2ea043;stroke-width:2;stroke-dasharray:5 4;opacity:.85}
+.stage.review-guessing{cursor:crosshair}
+.wall-layer{position:absolute;left:0;top:0;z-index:2;overflow:visible;pointer-events:none}
+.wall-halo{stroke:#0b0d10;stroke-width:6;stroke-linecap:round;opacity:.75}
+.wall-line{stroke:#4d8fe0;stroke-width:2.6;stroke-linecap:round}
+.wall-auto-layer{position:absolute;left:0;top:0;z-index:2;pointer-events:none;image-rendering:pixelated}
 
 /* COMPASS — поворот плана */
 .compass{position:absolute;right:12px;bottom:12px;z-index:11;width:92px;height:92px;border-radius:50%;background:#191c20ee;border:1px solid var(--line);box-shadow:0 6px 18px #0009;cursor:grab;touch-action:none;user-select:none}
@@ -479,7 +520,6 @@ button .ic{pointer-events:none}
 <symbol id="i-swap" viewBox="0 0 16 16"><path d="M2.8 5.6h9.4M9.8 3.2 12.2 5.6 9.8 8"/><path d="M13.2 10.4H3.8M6.2 8 3.8 10.4 6.2 12.8"/></symbol>
 <symbol id="i-cursor" viewBox="0 0 16 16"><path d="M4 2.6 12.2 8 8.4 8.7 7 12.4z"/></symbol>
 <symbol id="i-pin" viewBox="0 0 16 16"><circle cx="8" cy="6.4" r="2.9"/><path d="M8 9.3v4.1"/></symbol>
-<symbol id="i-path" viewBox="0 0 16 16"><path d="M3 12.4 6.3 7.2l3.3 2.6 3.4-6"/><circle cx="3" cy="12.4" r="1.2"/><circle cx="13" cy="3.8" r="1.2"/></symbol>
 <symbol id="i-fit" viewBox="0 0 16 16"><path d="M2.4 5.6V2.6h3M13.6 5.6V2.6h-3M2.4 10.4v3h3M13.6 10.4v3h-3"/></symbol>
 <symbol id="i-arrow-up" viewBox="0 0 16 16"><path d="M8 13V3.4M4.5 6.9 8 3.4l3.5 3.5"/></symbol>
 <symbol id="i-arrow-down" viewBox="0 0 16 16"><path d="M8 3v9.6M4.5 9.1 8 12.6l3.5-3.5"/></symbol>
@@ -492,6 +532,7 @@ button .ic{pointer-events:none}
 <symbol id="i-arrow-right" viewBox="0 0 16 16"><path d="M2.8 8h10.4M9.8 4.6 13.2 8l-3.4 3.4"/></symbol>
 <symbol id="i-turn-cw" viewBox="0 0 16 16"><path d="M3.4 8.6a4.6 4.6 0 1 0 1.5-3.5"/><path d="M4.6 1.8v3.5h3.5"/></symbol>
 <symbol id="i-turn-ccw" viewBox="0 0 16 16"><path d="M12.6 8.6a4.6 4.6 0 1 1-1.5-3.5"/><path d="M11.4 1.8v3.5H7.9"/></symbol>
+<symbol id="i-close" viewBox="0 0 16 16"><path d="M3.2 3.2 12.8 12.8M12.8 3.2 3.2 12.8" stroke-width="1.6" stroke-linecap="round"/></symbol>
 </defs></svg>
 <div class="app" data-ui="editor" data-layout="plan" id="appRoot">
   <header class="top">
@@ -502,6 +543,7 @@ button .ic{pointer-events:none}
     </div>
     <div class="title"><input aria-label="Название дворца" id="palaceName" value="Новый дворец памяти — PALACE"/></div>
     <div class="top-actions">
+      <button id="reviewBtn" title="Случайно выбрать режим повторения (1–5) и начать">Повторение</button>
       <button class="primary" id="saveBtn">Сохранить</button>
     </div>
     <input accept=".mplace,.zip" hidden="" id="fileOpen" type="file"/>
@@ -528,14 +570,34 @@ button .ic{pointer-events:none}
     <aside class="left" id="planTools">
       <button class="tool active" data-tool="select" title="Выбор" aria-label="Выбор"><svg class="ic"><use href="#i-cursor"/></svg></button>
       <button class="tool" data-tool="marker" title="Маркер" aria-label="Маркер"><svg class="ic"><use href="#i-pin"/></svg></button>
-      <button class="tool" data-tool="path" title="Путь: показать и править изломы" id="pathTool" aria-label="Путь"><svg class="ic"><use href="#i-path"/></svg></button>
-      <span style="flex:1"></span>
+      <span class="tool-sep"></span>
       <button class="tool" id="zoomOut" title="Уменьшить" aria-label="Уменьшить"><svg class="ic"><use href="#i-minus"/></svg></button>
       <button class="tool" id="zoomIn" title="Увеличить" aria-label="Увеличить"><svg class="ic"><use href="#i-plus"/></svg></button>
       <button class="tool" id="resetView" title="Сбросить вид" aria-label="Сбросить вид"><svg class="ic"><use href="#i-fit"/></svg></button>
     </aside>
     <section class="stage" id="stage">
       <div class="floor-overlay" id="floorOverlay"></div>
+      <div class="review-bar" id="reviewBar" hidden>
+        <button class="rv-stop" id="reviewStop" title="Остановить повторение и посмотреть итоги" aria-label="Остановить"><svg class="ic"><use href="#i-close"/></svg></button>
+        <div class="rv-head">
+          <span class="rv-dot" id="reviewModeDot"></span>
+          <div class="rv-head-text">
+            <strong id="reviewModeLabel"></strong>
+            <span class="rv-pill" id="reviewStepLabel"></span>
+          </div>
+        </div>
+        <div class="rv-instruction" id="reviewInstruction"></div>
+        <div class="rv-foot">
+          <div class="rv-actions">
+            <button class="primary" id="reviewCheck" title="Проверить расставленные локусы">Проверить</button>
+            <button class="primary" id="reviewNext" hidden>Дальше</button>
+          </div>
+          <div class="rv-stats">
+            <span id="reviewStatsText"></span>
+            <span class="rv-acc-bar"><span class="rv-acc-fill" id="reviewAccFill"></span></span>
+          </div>
+        </div>
+      </div>
       <div class="empty" id="empty"><div><strong>Холст пуст</strong>Откройте сохранённый дворец или добавьте планы этажей
         <div class="empty-actions">
           <button class="primary" id="emptyOpenFile" type="button"><svg class="ic"><use href="#i-folder"/></svg>Открыть файл</button>
@@ -563,8 +625,6 @@ button .ic{pointer-events:none}
         <label for="markerSize">Размер маркера</label>
         <input id="markerSize" type="range" min="16" max="72" value="30"/>
         <output id="markerSizeVal" for="markerSize">30</output>
-        <span class="ctl-sep"></span>
-        <label class="ctl-check" title="Линия маршрута обходит стены по планировке этажа"><input checked id="routeAuto" type="checkbox"/> маршрут по плану</label>
       </div>
     </section>
     <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0"
@@ -701,6 +761,12 @@ button .ic{pointer-events:none}
   <div style="text-align:right"><button id="askNo">Отмена</button> <button class="primary" id="askYes">Да</button></div>
 </div></div>
 
+<div class="modal" id="reviewSummaryModal"><div class="dialog narrow">
+  <h2 id="reviewSummaryTitle">Повторение завершено</h2>
+  <div id="reviewSummaryBody" class="small" style="line-height:1.7"></div>
+  <div style="text-align:right;margin-top:14px"><button class="primary" id="reviewSummaryClose">Понятно</button></div>
+</div></div>
+
 <script>
 'use strict';
 
@@ -787,7 +853,9 @@ function ask(text, onYes, opts){
 }
 function notify(text, title){ ask(text, null, { notice:true, title:title || 'Сообщение' }); }
 function floorColor(i){
-  const palette = ['#ffb800','#4da3ff','#00ff88','#ff6b6b','#c084fc','#38e1d3','#ff9f45','#a3e635','#f472b6','#8fa6ff'];
+  /* синяя палитра: разные оттенки синего для различения этажей — затемнённые,
+     чтобы белый текст на локусах оставался хорошо читаемым */
+  const palette = ['#2f5fbf','#0d5aa8','#1c4b8f','#14406e','#0e6ba0','#24487a','#1a5276','#3a5fa0','#175a8c','#274e77'];
   return palette[((i % palette.length) + palette.length) % palette.length];
 }
 
@@ -796,7 +864,7 @@ function blankState(){
   const now = new Date().toISOString();
   return { version:FORMAT_VERSION, name:'Новый дворец памяти', purpose:'', source:'', explain:'', notes:'',
            created:now, edited:now, levels:[], active:0, mode:'edit', tool:'select',
-           zoom:1, rotation:0, markerSize:30, showPath:false, routeAuto:true, wallLevel:0, splitRatio:0.5, tourForceEmbed:false, tour:'', tourWidth:TOUR_WIDTH_DEFAULT, tourOpen:false, uiMode:'editor', layout:'plan', tourFollow:true, tourAutoBind:false, tourTags:true, tourYawFlip:false, tourSummary:null, panoSpots:{},
+           zoom:1, rotation:0, markerSize:30, splitRatio:0.5, tourForceEmbed:false, tour:'', tourWidth:TOUR_WIDTH_DEFAULT, tourOpen:false, uiMode:'editor', layout:'plan', tourFollow:true, tourAutoBind:false, tourTags:true, tourYawFlip:false, tourSummary:null, panoSpots:{},
            tourPanels:{ link:true, sync:true, info:true }, dirty:false };
 }
 const state = blankState();
@@ -950,8 +1018,91 @@ function confirmPendingBind(){
 let stageDown = null; /* нажатие ЛКМ по холсту: нужно отличать щелчок от протяжки */
 
 function level(){ return state.levels[state.active] || null; }
-function touch(){ state.edited = new Date().toISOString(); state.dirty = true; }
+function touch(){ state.edited = new Date().toISOString(); state.dirty = true; scheduleHistoryPush(); }
+/* Для полей, меняющихся часто (текстовые поля, ползунки) — та же отметка "изменено",
+   но запись в историю отмены откладывается, чтобы Cmd+Z не откатывал по одному символу. */
+function touchSoft(){ state.edited = new Date().toISOString(); state.dirty = true; scheduleHistoryPushSoft(); }
 function markerSize(){ const n = Number(state.markerSize); return (n >= 10 && n <= 200) ? n : 30; }
+
+/* ---------- история отмены (Cmd+Z / Ctrl+Z, Shift+Cmd+Z / Ctrl+Y — повтор) ----------
+   Снимки — неглубокая копия этажей: строки (изображения base64, имена) переиспользуются
+   по ссылке, копируются только изменяемые вложенные структуры (маркеры/стены). */
+let history = [];
+let historyIndex = -1;
+let historySuspend = false;
+let historyMicroQueued = false;
+let historySoftTimer = null;
+const HISTORY_LIMIT = 100;
+function cloneLevelForHistory(l){
+  if(!l) return l;
+  return Object.assign({}, l, {
+    markers: (l.markers || []).map(m => Object.assign({}, m, m.camera ? { camera: Object.assign({}, m.camera) } : null)),
+    walls: (l.walls || []).map(w => Object.assign({}, w)),
+    autoWalls: l.autoWalls ? { color: Object.assign({}, l.autoWalls.color), tol: l.autoWalls.tol } : null
+  });
+}
+function snapshotState(){
+  return {
+    name: state.name, purpose: state.purpose, source: state.source, explain: state.explain, notes: state.notes,
+    active: state.active, markerSize: state.markerSize,
+    levels: state.levels.map(cloneLevelForHistory)
+  };
+}
+function restoreSnapshot(snap){
+  state.name = snap.name; state.purpose = snap.purpose; state.source = snap.source;
+  state.explain = snap.explain; state.notes = snap.notes; state.markerSize = snap.markerSize;
+  state.active = Math.max(0, Math.min(snap.active, Math.max(0, snap.levels.length - 1)));
+  state.levels = snap.levels.map(cloneLevelForHistory);
+  state.dirty = true; state.edited = new Date().toISOString();
+  render();
+}
+function pushHistory(){
+  if(historySuspend) return;
+  const snap = snapshotState();
+  history = history.slice(0, historyIndex + 1);
+  history.push(snap);
+  while(history.length > HISTORY_LIMIT) history.shift();
+  historyIndex = history.length - 1;
+}
+function scheduleHistoryPush(){
+  if(historySuspend) return;
+  if(historySoftTimer){ clearTimeout(historySoftTimer); historySoftTimer = null; }
+  if(historyMicroQueued) return;
+  historyMicroQueued = true;
+  Promise.resolve().then(() => { historyMicroQueued = false; pushHistory(); });
+}
+function scheduleHistoryPushSoft(){
+  if(historySuspend) return;
+  if(historySoftTimer) clearTimeout(historySoftTimer);
+  historySoftTimer = setTimeout(() => { historySoftTimer = null; pushHistory(); }, 700);
+}
+function flushHistorySoft(){
+  if(historySoftTimer){ clearTimeout(historySoftTimer); historySoftTimer = null; pushHistory(); }
+}
+function resetHistory(){
+  if(historySoftTimer){ clearTimeout(historySoftTimer); historySoftTimer = null; }
+  historyMicroQueued = false;
+  history = [snapshotState()];
+  historyIndex = 0;
+}
+function undo(){
+  flushHistorySoft();
+  if(historyIndex <= 0){ status('Отменять больше нечего'); return; }
+  historyIndex--;
+  historySuspend = true;
+  restoreSnapshot(history[historyIndex]);
+  historySuspend = false;
+  status('Действие отменено (Cmd/Ctrl+Z)');
+}
+function redo(){
+  flushHistorySoft();
+  if(historyIndex >= history.length - 1){ status('Повторять больше нечего'); return; }
+  historyIndex++;
+  historySuspend = true;
+  restoreSnapshot(history[historyIndex]);
+  historySuspend = false;
+  status('Действие повторено (Shift+Cmd/Ctrl+Z)');
+}
 function floorOffset(){
   return state.levels.slice(0, state.active).reduce((n,f) => n + ((f && f.markers) ? f.markers.length : 0), 0);
 }
@@ -1040,472 +1191,238 @@ function clearPlan(){
   if(p){ p.innerHTML = ''; p.style.width = '0px'; p.style.height = '0px'; }
 }
 
-/* Точки полилинии пути: локусы + изломы toNext между ними */
-/* ---------- Маршрут, повторяющий планировку ----------
-   План разбирается на сетку проходимости: изображение уменьшается так, что одна
-   клетка ≈ 10 px плана, и усредняется. Стены — тёмные и толстые, поэтому клетка
-   с ними темнеет целиком; подписи комнат тонкие и после усреднения остаются
-   светлыми, так что текст пути не перекрывает. Дверные проёмы — разрывы в стенах,
-   они светлые и проходимы сами по себе. */
-const GRID_CELL = 10, GRID_MAX = 320;
-const WALL_CLEAR_PX = 16;      /* на сколько линия отступает от стен */
-const HUB_RADIUS_PX = 55;      /* как далеко от локуса ищется середина прохода */
-
-/* Порог «стена / не стена» по методу Оцу: сам находит границу между тёмными
-   линиями стен и светлой заливкой комнат, поэтому работает и на белых
-   чертежах, и на цветных, и на планах поверх фотографии. */
-function otsuThreshold(lum){
-  const hist = new Float64Array(256);
-  for(let i = 0; i < lum.length; i++) hist[Math.max(0, Math.min(255, lum[i] | 0))]++;
-  const total = lum.length;
-  let sum = 0;
-  for(let t = 0; t < 256; t++) sum += t * hist[t];
-  let sumB = 0, wB = 0, best = 0, thr = 128;
-  for(let t = 0; t < 256; t++){
-    wB += hist[t];
-    if(!wB) continue;
-    const wF = total - wB;
-    if(!wF) break;
-    sumB += t * hist[t];
-    const mB = sumB / wB, mF = (sum - sumB) / wF;
-    const between = wB * wF * (mB - mF) * (mB - mF);
-    if(between > best){ best = between; thr = t; }
-  }
-  return thr;
-}
-function buildWalkGrid(l){
-  if(!l || !l.src || !l.w || !l.h || !l.__img) return null;
-  const sig = l.src.length + ':' + l.w + 'x' + l.h + ':' + (state.wallLevel || 0);
-  if(l.__grid && l.__grid.sig === sig) return l.__grid;
-  const cols = Math.max(8, Math.min(GRID_MAX, Math.round(l.w / GRID_CELL)));
-  const rows = Math.max(8, Math.min(GRID_MAX, Math.round(l.h / GRID_CELL)));
-  const c = document.createElement('canvas');
-  c.width = cols; c.height = rows;
-  const g = c.getContext('2d');
-  if(!g) return null;
-  let data;
-  try{
-    g.drawImage(l.__img, 0, 0, cols, rows);
-    data = g.getImageData(0, 0, cols, rows).data;
-  }catch(err){ return null; }
-  const n = cols * rows;
-  const lum = new Float32Array(n);
-  for(let i = 0; i < n; i++){
-    const o = i * 4, a = data[o + 3] / 255;
-    lum[i] = a < 0.15 ? 255
-      : (0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2]) * a + 255 * (1 - a);
-  }
-  const thr = Math.max(40, Math.min(220, otsuThreshold(lum) - (Number(state.wallLevel) || 0) * 10));
-  const blocked = new Uint8Array(n);
-  for(let i = 0; i < n; i++) blocked[i] = lum[i] < thr ? 1 : 0;
-
-  /* Расстояние до ближайшей стены в клетках. */
-  const dist = new Int32Array(n).fill(1e9);
-  const q = new Int32Array(n);
-  let qs = 0, qe = 0;
-  for(let i = 0; i < n; i++) if(blocked[i]){ dist[i] = 0; q[qe++] = i; }
-  while(qs < qe){
-    const i = q[qs++], x = i % cols, y = (i / cols) | 0, d = dist[i] + 1;
-    for(let k = 0; k < 4; k++){
-      const nx = x + (k === 0 ? 1 : k === 1 ? -1 : 0), ny = y + (k === 2 ? 1 : k === 3 ? -1 : 0);
-      if(nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
-      const j = ny * cols + nx;
-      if(dist[j] > d){ dist[j] = d; q[qe++] = j; }
-    }
-  }
-  /* Мягкая карта: стены «раздуты» на ширину отступа, по ней и ищется путь,
-     поэтому линия не липнет к стенам и не режет углы. */
-  const sx = l.w / cols, sy = l.h / rows;
-  const pad = 1;                                   /* вплотную к стене линия не идёт никогда */
-  const want = Math.max(1, Math.round(WALL_CLEAR_PX / Math.max(1, (sx + sy) / 2)));
-  const soft = new Uint8Array(n);
-  for(let i = 0; i < n; i++) soft[i] = dist[i] <= pad ? 1 : 0;
-  l.__grid = { sig, cols, rows, blocked, soft, dist, sx, sy, pad, want, thr };
-  l.__route = null;
-  return l.__grid;
-}
-function gridIndexAt(grid, x, y){
-  const cx = Math.max(0, Math.min(grid.cols - 1, Math.floor(x / grid.sx)));
-  const cy = Math.max(0, Math.min(grid.rows - 1, Math.floor(y / grid.sy)));
-  return cy * grid.cols + cx;
-}
-function cellCenter(grid, idx){
-  return { x: (idx % grid.cols + 0.5) * grid.sx, y: (((idx / grid.cols) | 0) + 0.5) * grid.sy };
-}
-function nearestFree(grid, idx, map){
-  const m = map || grid.soft;
-  if(!m[idx]) return idx;
-  const cols = grid.cols, rows = grid.rows;
-  const x0 = idx % cols, y0 = (idx / cols) | 0;
-  for(let r = 1; r < 20; r++){
-    for(let dy = -r; dy <= r; dy++){
-      for(let dx = -r; dx <= r; dx++){
-        if(Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-        const x = x0 + dx, y = y0 + dy;
-        if(x < 0 || y < 0 || x >= cols || y >= rows) continue;
-        const j = y * cols + x;
-        if(!m[j]) return j;
-      }
-    }
-  }
-  return -1;
-}
-/* «Хаб» локуса — самая открытая точка прохода рядом с ним. Линия идёт по хабам,
-   то есть по коридору, а сам локус цепляется к ней короткой ножкой. Именно это
-   убирает зигзаг, когда локусы стоят по разным сторонам коридора. */
-function hubFor(grid, m){
-  const here = gridIndexAt(grid, m.x, m.y);
-  const cols = grid.cols, rows = grid.rows;
-  const x0 = here % cols, y0 = (here / cols) | 0;
-  const R = Math.max(2, Math.round(HUB_RADIUS_PX / Math.max(1, (grid.sx + grid.sy) / 2)));
-  let best = -1, bestScore = -1e9;
-  for(let dy = -R; dy <= R; dy++){
-    for(let dx = -R; dx <= R; dx++){
-      const x = x0 + dx, y = y0 + dy;
-      if(x < 0 || y < 0 || x >= cols || y >= rows) continue;
-      const j = y * cols + x;
-      if(grid.soft[j]) continue;
-      const away = Math.hypot(dx, dy);
-      const score = Math.min(grid.dist[j], (grid.want || 2) + 2) - away * 0.55;
-      if(score > bestScore){ bestScore = score; best = j; }
-    }
-  }
-  if(best < 0) return { x: m.x, y: m.y, same: true };
-  const c = cellCenter(grid, best);
-  const moved = Math.hypot(c.x - m.x, c.y - m.y);
-  return { x: c.x, y: c.y, same: moved < Math.max(grid.sx, grid.sy) * 0.8 };
-}
-function freeLine(grid, a, b, map){
-  const m = map || grid.soft;
-  const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / Math.min(grid.sx, grid.sy) * 1.5);
-  for(let i = 0; i <= steps; i++){
-    const t = steps ? i / steps : 0;
-    if(m[gridIndexAt(grid, a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)]) return false;
-  }
-  return true;
-}
-function segmentFree(grid, a, b){ return freeLine(grid, a, b, grid.blocked); }
-/* A* с восемью направлениями и штрафом за поворот — линия получается спокойной,
-   без ступенек по клеткам. */
-function findWalkPath(grid, ax, ay, bx, by, wide){
-  const start = nearestFree(grid, gridIndexAt(grid, ax, ay));
-  const goal = nearestFree(grid, gridIndexAt(grid, bx, by));
-  if(start < 0 || goal < 0) return null;
-  if(start === goal) return [cellCenter(grid, start)];
-  const cols = grid.cols, rows = grid.rows, n = cols * rows;
-  const sxC = start % cols, syC = (start / cols) | 0, gxC = goal % cols, gyC = (goal / cols) | 0;
-  const pad = wide ? Math.max(cols, rows) : Math.max(14, Math.round(Math.hypot(gxC - sxC, gyC - syC) * 0.7) + 10);
-  const minX = Math.max(0, Math.min(sxC, gxC) - pad), maxX = Math.min(cols - 1, Math.max(sxC, gxC) + pad);
-  const minY = Math.max(0, Math.min(syC, gyC) - pad), maxY = Math.min(rows - 1, Math.max(syC, gyC) + pad);
-  const gScore = new Float32Array(n).fill(Infinity);
-  const fScore = new Float32Array(n).fill(Infinity);
-  const came = new Int32Array(n).fill(-1);
-  const dirOf = new Int8Array(n).fill(-1);
-  const inOpen = new Uint8Array(n);
-  const open = [start];
-  const h = i => {
-    const x = i % cols, y = (i / cols) | 0;
-    const dx = Math.abs(x - gxC), dy = Math.abs(y - gyC);
-    return (dx + dy) + (1.414 - 2) * Math.min(dx, dy);
-  };
-  gScore[start] = 0; fScore[start] = h(start); inOpen[start] = 1;
-  let guard = 0;
-  while(open.length && guard++ < 400000){
-    let bi = 0;
-    for(let k = 1; k < open.length; k++) if(fScore[open[k]] < fScore[open[bi]]) bi = k;
-    const cur = open.splice(bi, 1)[0];
-    inOpen[cur] = 0;
-    if(cur === goal){
-      const out = [];
-      let i = cur;
-      while(i !== -1){ out.push(cellCenter(grid, i)); i = came[i]; }
-      return out.reverse();
-    }
-    const cx = cur % cols, cy = (cur / cols) | 0;
-    let d = -1;
-    for(let dy = -1; dy <= 1; dy++){
-      for(let dx = -1; dx <= 1; dx++){
-        if(!dx && !dy) continue;
-        d++;
-        const nx = cx + dx, ny = cy + dy;
-        if(nx < minX || ny < minY || nx > maxX || ny > maxY) continue;
-        const j = ny * cols + nx;
-        if(grid.soft[j]) continue;
-        if(dx && dy && (grid.soft[cy * cols + nx] || grid.soft[ny * cols + cx])) continue;
-        const step = (dx && dy) ? 1.75 : 1;                    /* диагональ дороже — линия идёт осями */
-        const turn = (dirOf[cur] >= 0 && dirOf[cur] !== d) ? 2.2 : 0; /* повороты дорогие — меньше изломов */
-        /* чем ближе стена, тем дороже клетка — линия сама держится середины прохода */
-        const clear = 1 + 1.8 / (1 + Math.min(grid.dist[j], grid.want || 2));
-        const t = gScore[cur] + step * clear + turn;
-        if(t < gScore[j]){
-          came[j] = cur; dirOf[j] = d; gScore[j] = t; fScore[j] = t + h(j);
-          if(!inOpen[j]){ inOpen[j] = 1; open.push(j); }
-        }
-      }
-    }
-  }
-  return null;
-}
-function smoothWalkPath(grid, pts){
-  if(pts.length < 3) return pts;
-  const out = [pts[0]];
-  let i = 0;
-  while(i < pts.length - 1){
-    let j = pts.length - 1;
-    for(; j > i + 1; j--) if(freeLine(grid, pts[i], pts[j])) break;
-    out.push(pts[j]);
-    i = j;
-  }
-  return out;
-}
-/* Только два вида отрезков: по горизонтали/вертикали и под 45°.
-   Каждый участок раскладывается на прямой кусок плюс диагональ. */
-function octilinear(grid, a, b){
-  const dx = b.x - a.x, dy = b.y - a.y;
-  const adx = Math.abs(dx), ady = Math.abs(dy);
-  if(adx < 1 || ady < 1 || Math.abs(adx - ady) < 1) return [a, b];   /* уже по оси или ровно 45° */
-  const sx = Math.sign(dx), sy = Math.sign(dy);
-  const variants = adx > ady
-    ? [{ x: b.x - sx * ady, y: a.y }, { x: a.x + sx * ady, y: b.y }]
-    : [{ x: a.x, y: b.y - sy * adx }, { x: b.x, y: a.y + sy * adx }];
-  for(const v of variants){
-    if(freeLine(grid, a, v) && freeLine(grid, v, b)) return [a, v, b];
-  }
-  /* Косых отрезков под произвольным углом не бывает: берём вариант,
-     который меньше задевает стены. */
-  const cost = v => {
-    let bad = 0;
-    [[a, v], [v, b]].forEach(pair => {
-      const steps = Math.ceil(Math.hypot(pair[1].x - pair[0].x, pair[1].y - pair[0].y) / Math.min(grid.sx, grid.sy));
-      for(let i = 0; i <= steps; i++){
-        const t = steps ? i / steps : 0;
-        if(grid.blocked[gridIndexAt(grid, pair[0].x + (pair[1].x - pair[0].x) * t, pair[0].y + (pair[1].y - pair[0].y) * t)]) bad++;
-      }
-    });
-    return bad;
-  };
-  return cost(variants[0]) <= cost(variants[1]) ? [a, variants[0], b] : [a, variants[1], b];
-}
-function octilinearPath(grid, pts){
-  if(pts.length < 2) return pts;
-  const out = [pts[0]];
-  for(let i = 0; i < pts.length - 1; i++){
-    const seg = octilinear(grid, pts[i], pts[i + 1]);
-    for(let k = 1; k < seg.length; k++) out.push(seg[k]);
-  }
-  /* Выпрямление: почти вертикальные и почти горизонтальные участки делаем
-     строго вертикальными и горизонтальными — линия читается как на схеме. */
-  const snapPx = Math.max(6, Math.min(grid.sx, grid.sy) * 0.9);
-  for(let i = 1; i < out.length; i++){
-    if(Math.abs(out[i].x - out[i - 1].x) < snapPx) out[i] = { x: out[i - 1].x, y: out[i].y };
-    if(Math.abs(out[i].y - out[i - 1].y) < snapPx) out[i] = { x: out[i].x, y: out[i - 1].y };
-  }
-  /* выкидываем точки, лежащие на одной прямой */
-  const clean = [out[0]];
-  for(let i = 1; i < out.length - 1; i++){
-    const p = clean[clean.length - 1], c = out[i], nx = out[i + 1];
-    const a1 = Math.atan2(c.y - p.y, c.x - p.x), a2 = Math.atan2(nx.y - c.y, nx.x - c.x);
-    if(Math.abs(a1 - a2) > 0.12) clean.push(c);
-  }
-  clean.push(out[out.length - 1]);
-  /* убираем совсем короткие «дрожания» */
-  const tight = [clean[0]];
-  for(let i = 1; i < clean.length; i++){
-    const prev = tight[tight.length - 1];
-    if(Math.hypot(clean[i].x - prev.x, clean[i].y - prev.y) > snapPx * 0.8 || i === clean.length - 1) tight.push(clean[i]);
-  }
-  return tight;
-}
-/* Готовый маршрут этажа: хабы в коридорах + участки между ними. */
-function autoRouteFor(l){
-  if(!state.routeAuto || !l || !l.src) return null;
-  const ms = l.markers || [];
-  if(ms.length < 2) return null;
-  const grid = buildWalkGrid(l);
-  if(!grid) return null;
-  const sig = ms.map(m => Math.round(m.x) + ',' + Math.round(m.y) + ':' + ((m.toNext || []).length)).join('|') +
-              '#' + grid.sig;
-  if(l.__route && l.__route.sig === sig) return l.__route;
-  const hubs = ms.map(m => hubFor(grid, m));
-  const segs = [];
-  let detours = 0, failed = 0;
-  for(let i = 0; i < ms.length - 1; i++){
-    if(Array.isArray(ms[i].toNext) && ms[i].toNext.length){ segs.push(null); continue; }
-    const a = hubs[i], b = hubs[i + 1];
-    let pts;
-    if(freeLine(grid, a, b)){
-      pts = octilinearPath(grid, [a, b]);
-    }else{
-      let raw = findWalkPath(grid, a.x, a.y, b.x, b.y);
-      if(!raw) raw = findWalkPath(grid, a.x, a.y, b.x, b.y, true);
-      if(!raw){ segs.push('none'); failed++; continue; }
-      pts = octilinearPath(grid, smoothWalkPath(grid, [a].concat(raw).concat([b])));
-      detours++;
-    }
-    segs.push(pts.slice(1, -1));
-  }
-  l.__route = { sig, segs, hubs, anchors: hubs, detours, failed };
-  return l.__route;
-}
-function buildPathNodes(l){
-  const ms = (l && l.markers) ? l.markers : [];
-  const nodes = [];
-  const auto = autoRouteFor(l);
-  for(let i = 0; i < ms.length; i++){
-    const anc = (auto && auto.anchors && auto.anchors[i]) ? auto.anchors[i] : null;
-    const usesAuto = anc && !(Array.isArray(ms[i].toNext) && ms[i].toNext.length) &&
-                     !(i > 0 && Array.isArray(ms[i - 1].toNext) && ms[i - 1].toNext.length);
-    nodes.push({ x: usesAuto ? anc.x : ms[i].x, y: usesAuto ? anc.y : ms[i].y, kind: 'locus', mi: i });
-    if(i < ms.length - 1){
-      const mid = Array.isArray(ms[i].toNext) ? ms[i].toNext : [];
-      if(mid.length){
-        mid.forEach((w, wi) => {
-          if(w && isFinite(w.x) && isFinite(w.y)) nodes.push({ x: w.x, y: w.y, kind: 'way', mi: i, wi: wi });
-        });
-      }else{
-        const route = auto;
-        const seg = route && route.segs[i];
-        if(Array.isArray(seg)) seg.forEach(w => nodes.push({ x: w.x, y: w.y, kind: 'auto', mi: i }));
-      }
-    }
-  }
-  return nodes;
-}
-function distPointSeg(px, py, ax, ay, bx, by){
-  const dx = bx - ax, dy = by - ay;
-  const len2 = dx * dx + dy * dy;
-  if(len2 < 1e-6) return { d: Math.hypot(px - ax, py - ay), t: 0, x: ax, y: ay };
-  let t = ((px - ax) * dx + (py - ay) * dy) / len2;
-  t = Math.max(0, Math.min(1, t));
-  const x = ax + t * dx, y = ay + t * dy;
-  return { d: Math.hypot(px - x, py - y), t: t, x: x, y: y };
-}
-/* Вставить излом на ближайший сегмент пути */
-function insertPathWaypoint(l, pt, maxDist){
-  const ms = l.markers || [];
-  if(ms.length < 2) return false;
-  let best = null;
-  for(let mi = 0; mi < ms.length - 1; mi++){
-    const chain = [{ x: ms[mi].x, y: ms[mi].y }].concat(Array.isArray(ms[mi].toNext) ? ms[mi].toNext : []).concat([{ x: ms[mi + 1].x, y: ms[mi + 1].y }]);
-    for(let s = 0; s < chain.length - 1; s++){
-      const hit = distPointSeg(pt.x, pt.y, chain[s].x, chain[s].y, chain[s + 1].x, chain[s + 1].y);
-      if(hit.d <= (maxDist || 28) && (!best || hit.d < best.d)){
-        best = { mi: mi, insertAt: s, x: hit.x, y: hit.y, d: hit.d };
-      }
-    }
-  }
-  if(!best) return false;
-  if(!Array.isArray(ms[best.mi].toNext)) ms[best.mi].toNext = [];
-  /* insertAt: 0 = после локуса (индекс 0 в toNext), s>=1 → toNext[s-1] */
-  const idx = best.insertAt;
-  ms[best.mi].toNext.splice(idx, 0, { x: best.x, y: best.y });
-  return true;
-}
-/* Полилиния со скруглёнными углами: на каждом изломе вставляется дуга. */
-function roundedPathD(pts, r){
-  if(!pts.length) return '';
-  if(pts.length === 1) return 'M' + pts[0].x + ' ' + pts[0].y;
-  let d = 'M' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
-  for(let i = 1; i < pts.length - 1; i++){
-    const p0 = pts[i - 1], c = pts[i], p2 = pts[i + 1];
-    const l1 = Math.hypot(c.x - p0.x, c.y - p0.y), l2 = Math.hypot(p2.x - c.x, p2.y - c.y);
-    if(l1 < 0.5 || l2 < 0.5) continue;
-    const rr = Math.max(2, Math.min(r, l1 / 2, l2 / 2));
-    const a = { x: c.x + (p0.x - c.x) / l1 * rr, y: c.y + (p0.y - c.y) / l1 * rr };
-    const b = { x: c.x + (p2.x - c.x) / l2 * rr, y: c.y + (p2.y - c.y) / l2 * rr };
-    d += ' L' + a.x.toFixed(1) + ' ' + a.y.toFixed(1) +
-         ' Q' + c.x.toFixed(1) + ' ' + c.y.toFixed(1) + ' ' + b.x.toFixed(1) + ' ' + b.y.toFixed(1);
-  }
-  const last = pts[pts.length - 1];
-  d += ' L' + last.x.toFixed(1) + ' ' + last.y.toFixed(1);
-  return d;
-}
-/* Локус не лежит на линии — он соединён с ней короткой ножкой. */
-function routeStubs(l){
-  const route = autoRouteFor(l);
-  if(!route || !route.hubs) return [];
-  const ms = l.markers || [];
-  const out = [];
-  route.hubs.forEach((hub, i) => {
-    if(!hub || hub.same || !ms[i]) return;
-    if(Array.isArray(ms[i].toNext) && ms[i].toNext.length) return;
-    out.push({ from: ms[i], to: hub });
-  });
-  return out;
-}
-function drawPathLayer(p, l, w, h){
-  if(!state.showPath) return;
-  const nodes = buildPathNodes(l);
-  if(nodes.length < 2) return;
+/* ---------- стены: рисуются как физическая структура помещения ---------- */
+function renderWalls(p, w, h, walls){
+  if(!walls || !walls.length) return;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'path-layer');
+  svg.setAttribute('class', 'wall-layer');
   svg.setAttribute('width', String(w));
   svg.setAttribute('height', String(h));
-  const pts = nodes.map(n => n.x + ',' + n.y).join(' ');
-  const d = roundedPathD(nodes, Math.max(8, markerSize() * 0.45));
-  const soft = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  soft.setAttribute('class', 'path-stroke-soft');
-  soft.setAttribute('d', d);
-  svg.appendChild(soft);
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  line.setAttribute('class', 'path-stroke');
-  line.setAttribute('d', d);
-  svg.appendChild(line);
-  routeStubs(l).forEach(st => {
-    const leg = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    leg.setAttribute('class', 'path-stub');
-    leg.setAttribute('x1', st.from.x); leg.setAttribute('y1', st.from.y);
-    leg.setAttribute('x2', st.to.x);   leg.setAttribute('y2', st.to.y);
-    svg.appendChild(leg);
+  walls.forEach((wl, i) => {
+    const halo = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    halo.setAttribute('class', 'wall-halo');
+    halo.setAttribute('x1', wl.x1); halo.setAttribute('y1', wl.y1);
+    halo.setAttribute('x2', wl.x2); halo.setAttribute('y2', wl.y2);
+    svg.appendChild(halo);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('class', 'wall-line');
+    line.dataset.wi = String(i);
+    line.setAttribute('x1', wl.x1); line.setAttribute('y1', wl.y1);
+    line.setAttribute('x2', wl.x2); line.setAttribute('y2', wl.y2);
+    svg.appendChild(line);
   });
-  if(state.tool === 'path' && state.mode === 'edit'){
-    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    hit.setAttribute('class', 'path-hit');
-    hit.setAttribute('points', pts);
-    hit.style.pointerEvents = 'stroke';
-    svg.style.pointerEvents = 'none';
-    hit.addEventListener('click', e => {
-      e.stopPropagation();
-      const pt = planPoint(e.clientX, e.clientY);
-      if(insertPathWaypoint(l, pt, 40)){ touch(); drawPlan(); status('Излом добавлен · перетащите точку · ПКМ — удалить'); }
-    });
-    /* hit needs pointer events on svg for the stroke */
-    svg.style.pointerEvents = 'auto';
-    svg.appendChild(hit);
-  }
   p.appendChild(svg);
-  /* Ручки изломов */
-  if(state.showPath){
-    nodes.forEach(n => {
-      if(n.kind !== 'way') return;
-      const d = document.createElement('div');
-      d.className = 'path-way';
-      d.style.left = n.x + 'px';
-      d.style.top = n.y + 'px';
-      d.title = 'Излом пути · перетащите · ПКМ — удалить';
-      d.oncontextmenu = e => {
-        e.preventDefault(); e.stopPropagation();
-        if(state.mode !== 'edit') return;
-        const m = l.markers[n.mi];
-        if(!m || !Array.isArray(m.toNext)) return;
-        m.toNext.splice(n.wi, 1);
-        if(!m.toNext.length) delete m.toNext;
-        touch(); drawPlan(); status('Излом удалён');
-      };
-      d.onmousedown = e => {
-        if(e.button !== 0 || state.mode !== 'edit') return;
-        e.stopPropagation(); e.preventDefault();
-        const m = l.markers[n.mi];
-        if(!m || !m.toNext || !m.toNext[n.wi]) return;
-        const wpt = m.toNext[n.wi];
-        wpt.dragging = true;
-        drag = { m: wpt, target: d, sx: e.clientX, sy: e.clientY, ox: 0, oy: 0, moved: false, way: true };
-        d.classList.add('dragging');
-      };
-      p.appendChild(d);
-    });
-  }
 }
+function distToSegment(px, py, x1, y1, x2, y2){
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  let t = lenSq ? ((px - x1) * dx + (py - y1) * dy) / lenSq : 0;
+  t = Math.max(0, Math.min(1, t));
+  const cx = x1 + t * dx, cy = y1 + t * dy;
+  return Math.hypot(px - cx, py - cy);
+}
+
+/* ---------- автоопределение стен по цвету линий плана ----------
+   Дом на фото состоит из трёх слоёв: фон (размытое фото), сам план
+   (светлая заливка комнат) и стены/окна — они рисуются одной и той же
+   тёмно-синей «чернильной» линией. Эта линия всегда самый частый
+   достаточно тёмный синеватый цвет на изображении, поэтому её не нужно
+   задавать вручную — можно определить по гистограмме цветов плана. */
+const floorPixelCache = new Map(); /* level -> {src,w,h,data} — пиксели уменьшенной копии плана */
+const autoWallOverlayCache = new Map(); /* level -> {key,dataUrl} — подсветка найденных стен */
+const AUTO_WALL_MAXD = 1400;
+function cacheFloorPixelsFromImage(l, im){
+  if(!l || !im || !im.naturalWidth || !im.naturalHeight) return null;
+  let sw = im.naturalWidth, sh = im.naturalHeight;
+  if(Math.max(sw, sh) > AUTO_WALL_MAXD){
+    const scale = AUTO_WALL_MAXD / Math.max(sw, sh);
+    sw = Math.max(1, Math.round(sw * scale)); sh = Math.max(1, Math.round(sh * scale));
+  }
+  const c = document.createElement('canvas'); c.width = sw; c.height = sh;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(im, 0, 0, sw, sh);
+  let imgData;
+  try{ imgData = ctx.getImageData(0, 0, sw, sh); }catch(err){ return null; }
+  const entry = { src: l.src, w: sw, h: sh, data: imgData.data };
+  floorPixelCache.set(l, entry);
+  return entry;
+}
+async function ensureFloorPixels(li){
+  const l = state.levels[li];
+  if(!l || !l.src) return null;
+  const cached = floorPixelCache.get(l);
+  if(cached && cached.src === l.src) return cached;
+  try{
+    const im = await loadImage(l.src);
+    return cacheFloorPixelsFromImage(l, im);
+  }catch(err){ return null; }
+}
+/* Определение цвета стен работает для чернил ЛЮБОГО цвета (синий, чёрный,
+   красный, коричневый и т.п.), а не только синеватых. Идея: стены на плане
+   рисуются тонкими вытянутыми линиями, а тёмные пятна фото (тени, текстура,
+   мелкие детали) — нет. Поэтому вместо фиксированного оттенка ищем среди
+   самых частых достаточно тёмных цветов тот, что чаще всего образует
+   тонкие протяжённые линии — это и есть чернила стен. */
+function detectWallColor(entry){
+  const { w, h, data } = entry;
+  const step = 2;
+  const QSHIFT = 4; /* квант 16 градаций на канал — грубее, чтобы ловить один и тот же цвет чернил */
+  const buckets = new Map(); /* key -> {count, rs, gs, bs} */
+  for(let y = 0; y < h; y += step){
+    for(let x = 0; x < w; x += step){
+      const idx = (y * w + x) * 4;
+      const r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
+      if(a < 200) continue;
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      if(lum > 195 || lum < 5) continue; /* стены темнее заливки плана, но не абсолютный чёрный шум/рамка */
+      const key = (r >> QSHIFT) + ',' + (g >> QSHIFT) + ',' + (b >> QSHIFT);
+      let bucket = buckets.get(key);
+      if(!bucket){ bucket = { count: 0, rs: 0, gs: 0, bs: 0 }; buckets.set(key, bucket); }
+      bucket.count++; bucket.rs += r; bucket.gs += g; bucket.bs += b;
+    }
+  }
+  if(!buckets.size) return null;
+  /* берём top-N кандидатов по частоте — среди них ищем «линейчатый» цвет */
+  const candidates = Array.from(buckets.entries())
+    .filter(([, b]) => b.count >= 40)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 12)
+    .map(([key, b]) => ({ key: key, count: b.count, r: b.rs / b.count, g: b.gs / b.count, b: b.bs / b.count }));
+  if(!candidates.length) return null;
+  function runLen(x0, y0, dx, dy, key, cap){
+    let n = 0, x = x0, y = y0;
+    while(n < cap && x >= 0 && y >= 0 && x < w && y < h){
+      const idx = (y * w + x) * 4;
+      if(data[idx + 3] < 200) break;
+      const k = (data[idx] >> QSHIFT) + ',' + (data[idx + 1] >> QSHIFT) + ',' + (data[idx + 2] >> QSHIFT);
+      if(k !== key) break;
+      n++; x += dx; y += dy;
+    }
+    return n;
+  }
+  const isLight = (px, py) => {
+    if(px < 0 || py < 0 || px >= w || py >= h) return false;
+    const idx = (py * w + px) * 4;
+    if(data[idx + 3] < 200) return false;
+    const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+    return lum > 195;
+  };
+  let best = null, bestScore = -1;
+  candidates.forEach(cand => {
+    const cap = 60;
+    /* берём кандидатов равномерно по всему изображению (через каждый N-й найденный
+       пиксель), а не только первые попавшиеся — иначе выборку перекашивает в сторону
+       одного угла фото */
+    const strideN = Math.max(1, Math.floor(cand.count / 300));
+    let elongated = 0, total = 0, lightBordered = 0, matchIdx = 0;
+    for(let y = 0; y < h; y += step){
+      for(let x = 0; x < w; x += step){
+        if(total >= 320) break;
+        const idx = (y * w + x) * 4;
+        if(data[idx + 3] < 200) continue;
+        const k = (data[idx] >> QSHIFT) + ',' + (data[idx + 1] >> QSHIFT) + ',' + (data[idx + 2] >> QSHIFT);
+        if(k !== cand.key) continue;
+        matchIdx++;
+        if((matchIdx - 1) % strideN !== 0) continue;
+        const hRun = runLen(x, y, -1, 0, cand.key, cap) + runLen(x + 1, y, 1, 0, cand.key, cap) - 1;
+        const vRun = runLen(x, y, 0, -1, cand.key, cap) + runLen(x, y + 1, 0, 1, cand.key, cap) - 1;
+        const thickness = Math.min(hRun, vRun), length = Math.max(hRun, vRun);
+        total++;
+        if(thickness >= 2 && thickness <= 25 && length >= thickness * 2.2){
+          elongated++;
+          /* настоящая стена почти всегда граничит хотя бы с одной стороны со светлой
+             заливкой помещения — так отсеиваем тонкие тёмные артефакты фона/рамки фото,
+             которые тоже могут выглядеть «линейчато», но света рядом не имеют */
+          const off = Math.min(40, thickness + 4);
+          let bordered;
+          if(hRun < vRun) bordered = isLight(x - off, y) || isLight(x + off, y);
+          else if(vRun < hRun) bordered = isLight(x, y - off) || isLight(x, y + off);
+          else bordered = isLight(x - off, y) || isLight(x + off, y) || isLight(x, y - off) || isLight(x, y + off);
+          if(bordered) lightBordered++;
+        }
+      }
+      if(total >= 320) break;
+    }
+    if(total < 15) return;
+    const elongRatio = elongated / total;
+    if(elongRatio < 0.35) return;
+    const lightRatio = elongated ? lightBordered / elongated : 0;
+    /* лёгкий бонус за насыщенный (не серый) цвет — черновики планов чаще рисуют
+       стены отдельным заметным цветом, но серые/чёрные стены всё ещё побеждают,
+       если явно более линейчаты и рядом со светлой заливкой */
+    const sat = Math.max(cand.r, cand.g, cand.b) - Math.min(cand.r, cand.g, cand.b);
+    const satBonus = 1 + sat / 140;
+    const score = elongRatio * (0.3 + 0.7 * lightRatio) * satBonus * Math.log(cand.count + 1);
+    if(score > bestScore){ bestScore = score; best = cand; }
+  });
+  if(!best) return null;
+  return { r: Math.round(best.r), g: Math.round(best.g), b: Math.round(best.b) };
+}
+/* Автоопределение запускается само при первой отрисовке плана (см. drawPlan) —
+   отдельной кнопки больше нет, стены находятся тихо, без участия пользователя. */
+function autoDetectWallsIfNeeded(l, entry){
+  if(!l || l.autoWalls || !entry) return;
+  const color = detectWallColor(entry);
+  if(!color) return;
+  l.autoWalls = { color: color, tol: 44 };
+  touch();
+}
+function renderAutoWallOverlay(p, w, h, l){
+  if(!l || !l.autoWalls) return;
+  const entry = floorPixelCache.get(l);
+  if(!entry || entry.src !== l.src) return;
+  const aw = l.autoWalls;
+  const key = aw.color.r + ',' + aw.color.g + ',' + aw.color.b + ',' + aw.tol + ',' + entry.w + ',' + entry.h + ',' + entry.src.length;
+  let cached = autoWallOverlayCache.get(l);
+  if(!cached || cached.key !== key){
+    const { w: ew, h: eh, data: src } = entry;
+    const tol2 = aw.tol * aw.tol;
+    const isWallColor = (x, y) => {
+      if(x < 0 || y < 0 || x >= ew || y >= eh) return false;
+      const idx = (y * ew + x) * 4;
+      if(src[idx + 3] < 200) return false;
+      const dr = src[idx] - aw.color.r, dg = src[idx + 1] - aw.color.g, db = src[idx + 2] - aw.color.b;
+      return dr * dr + dg * dg + db * db <= tol2;
+    };
+    const RUN_CAP = 60, THICK_MAX = 30;
+    function runLen(x0, y0, dx, dy){
+      let n = 0, x = x0, y = y0;
+      while(n < RUN_CAP && isWallColor(x, y)){ n++; x += dx; y += dy; }
+      return n;
+    }
+    const c = document.createElement('canvas');
+    c.width = ew; c.height = eh;
+    const ctx = c.getContext('2d');
+    const out = ctx.createImageData(ew, eh);
+    const dst = out.data;
+    for(let y = 0; y < eh; y++){
+      for(let x = 0; x < ew; x++){
+        const idx = (y * ew + x) * 4;
+        if(!isWallColor(x, y)){ dst[idx + 3] = 0; continue; }
+        /* красим только тонкие протяжённые структуры (сами стены), а не любые
+           сплошные заливки похожего цвета — бассейн, воду, небо на фото и т.п.,
+           которые могут случайно попасть в допуск по цвету стены */
+        const hRun = runLen(x, y, -1, 0) + runLen(x + 1, y, 1, 0) - 1;
+        const vRun = runLen(x, y, 0, -1) + runLen(x, y + 1, 0, 1) - 1;
+        const thickness = Math.min(hRun, vRun);
+        if(thickness > THICK_MAX){ dst[idx + 3] = 0; continue; }
+        dst[idx] = 61; dst[idx + 1] = 132; dst[idx + 2] = 245; dst[idx + 3] = 205;
+      }
+    }
+    ctx.putImageData(out, 0, 0);
+    cached = { key: key, dataUrl: c.toDataURL('image/png') };
+    autoWallOverlayCache.set(l, cached);
+  }
+  const img = document.createElement('img');
+  img.src = cached.dataUrl;
+  img.className = 'wall-auto-layer';
+  img.style.width = w + 'px';
+  img.style.height = h + 'px';
+  img.draggable = false;
+  img.alt = '';
+  p.appendChild(img);
+}
+
 function drawPlan(){
   const l = level(), p = $('#plan');
   if(!p) return;
@@ -1524,20 +1441,30 @@ function drawPlan(){
     im.draggable = false;
     im.setAttribute('draggable', 'false');
     im.ondragstart = e => e.preventDefault();
-    l.__img = im;   /* нужен для разбора планировки при построении маршрута */
     p.appendChild(im);
-    drawPathLayer(p, l, im.naturalWidth, im.naturalHeight);
+    if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
+      const entry = cacheFloorPixelsFromImage(l, im);
+      if(entry) autoDetectWallsIfNeeded(l, entry);
+    }
+    renderWalls(p, im.naturalWidth, im.naturalHeight, l.walls);
+    renderAutoWallOverlay(p, im.naturalWidth, im.naturalHeight, l);
     const size = markerSize(), off = floorOffset();
     (l.markers || []).forEach((m, i) => {
+      if(!reviewMarkerVisible(i)) return;
       const d = document.createElement('div');
-      d.className = 'marker' + (m.dragging ? ' dragging' : '') + (l.selected === i ? ' selected' : '') + (m.pano ? ' pinned' : '');
+      const resultClass = reviewMarkerResultClass(i);
+      d.className = 'marker' + (m.dragging ? ' dragging' : '') + (l.selected === i ? ' selected' : '') + (m.pano ? ' pinned' : '') + resultClass;
       d.dataset.mi = String(i);
       d.textContent = i + 1 + off;
       d.style.left = m.x + 'px';
       d.style.top = m.y + 'px';
       d.style.width = d.style.height = size + 'px';
-      d.style.background = floorColor(state.active);
+      d.style.background = resultClass === ' review-hit' ? '#2ea043' :
+                            resultClass === ' review-miss' ? '#f14c4c' : floorColor(state.active);
       d.style.fontSize = Math.max(9, Math.round(size * 0.42)) + 'px';
+      d.tabIndex = 0;
+      d.setAttribute('role', 'button');
+      d.setAttribute('aria-label', 'Локус ' + (i + 1 + off) + (l.selected === i ? ' (выбран)' : ''));
       d.onclick = e => {
         e.stopPropagation();
         if(suppressMarkerClick){ suppressMarkerClick = false; return; }
@@ -1547,6 +1474,15 @@ function drawPlan(){
         e.preventDefault(); e.stopPropagation();
         if(state.mode !== 'edit') return;
         deleteMarker(i);
+      };
+      d.onkeydown = e => {
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault(); e.stopPropagation();
+          selectMarker(i);
+        }else if((e.key === 'Delete' || e.key === 'Backspace') && state.mode === 'edit'){
+          e.preventDefault(); e.stopPropagation();
+          deleteMarker(i);
+        }
       };
       d.onmousedown = e => {
         if(e.button === 2){ e.stopPropagation(); return; }
@@ -1559,6 +1495,7 @@ function drawPlan(){
       };
       p.appendChild(d);
     });
+    reviewDrawGuessOverlay(p, im.naturalWidth, im.naturalHeight);
   };
   im.onerror = () => { if(token === planRenderToken){ clearPlan(); status('Не удалось отобразить изображение этажа'); } };
   im.src = l.src;
@@ -1620,6 +1557,7 @@ function renderRoute(){
   $$('#route .r').forEach(b => {
     const li = Number(b.dataset.l), idx = Number(b.dataset.i);
     b.ondragstart = e => {
+      if(reviewSession){ e.preventDefault(); return; }
       try{
         e.dataTransfer.setData('text/plain', li + ':' + idx);
         e.dataTransfer.effectAllowed = 'move';
@@ -1658,7 +1596,7 @@ function renderRoute(){
     b.ondrop = e => { e.preventDefault(); e.stopPropagation(); dropRouteHere(li); };
     /* Клавиатурная альтернатива перетаскиванию */
     b.onkeydown = e => {
-      if(!e.altKey) return;
+      if(!e.altKey || reviewSession) return;
       const arr = state.levels[li] && state.levels[li].markers;
       if(!arr) return;
       let to = null;
@@ -1675,6 +1613,7 @@ function renderRoute(){
       if(next) try{ next.focus(); }catch(err){}
     };
     b.onclick = () => {
+      if(reviewSession) return;
       if(li !== state.active) selectLevel(li);
       const l = state.levels[li];
       const m = l && l.markers[idx];
@@ -2020,9 +1959,6 @@ function buildSerializableState(){
     uiMode: 'editor',
     layout: state.layout || 'plan',
     splitRatio: clampSplit(state.splitRatio),
-    showPath: !!state.showPath,
-    routeAuto: state.routeAuto !== false,
-    wallLevel: Number(state.wallLevel) || 0,
     tourFollow: state.tourFollow !== false,
     tourAutoBind: !!state.tourAutoBind,
     tourTags: state.tourTags !== false,
@@ -2041,12 +1977,15 @@ function buildSerializableState(){
       w: l.w || null, h: l.h || null,
       rotation: l.rotation || 0, flip: !!l.flip,
       brightness: l.brightness || 100, contrast: l.contrast || 100,
-      draw: l.draw || [],
+      walls: (l.walls || []).filter(w => w && isFinite(w.x1) && isFinite(w.y1) && isFinite(w.x2) && isFinite(w.y2))
+                             .map(w => ({ x1:w.x1, y1:w.y1, x2:w.x2, y2:w.y2 })),
+      autoWalls: (l.autoWalls && l.autoWalls.color && isFinite(l.autoWalls.color.r) && isFinite(l.autoWalls.color.g) && isFinite(l.autoWalls.color.b))
+        ? { color: { r:l.autoWalls.color.r, g:l.autoWalls.color.g, b:l.autoWalls.color.b }, tol: Number(l.autoWalls.tol) || 44 }
+        : null,
       markers: (l.markers || []).map(m => ({
         x: m.x, y: m.y, note: m.note || '',
         pano: m.pano || null,
-        camera: m.camera || null,
-        toNext: Array.isArray(m.toNext) ? m.toNext.filter(w => w && isFinite(w.x) && isFinite(w.y)).map(w => ({ x: w.x, y: w.y })) : undefined
+        camera: m.camera || null
       }))
     }))
   };
@@ -2119,11 +2058,13 @@ async function loadMplaceBuffer(buffer){
                                                      .map(m => ({
                                                        x:Number(m.x), y:Number(m.y), note:m.note || '',
                                                        pano:m.pano || null,
-                                                       camera:m.camera || null,
-                                                       toNext: Array.isArray(m.toNext)
-                                                         ? m.toNext.filter(w => w && isFinite(w.x) && isFinite(w.y)).map(w => ({ x: Number(w.x), y: Number(w.y) }))
-                                                         : undefined
+                                                       camera:m.camera || null
                                                      })) : [];
+    l.walls = Array.isArray(l.walls) ? l.walls.filter(w => w && isFinite(w.x1) && isFinite(w.y1) && isFinite(w.x2) && isFinite(w.y2))
+                                               .map(w => ({ x1:Number(w.x1), y1:Number(w.y1), x2:Number(w.x2), y2:Number(w.y2) })) : [];
+    l.autoWalls = (l.autoWalls && l.autoWalls.color && isFinite(l.autoWalls.color.r) && isFinite(l.autoWalls.color.g) && isFinite(l.autoWalls.color.b))
+      ? { color: { r:Number(l.autoWalls.color.r), g:Number(l.autoWalls.color.g), b:Number(l.autoWalls.color.b) }, tol: Number(l.autoWalls.tol) || 44 }
+      : null;
     l.selected = null;
     l.name = l.name || ('Этаж #' + (i + 1));
     let file = z.file(l.image || ('images/level-' + (i + 1) + '.png'));
@@ -2154,9 +2095,6 @@ async function loadMplaceBuffer(buffer){
     layout: (data.layout === 'tour' || data.layout === 'split' || data.layout === 'split-rev' || data.layout === 'plan')
       ? data.layout
       : (data.uiMode === 'tour' ? 'tour' : 'plan'),
-    showPath: !!data.showPath,
-    routeAuto: data.routeAuto !== false,
-    wallLevel: Number(data.wallLevel) || 0,
     tourFollow: data.tourFollow !== false,
     tourAutoBind: data.tourAutoBind === true,
     tourTags: data.tourTags !== false,
@@ -2174,6 +2112,7 @@ async function loadMplaceBuffer(buffer){
   state.zoom = 1;
   const v = $('#viewport'); if(v) v.style.transform = '';
   render();
+  resetHistory();
   status('Открыт дворец «' + state.name + '» · этажей: ' + levels.length + ' · формат ' + (data.version || '1.0'));
 }
 function openFileObject(file){
@@ -3567,6 +3506,7 @@ function resetPalace(){
   clearPlan();
   renderPending();
   render();
+  resetHistory();
 }
 function startNewPalaceWizard(){
   resetPalace();
@@ -3655,7 +3595,7 @@ on('#applyPlans', 'click', () => {
       src: x.src, original: x.original || x.src,
       rotation: x.rotation || 0, flip: !!x.flip,
       brightness: x.brightness || 100, contrast: x.contrast || 100,
-      markers: [], draw: [], selected: null
+      markers: [], walls: [], autoWalls: null, selected: null
     }));
     state.active = Math.min(start, Math.max(0, state.levels.length - 1));
   }
@@ -3687,6 +3627,14 @@ on('#stage', 'click', e => {
   stageDown = null;
   if(dragged) return;
   if(e.detail > 1) return; /* второй клик двойного нажатия не создаёт лишний маркер */
+  /* Клики по всплывающим панелям над холстом (панель повторения, компас, ctl)
+     не должны долетать сюда как клик по самому плану. */
+  if(e.target && e.target.closest && e.target.closest('.review-bar, .canvas-ctl, #compass, button, input, textarea, select')) return;
+  if(reviewSession && reviewSession.phase === 'placing'){
+    const pt = planPoint(e.clientX, e.clientY);
+    if(insidePlan(pt)) reviewTogglePlacement(pt);
+    return;
+  }
   if(state.mode !== 'edit') return;
   const l = level(); if(!l) return;
   if(placingSpot){
@@ -3698,18 +3646,6 @@ on('#stage', 'click', e => {
     touch(); render(); scheduleTourOverlay();
     status('Точка съёмки «' + tourApi.pano + '» отмечена на этаже ' + (state.active + 1) +
            ' — теперь локусы показываются в туре по их настоящему положению');
-    return;
-  }
-  if(state.tool === 'path'){
-    if(state.mode !== 'edit') return;
-    const pt = planPoint(e.clientX, e.clientY);
-    if(!insidePlan(pt)) return;
-    if(insertPathWaypoint(l, pt, 48)){
-      touch(); drawPlan();
-      status('Излом добавлен · перетащите · ПКМ по точке — удалить');
-    }else{
-      status('Кликните ближе к полосе пути, чтобы добавить излом');
-    }
     return;
   }
   if(state.tool !== 'marker'){
@@ -3725,7 +3661,26 @@ on('#stage', 'click', e => {
   touch(); render();
   status('Локус ' + (l.markers.length + floorOffset()) + ' добавлен');
 });
-on('#stage', 'contextmenu', e => e.preventDefault());
+on('#stage', 'contextmenu', e => {
+  e.preventDefault();
+  if(state.mode !== 'edit') return;
+  const t = e.target;
+  if(t && t.closest && t.closest('.marker, input, textarea, select, button, .canvas-ctl, .floor-overlay, #compass')) return;
+  const l = level(); if(!l || !l.walls || !l.walls.length) return;
+  const pt = planPoint(e.clientX, e.clientY);
+  if(!insidePlan(pt)) return;
+  let bestIdx = -1, bestD = 14;
+  l.walls.forEach((w, i) => {
+    const d = distToSegment(pt.x, pt.y, w.x1, w.y1, w.x2, w.y2);
+    if(d < bestD){ bestD = d; bestIdx = i; }
+  });
+  if(bestIdx >= 0){
+    l.walls.splice(bestIdx, 1);
+    touch();
+    drawPlan();
+    status('Стена удалена');
+  }
+});
 function startPan(e){
   pan = { x:e.clientX, y:e.clientY, tx:0, ty:0 };
   const v = $('#viewport');
@@ -3811,9 +3766,40 @@ window.onkeydown = e => {
   }
   const t = e.target && e.target.tagName;
   if(t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+  const meta = e.metaKey || e.ctrlKey;
+  if(meta && !e.altKey && (e.key === 'z' || e.key === 'Z')){
+    e.preventDefault();
+    if(e.shiftKey) redo(); else undo();
+    return;
+  }
+  if(meta && !e.altKey && !e.shiftKey && (e.key === 'y' || e.key === 'Y')){
+    e.preventDefault();
+    redo();
+    return;
+  }
   if((e.key === 'Delete' || e.key === 'Backspace') && state.mode === 'edit'){
     const l = level();
     if(l && l.selected != null){ e.preventDefault(); deleteMarker(l.selected); }
+    return;
+  }
+  /* стрелки — сдвиг выбранного локуса с клавиатуры (Shift — крупный шаг) */
+  if(state.mode === 'edit' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')){
+    const l = level();
+    const m = l && l.selected != null ? l.markers[l.selected] : null;
+    if(m){
+      const step = e.shiftKey ? 10 : 1;
+      if(e.key === 'ArrowLeft') m.x -= step;
+      else if(e.key === 'ArrowRight') m.x += step;
+      else if(e.key === 'ArrowUp') m.y -= step;
+      else if(e.key === 'ArrowDown') m.y += step;
+      e.preventDefault();
+      touchSoft();
+      const idx = l.selected;
+      drawPlan(); renderRoute();
+      const p = $('#plan');
+      const refocus = p && p.querySelector('[data-mi="' + idx + '"]');
+      if(refocus) refocus.focus({ preventScroll:true });
+    }
   }
 };
 window.addEventListener('paste', async e => {
@@ -3840,24 +3826,10 @@ $$('.tool').forEach(b => {
   if(!b.dataset.tool) return;
   b.onclick = () => {
     state.tool = b.dataset.tool;
-    if(state.tool === 'path'){
-      state.showPath = true;
-      status('Путь: клик по полосе — излом · перетащите точку · ПКМ — удалить. Другой инструмент скроет путь.');
-    }else if(state.showPath){
-      /* путь остаётся видимым при select/marker, чтобы видеть маршрут; скрытие — повторный клик по ╱ или Esc */
-    }
     $$('.tool').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     drawPlan();
   };
-});
-on('#pathTool', 'dblclick', e => {
-  e.preventDefault();
-  state.showPath = !state.showPath;
-  if(!state.showPath && state.tool === 'path') state.tool = 'select';
-  applyMode();
-  drawPlan();
-  status(state.showPath ? 'Путь показан' : 'Путь скрыт');
 });
 function applyZoom(z, cx, cy){
   const v = $('#viewport'); if(!v) return;
@@ -4087,23 +4059,13 @@ on('#tourDownload', 'click', () => openTourDownloadHelp());
 on('#tourWindowBtn', 'click', () => openTourWindow(state.tour));
 bindGuideCopy();
 on('#tourUrl', 'keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); applyTourUrl(); } e.stopPropagation(); });
-on('#routeAuto', 'change', e => {
-  state.routeAuto = !!e.target.checked;
-  const l = level(); if(l) l.__route = null;
-  touch();
-  if(!state.showPath && state.routeAuto) state.showPath = true;
-  render();
-  const r = l ? l.__route : null;
-  status(state.routeAuto
-    ? ('Маршрут построен по планировке' + (r ? ': обходов ' + r.detours + (r.failed ? ', прямых участков ' + r.failed : '') : ''))
-    : 'Маршрут — прямыми линиями');
-});
 on('#markerSize', 'input', e => {
   state.markerSize = Number(e.target.value) || 30;
   setText('#markerSizeVal', markerSize());
   if(level()) drawPlan();
-  touch();
+  touchSoft();
 });
+on('#markerSize', 'change', () => flushHistorySoft());
 /* Регулятор лежит на холсте — его клики не должны ставить маркеры. */
 (function shieldMarkerCtl(){
   const c = $('#markerCtl'); if(!c) return;
@@ -4113,11 +4075,12 @@ on('#markerSize', 'input', e => {
 })();
 
 /* ---------- текстовые поля ---------- */
-on('#palaceName', 'input', e => { state.name = e.target.value; syncFileNameField(); touch(); });
-on('#purpose', 'input', e => { state.purpose = e.target.value; touch(); });
-on('#source', 'input', e => { state.source = e.target.value; touch(); });
-on('#explain', 'input', e => { state.explain = e.target.value; touch(); });
-on('#notes', 'input', e => { state.notes = e.target.value; touch(); });
+on('#palaceName', 'input', e => { state.name = e.target.value; syncFileNameField(); touchSoft(); });
+on('#purpose', 'input', e => { state.purpose = e.target.value; touchSoft(); });
+on('#source', 'input', e => { state.source = e.target.value; touchSoft(); });
+on('#explain', 'input', e => { state.explain = e.target.value; touchSoft(); });
+on('#notes', 'input', e => { state.notes = e.target.value; touchSoft(); });
+['#palaceName', '#purpose', '#source', '#explain', '#notes'].forEach(sel => on(sel, 'blur', () => flushHistorySoft()));
 
 /* ---------- перетаскивание файлов на окно ---------- */
 document.body.ondragover = e => {
@@ -4145,12 +4108,447 @@ document.body.ondrop = e => {
 
 window.onbeforeunload = e => { if(state.dirty){ e.preventDefault(); e.returnValue = ''; } };
 
+/* Повторение: раунд за раундом. План показывается пустым, пользователь по
+   памяти расставляет локусы для случайного набора, затем проверяет —
+   результат виден прямо на карте. Раунды идут без ограничения, пока
+   пользователь сам не остановит сессию. */
+const REVIEW_MODE_LABEL = {
+  1: 'Быстрое повторение',
+  2: 'Среднее повторение',
+  3: 'Глубокое повторение',
+  4: 'Повторение с растущим интервалом',
+  5: 'Экстренное вспоминание'
+};
+const REVIEW_MODE_COLOR = {
+  1: '#4da3ff',
+  2: '#37c6e0',
+  3: '#5b7fff',
+  4: '#8fb8ff',
+  5: '#f14c4c'
+};
+let reviewSession = null;
+
+function allLociFlat(){
+  const out = [];
+  state.levels.forEach((l, li) => {
+    (l && l.markers ? l.markers : []).forEach((m, idx) => {
+      out.push({ li: li, idx: idx, num: routeNum(li, idx) });
+    });
+  });
+  return out;
+}
+function reviewShieldBusy(){
+  const btn = $('#reviewBtn'); if(btn) btn.disabled = !!reviewSession;
+}
+
+/* ---------- подбор набора локусов на раунд ---------- */
+function pickFloorWithMarkers(){
+  const candidates = [];
+  state.levels.forEach((l, li) => { if(l && l.markers && l.markers.length) candidates.push(li); });
+  if(!candidates.length) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+function shuffleArr(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+/* Набор на раунд — не блок подряд идущих, а случайная россыпь локусов по
+   этажу, и само количество каждый раз новое (в пределах режима). */
+function pickRoundLoci(modeNum, li){
+  const l = state.levels[li], ms = l.markers, n = ms.length;
+  let size;
+  if(modeNum === 5){
+    size = 1;
+  }else if(modeNum === 1 || modeNum === 3){
+    const lo = Math.min(2, n), hi = Math.min(5, n);
+    size = lo + Math.floor(Math.random() * (hi - lo + 1));
+  }else{
+    const lo = Math.min(4, n), hi = Math.min(15, n);
+    size = lo + Math.floor(Math.random() * (hi - lo + 1));
+  }
+  const idxs = shuffleArr(Array.from({ length: n }, (_, k) => k)).slice(0, size);
+  return idxs.map(idx => ({ li: li, idx: idx, num: routeNum(li, idx), x: ms[idx].x, y: ms[idx].y }));
+}
+function formatNumList(nums){
+  const sorted = nums.slice().sort((a, b) => a - b);
+  if(sorted.length <= 2) return sorted.join(', ');
+  let run = true;
+  for(let i = 1; i < sorted.length; i++) if(sorted[i] !== sorted[i - 1] + 1){ run = false; break; }
+  return run ? (sorted[0] + '–' + sorted[sorted.length - 1]) : sorted.join(', ');
+}
+
+/* ---------- «зона верного ответа»: расстояние с учётом стен ----------
+   База: 5 диаметров локуса, но всё, что за стеной — не считается.
+   Если несколько локусов раунда лежат в одной комнате (стена их не
+   разделяет), вся комната становится верной зоной и делится между ними
+   по геометрической середине — линии, равноудалённой от обеих точек. */
+function buildWallGrid(li){
+  const l = state.levels[li];
+  const w = (l && l.w) || 0, h = (l && l.h) || 0;
+  if(!w || !h) return null;
+  const cell = Math.max(6, Math.round(Math.max(w, h) / 220));
+  const cols = Math.max(1, Math.ceil(w / cell)), rows = Math.max(1, Math.ceil(h / cell));
+  const blocked = new Uint8Array(cols * rows);
+  const mark = (x, y) => {
+    const cx = Math.min(cols - 1, Math.max(0, Math.floor(x / cell)));
+    const cy = Math.min(rows - 1, Math.max(0, Math.floor(y / cell)));
+    blocked[cy * cols + cx] = 1;
+  };
+  (l.walls || []).forEach(wl => {
+    const dx = wl.x2 - wl.x1, dy = wl.y2 - wl.y1;
+    const len = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.ceil(len / (cell * 0.5)));
+    for(let s = 0; s <= steps; s++){
+      const t = s / steps;
+      mark(wl.x1 + dx * t, wl.y1 + dy * t);
+    }
+  });
+  /* Автоматически найденные стены — сэмплируем сами пиксели плана по цвету,
+     а не векторные линии: несколько точек на клетку, чтобы не пропустить
+     тонкую линию, которая не попала точно в центр клетки грида. */
+  if(l.autoWalls){
+    const entry = floorPixelCache.get(l);
+    if(entry && entry.src === l.src){
+      const { color, tol } = l.autoWalls;
+      const tol2 = tol * tol;
+      const sx = entry.w / w, sy = entry.h / h;
+      const data = entry.data;
+      const ew = entry.w, eh = entry.h;
+      const isWallColor = (x, y) => {
+        if(x < 0 || y < 0 || x >= ew || y >= eh) return false;
+        const idx = (y * ew + x) * 4;
+        if(data[idx + 3] < 200) return false;
+        const dr = data[idx] - color.r, dg = data[idx + 1] - color.g, db = data[idx + 2] - color.b;
+        return dr * dr + dg * dg + db * db <= tol2;
+      };
+      const RUN_CAP = 60, THICK_MAX = 30;
+      function runLen(x0, y0, dx, dy){
+        let n = 0, x = x0, y = y0;
+        while(n < RUN_CAP && isWallColor(x, y)){ n++; x += dx; y += dy; }
+        return n;
+      }
+      /* та же проверка «тонкой линии», что и в подсветке стен — иначе большая
+         заливка похожего цвета (бассейн, вода на фото) блокирует зону насквозь */
+      const isThinWall = (px, py) => {
+        if(!isWallColor(px, py)) return false;
+        const hRun = runLen(px, py, -1, 0) + runLen(px + 1, py, 1, 0) - 1;
+        const vRun = runLen(px, py, 0, -1) + runLen(px, py + 1, 0, 1) - 1;
+        return Math.min(hRun, vRun) <= THICK_MAX;
+      };
+      for(let cy = 0; cy < rows; cy++){
+        for(let cx = 0; cx < cols; cx++){
+          const ci = cy * cols + cx;
+          if(blocked[ci]) continue;
+          let hit = false;
+          for(let oy = 0.25; oy <= 0.75 && !hit; oy += 0.5){
+            for(let ox = 0.25; ox <= 0.75 && !hit; ox += 0.5){
+              const px = Math.min(entry.w - 1, Math.max(0, Math.round((cx + ox) * cell * sx)));
+              const py = Math.min(entry.h - 1, Math.max(0, Math.round((cy + oy) * cell * sy)));
+              if(isThinWall(px, py)) hit = true;
+            }
+          }
+          if(hit) blocked[ci] = 1;
+        }
+      }
+    }
+  }
+  return { cell: cell, cols: cols, rows: rows, blocked: blocked };
+}
+function cellOf(grid, x, y){
+  const cx = Math.min(grid.cols - 1, Math.max(0, Math.floor(x / grid.cell)));
+  const cy = Math.min(grid.rows - 1, Math.max(0, Math.floor(y / grid.cell)));
+  return cy * grid.cols + cx;
+}
+/* Заливка от клетки локуса по доступным (не заблокированным стеной) клеткам.
+   Только 4 направления — иначе заливка может «просочиться» по диагонали
+   через угол стены. maxSteps ограничивает радиус в клетках. */
+function floodFillFrom(grid, x, y, maxSteps){
+  const start = cellOf(grid, x, y);
+  const seen = new Set([start]);
+  if(grid.blocked[start]) return seen;
+  let frontier = [start], steps = 0;
+  const cols = grid.cols, rows = grid.rows;
+  while(frontier.length && steps < maxSteps && seen.size < 60000){
+    const next = [];
+    for(let k = 0; k < frontier.length; k++){
+      const c = frontier[k], cx = c % cols, cy = (c - cx) / cols;
+      const neigh = [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]];
+      for(let n = 0; n < 4; n++){
+        const nx = neigh[n][0], ny = neigh[n][1];
+        if(nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+        const nc = ny * cols + nx;
+        if(seen.has(nc) || grid.blocked[nc]) continue;
+        seen.add(nc); next.push(nc);
+      }
+    }
+    frontier = next;
+    steps++;
+  }
+  return seen;
+}
+
+/* ---------- видимость и раскраска маркеров на плане во время повторения ---------- */
+function reviewMarkerVisible(i){
+  const s = reviewSession;
+  if(!s) return true;
+  if(s.phase !== 'checked' || s.floorLi !== state.active) return false;
+  return s.roundLoci.some(it => it.idx === i);
+}
+function reviewMarkerResultClass(i){
+  const s = reviewSession;
+  if(!s || s.phase !== 'checked' || s.floorLi !== state.active || !s.checkResult) return '';
+  return s.checkResult.hitIdx.has(i) ? ' review-hit' : ' review-miss';
+}
+function reviewDrawGuessOverlay(p, w, h){
+  const s = reviewSession;
+  if(!s || s.floorLi !== state.active) return;
+  if(s.phase === 'placing'){
+    s.guesses.forEach(g => {
+      const d = document.createElement('div');
+      d.className = 'guess-mark';
+      d.style.left = g.x + 'px'; d.style.top = g.y + 'px';
+      d.title = 'Ваша отметка — клик убирает её';
+      p.appendChild(d);
+    });
+    return;
+  }
+  if(s.phase === 'checked' && s.checkResult){
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'review-guess-layer');
+    svg.setAttribute('width', String(w));
+    svg.setAttribute('height', String(h));
+    const l = level();
+    s.checkResult.guessResults.forEach(g => {
+      if(g.hit && g.matchIdx != null){
+        const m = l && l.markers ? l.markers[g.matchIdx] : null;
+        if(m){
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('class', 'review-link');
+          line.setAttribute('x1', g.x); line.setAttribute('y1', g.y);
+          line.setAttribute('x2', m.x); line.setAttribute('y2', m.y);
+          svg.appendChild(line);
+        }
+      }
+    });
+    p.appendChild(svg);
+    s.checkResult.guessResults.forEach(g => {
+      const d = document.createElement('div');
+      d.className = 'guess-mark' + (g.hit ? ' hit' : ' miss');
+      d.style.left = g.x + 'px'; d.style.top = g.y + 'px';
+      d.title = g.hit ? 'Верно' : 'Мимо';
+      p.appendChild(d);
+    });
+  }
+}
+
+/* ---------- панель сессии ---------- */
+function reviewUpdateBar(){
+  const s = reviewSession; if(!s) return;
+  const checkBtn = $('#reviewCheck'), nextBtn = $('#reviewNext');
+  if(checkBtn){ checkBtn.hidden = s.phase !== 'placing'; checkBtn.disabled = s.phase === 'placing' && !s.guesses.length; }
+  if(nextBtn) nextBtn.hidden = s.phase !== 'checked';
+  let stepLabel = '', instruction = '';
+  if(s.phase === 'placing'){
+    stepLabel = s.guesses.length + ' / ' + s.maxCount + ' отмечено';
+    instruction = 'Отметьте на плане, где расположены локусы №' + formatNumList(s.roundLoci.map(it => it.num)) +
+      ' (' + s.roundLoci.length + (s.roundLoci.length === 1 ? ' локус' : ' локуса(ов)') + '). ' +
+      'Клик по своей отметке убирает её, максимум — ' + s.maxCount + '.';
+  }else{
+    const r = s.checkResult;
+    stepLabel = 'Верно: ' + r.correct + ' из ' + r.required + (r.extra ? ' · лишних отметок: ' + r.extra : '');
+    instruction = 'Зелёным на плане — угаданные локусы, красным — те, что не отметили. Нажмите «Дальше» для нового раунда.';
+  }
+  setText('#reviewModeLabel', REVIEW_MODE_LABEL[s.modeNum]);
+  setText('#reviewStepLabel', stepLabel);
+  setText('#reviewInstruction', instruction);
+  const dot = $('#reviewModeDot'); if(dot) dot.style.background = REVIEW_MODE_COLOR[s.modeNum] || 'var(--blue)';
+  const acc = s.totalRequired ? Math.round(100 * s.totalCorrect / s.totalRequired) : 0;
+  setText('#reviewStatsText', 'Раундов: ' + s.rounds + ' · точность: ' + acc + '%');
+  const fill = $('#reviewAccFill'); if(fill) fill.style.width = acc + '%';
+}
+
+/* ---------- размещение и снятие отметок пользователем ---------- */
+function reviewTogglePlacement(pt){
+  const s = reviewSession; if(!s || s.phase !== 'placing') return;
+  const REMOVE_R = 16;
+  for(let i = 0; i < s.guesses.length; i++){
+    const g = s.guesses[i];
+    if(Math.hypot(g.x - pt.x, g.y - pt.y) <= REMOVE_R){
+      s.guesses.splice(i, 1);
+      drawPlan(); reviewUpdateBar();
+      return;
+    }
+  }
+  if(s.guesses.length >= s.maxCount){
+    status('Уже расставлено максимум локусов для этого раунда: ' + s.maxCount);
+    return;
+  }
+  s.guesses.push({ x: pt.x, y: pt.y });
+  drawPlan(); reviewUpdateBar();
+}
+
+/* ---------- раунд: подбор набора → проверка (жадное ближайшее совпадение) ---------- */
+function startRound(){
+  const s = reviewSession; if(!s) return;
+  const li = pickFloorWithMarkers();
+  if(li == null){ endReview(); return; }
+  s.rounds++;
+  s.modeNum = 1 + Math.floor(Math.random() * 5);
+  s.floorLi = li;
+  s.roundLoci = pickRoundLoci(s.modeNum, li);
+  s.maxCount = s.roundLoci.length;
+  s.guesses = [];
+  s.checkResult = null;
+  s.phase = 'placing';
+  const l = state.levels[li]; if(l) l.selected = null;
+  if(state.active !== li){
+    selectLevel(li);
+  }else{
+    state.zoom = 1;
+    const v = $('#viewport'); if(v) v.style.transform = '';
+    drawPlan();
+    renderRoute();
+  }
+  reviewUpdateBar();
+}
+function reviewCheck(){
+  const s = reviewSession; if(!s || s.phase !== 'placing' || !s.guesses.length) return;
+  const li = s.floorLi;
+  const grid = buildWallGrid(li);
+  const capRadiusPx = 5 * markerSize();
+  const capSteps = grid ? Math.max(1, Math.ceil(capRadiusPx / grid.cell)) : 0;
+  const hasWalls = !!(state.levels[li] && ((state.levels[li].walls && state.levels[li].walls.length) || state.levels[li].autoWalls));
+
+  /* На каждый локус раунда — своя заливка: «всегда» (в пределах 5 диаметров,
+     не через стену) и, если на этаже есть стены, «вся комната» без ограничения
+     по расстоянию — она нужна только чтобы понять, кто делит комнату вместе. */
+  const real = s.roundLoci.map(it => {
+    const cappedSet = grid ? floodFillFrom(grid, it.x, it.y, capSteps) : null;
+    const roomSet = (grid && hasWalls) ? floodFillFrom(grid, it.x, it.y, Infinity) : null;
+    return { it: it, used: false, cappedSet: cappedSet, roomSet: roomSet, roommates: [] };
+  });
+  if(hasWalls && grid){
+    real.forEach((r, ri) => {
+      real.forEach((o, oi) => {
+        if(oi === ri) return;
+        const oCell = cellOf(grid, o.it.x, o.it.y);
+        if(r.roomSet.has(oCell)) r.roommates.push(o);
+      });
+    });
+  }
+
+  const guessResults = s.guesses.map(g => ({ x: g.x, y: g.y, hit: false, matchIdx: null }));
+  const pairs = [];
+  guessResults.forEach((g, gi) => {
+    const gCell = grid ? cellOf(grid, g.x, g.y) : null;
+    real.forEach((r, ri) => {
+      const d = Math.hypot(g.x - r.it.x, g.y - r.it.y);
+      let qualifies;
+      if(!grid){
+        qualifies = d <= capRadiusPx;
+      }else if(r.roommates.length){
+        /* Общая комната: вся комната — верная зона, поделённая по линии,
+           равноудалённой от локусов-соседей (геометрическая середина). */
+        qualifies = r.roomSet.has(gCell) && r.roommates.every(m => d <= Math.hypot(g.x - m.it.x, g.y - m.it.y));
+      }else{
+        qualifies = r.cappedSet.has(gCell);
+      }
+      if(qualifies) pairs.push({ gi: gi, ri: ri, d: d });
+    });
+  });
+  pairs.sort((a, b) => a.d - b.d);
+  const hitIdx = new Set();
+  pairs.forEach(p => {
+    if(guessResults[p.gi].hit || real[p.ri].used) return;
+    guessResults[p.gi].hit = true;
+    guessResults[p.gi].matchIdx = s.roundLoci[p.ri].idx;
+    real[p.ri].used = true;
+    hitIdx.add(s.roundLoci[p.ri].idx);
+  });
+  const correct = real.filter(r => r.used).length;
+  const extra = guessResults.filter(g => !g.hit).length;
+  s.checkResult = { guessResults: guessResults, hitIdx: hitIdx, correct: correct, extra: extra, required: s.roundLoci.length };
+  s.totalRequired += s.roundLoci.length;
+  s.totalCorrect += correct;
+  s.totalExtra += extra;
+  s.phase = 'checked';
+  drawPlan();
+  renderRoute();
+  reviewUpdateBar();
+}
+function reviewNextRound(){
+  const s = reviewSession; if(!s || s.phase !== 'checked') return;
+  startRound();
+}
+async function startReview(){
+  if(reviewSession) return;
+  const all = allLociFlat();
+  if(!all.length){ notify('На плане пока нет ни одного локуса — сначала расставьте маркеры.'); return; }
+  /* Заранее прогреваем пиксельный кэш этажей с автостенами — на случай если
+     этаж ещё не открывался в этой сессии и его картинка нигде не отрисована. */
+  const warmLis = [];
+  state.levels.forEach((l, li) => { if(l && l.markers && l.markers.length && l.autoWalls) warmLis.push(li); });
+  if(warmLis.length) await Promise.all(warmLis.map(li => ensureFloorPixels(li)));
+  if(reviewSession) return; /* защита от повторного старта, пока шёл прогрев */
+  reviewSession = {
+    prevMode: state.mode,
+    rounds: 0, totalRequired: 0, totalCorrect: 0, totalExtra: 0,
+    modeNum: null, floorLi: null, roundLoci: [], maxCount: 0,
+    guesses: [], checkResult: null, phase: 'placing'
+  };
+  state.mode = 'view';
+  applyMode();
+  reviewShieldBusy();
+  const bar = $('#reviewBar'); if(bar) bar.hidden = false;
+  status('Повторение начато');
+  startRound();
+}
+function reviewSummaryHtml(s){
+  const acc = s.totalRequired ? Math.round(100 * s.totalCorrect / s.totalRequired) : 0;
+  let tip;
+  if(!s.totalRequired) tip = 'Ни один раунд не был проверен.';
+  else if(acc >= 90) tip = 'Отличный результат — можно смело увеличивать интервал до следующего повторения.';
+  else if(acc >= 60) tip = 'Неплохо, но есть слабые места — держите текущий график повторений.';
+  else tip = 'Промахов много — стоит повторить дворец ещё раз в ближайший день.';
+  let body = '<div>Раундов пройдено: ' + s.rounds + '</div>' +
+    '<div>Точность: ' + acc + '% (' + s.totalCorrect + ' из ' + s.totalRequired + ')</div>';
+  if(s.totalExtra) body += '<div>Лишних отметок: ' + s.totalExtra + '</div>';
+  body += '<div style="margin-top:10px;color:var(--muted)">' + tip + '</div>';
+  return body;
+}
+function endReview(){
+  const s = reviewSession; if(!s) return;
+  const stage = $('#stage'); if(stage) stage.classList.remove('review-guessing');
+  const bar = $('#reviewBar'); if(bar) bar.hidden = true;
+  state.mode = s.prevMode || 'edit';
+  applyMode();
+  render();
+  reviewSession = null;
+  reviewShieldBusy();
+  status('Повторение остановлено');
+  const body = $('#reviewSummaryBody'); if(body) body.innerHTML = reviewSummaryHtml(s);
+  const m = $('#reviewSummaryModal'); if(m) m.classList.add('show');
+}
+on('#reviewBtn', 'click', startReview);
+on('#reviewCheck', 'click', reviewCheck);
+on('#reviewNext', 'click', reviewNextRound);
+on('#reviewStop', 'click', () => {
+  if(!reviewSession) return;
+  ask('Остановить повторение и посмотреть итоги сессии?', endReview, { yes:'Остановить', no:'Продолжить' });
+});
+on('#reviewSummaryClose', 'click', () => { const m = $('#reviewSummaryModal'); if(m) m.classList.remove('show'); });
+
 /* pdf.js воркер — иначе чтение PDF молча падает */
 try{ if(window.pdfjsLib && pdfjsLib.GlobalWorkerOptions) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }catch(err){}
 
 try{
   renderPending();
   render();
+  resetHistory();
 }catch(err){
   status('Ошибка запуска: ' + (err && err.message ? err.message : err));
   console.error('PALACE init:', err);
@@ -4160,3 +4558,4 @@ window.addEventListener('error', e => {
 });
 </script>
 </body></html>
+
