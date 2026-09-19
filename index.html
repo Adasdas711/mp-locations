@@ -180,11 +180,24 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   color:var(--vscode-fg-mute);opacity:0;transition:opacity .12s,background .12s;cursor:pointer}
 .floor-overlay button:hover .floor-del,.floor-overlay button.active .floor-del{opacity:.75}
 .floor-del:hover{opacity:1 !important;background:rgba(241,76,76,.22);color:#f14c4c}
-.tour-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--vscode-sidebar-bg);border-bottom:1px solid var(--vscode-tab-border);flex-shrink:0}
+.tour-toolbar{display:none;flex-direction:column;align-items:stretch;gap:8px;position:absolute;top:52px;right:10px;z-index:6;
+  width:min(380px,calc(100% - 20px));padding:10px 12px;background:var(--vscode-sidebar-bg);border:1px solid var(--vscode-widget-border);
+  border-radius:var(--r-md);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.tour-toolbar.open{display:flex}
 .tour-toolbar input{flex:1;min-width:0;background:var(--vscode-input-bg);color:var(--text);border:1px solid var(--vscode-input-border);border-radius:var(--r-sm);padding:6px 10px;font-size:13px}
 .tour-toolbar input:focus{border-color:var(--vscode-focus);outline:none}
 .tour-toolbar .primary{padding:6px 14px}
-.tour-host{font-size:12px;color:var(--vscode-fg-mute);max-width:28%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tour-toolbar select{background:var(--vscode-input-bg);color:var(--text);border:1px solid var(--vscode-input-border);border-radius:var(--r-sm);padding:6px 10px;font-size:13px}
+.tour-toolbar select:focus{border-color:var(--vscode-focus);outline:none}
+.tour-toolbar select:hover{border-color:var(--vscode-focus)}
+.l3d-rot{background:var(--vscode-input-bg);border:1px solid var(--vscode-input-border);border-radius:var(--r-sm);padding:3px}
+.l3d-rot button{padding:3px 8px!important;background:transparent!important}
+.l3d-rot button:hover{background:var(--vscode-button-hover)!important;color:#fff}
+.l3d-rot #l3dRotVal{color:var(--vscode-fg-dim)}
+.tour-host{font-size:12px;color:var(--vscode-fg-mute);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 9px;background:var(--vscode-input-bg);border:1px solid var(--vscode-input-border);border-radius:var(--r-sm)}
+#tourSettingsBtn{position:absolute;top:10px;right:10px;z-index:7;background:var(--vscode-sidebar-bg);border:1px solid var(--vscode-widget-border);box-shadow:0 2px 10px rgba(0,0,0,.4)}
+#tourSettingsBtn[aria-expanded=true]{background:var(--vscode-button-bg);color:#fff;border-color:transparent}
+#tourSettingsBtn[aria-expanded=true]:hover{background:var(--vscode-button-hover)}
 .tour{display:none;flex-direction:column;background:var(--vscode-editor-bg);min-width:0}
 .tour-body{flex:1;position:relative;min-height:0;background:#1f1f1f}
 .tour-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#1f1f1f}
@@ -233,10 +246,28 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .stage.mode-view{cursor:default}
 .stage.panning,.stage.panning .plan{cursor:grabbing}
 .plan img{display:block;max-width:none;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
-.marker{position:absolute;width:28px;height:28px;border-radius:50%;background:#1c4b8f;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;transform:translate(-50%,-50%) rotate(var(--mrot,0deg));cursor:grab;box-shadow:0 2px 10px #000;z-index:3}
+.marker{position:absolute;width:56px;height:56px;border-radius:50%;background:#1c4b8f;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;transform:translate(-50%,-50%) rotate(var(--mrot,0deg));cursor:grab;box-shadow:0 2px 10px #000;z-index:3}
 .marker.dragging{cursor:grabbing;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.18);box-shadow:0 0 0 4px #4da3ff66,0 6px 18px #000;z-index:20}
 .marker.selected{outline:2px solid var(--blue)}
 .marker:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+/* Значки «камера» на плане — позиции импортированных панорам (см.
+   renderPlanCameras()): клик переносит в локальный 3D-просмотрщик в это
+   место (интеграция плана с 3D, п.2 запроса пользователя). Не путать с
+   локусами (.marker) — это две независимые вещи: локус ставит человек
+   вручную для техники памяти, камера — это то, что реально есть в .3dview. */
+.app[data-layout="plan"] .plan-cam{display:none!important}.plan-cam{position:absolute;width:22px;height:22px;border-radius:50%;background:#0d0f12d9;border:1.5px solid #ffffff80;
+          color:#dbe6f2;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%) rotate(var(--mrot,0deg));
+          cursor:pointer;box-shadow:0 2px 8px #0009;z-index:2;transition:transform .12s ease,background .12s ease,border-color .12s ease}
+/* Размер самого кружка — фиксированные 22px в CSS - это только запасное
+   значение; на практике renderPlanCameras() всегда выставляет width/height
+   инлайново, пропорционально тому же ползунку «Размер маркера», что и у
+   локусов (см. жалобу пользователя: значок камеры/конус обзора был мелким
+   и НЕ подчинялся этому ползунку вовсе, в отличие от локусов). Иконка
+   внутри — в процентах от размера кружка (а не фиксированные px), чтобы
+   росла вместе с ним. */
+.plan-cam .ic{width:58%;height:58%;stroke-width:1.6}
+.plan-cam:hover{background:#171b20;border-color:var(--blue)}
+.plan-cam.active{background:var(--blue);border-color:#fff;color:#fff;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.2);z-index:4}
 
 /* RIGHT PANEL — narrower + denser */
 .section{border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px}
@@ -292,6 +323,52 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .ti-room i{font-style:normal;opacity:.7}
 .tour-body{flex:1;position:relative;min-height:0}
 .tour-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#0d0f12}
+.local3d{position:absolute;inset:0;background:#000;display:none}
+.local3d.show{display:block}
+.local3d canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none;
+                opacity:1;transition:opacity .16s ease}
+/* Короткое затемнение при смене панорамы — вместо мгновенного жёсткого
+   переключения кадра (жалоба «багует» отчасти про это): плавно гаснет,
+   пока грузится и декодируется следующее фото, и плавно проявляется, когда
+   текстура готова (см. setImage() в localViewer). Похоже на fade-переход
+   у реального Zillow (см. патент US11217019 — там тоже zoom/rotate/fade,
+   а не мгновенная склейка кадров). */
+.local3d canvas.l3d-fading{opacity:.15}
+.local3d canvas:active{cursor:grabbing}
+.local3d .tour-empty{z-index:1}
+.local3d.has-image .tour-empty{display:none}
+.l3d-room{position:absolute;left:10px;top:10px;z-index:2;padding:5px 11px;border-radius:14px;background:#0d0f12cc;border:1px solid #ffffff30;color:#fff;font-size:12px;pointer-events:none;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.local3d.has-image .l3d-room{display:block}
+.local3d:not(.has-image) .l3d-room{display:none}
+/* perspective здесь — настоящая CSS 3D-глубина для кнопок перехода (см.
+   updateNavLabels(): они получают translateZ, а не просто CSS scale), а не
+   просто сжатие по ширине/высоте — кнопки дальше от направления взгляда
+   реально «отъезжают» вглубь экрана и из-за этого становятся меньше и чуть
+   сближаются, как в референсе Zillow, а не просто линейно уменьшаются. */
+#l3dJumps{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;perspective:700px;perspective-origin:50% 100%}
+#l3dJumps:empty{display:none}
+.l3d-error{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:24px;text-align:center;
+           color:#ffd0d0;font-size:13px;line-height:1.55;z-index:3;background:#1a0d0dcc}
+.l3d-error.show{display:flex}
+.l3d-error strong{display:block;color:#ffb4b4;font-size:16px;margin-bottom:8px;font-weight:600}
+/* ВАЖНО: эта панель — диагностический оверлей ПОВЕРХ 3D-просмотрщика, и она
+   сама не должна перекрывать центр canvas (иначе document.elementFromPoint()
+   в l3dInspectNow() будет попадать на саму панель, а не на реальную причину —
+   именно это обнаружилось в первом тесте). Поэтому она сознательно маленькая
+   и с ФИКСИРОВАННОЙ (не процентной) максимальной высотой, прижата в угол. */
+.l3d-debug{position:absolute;right:8px;top:8px;z-index:5;width:min(300px,42%);max-height:210px;display:flex;flex-direction:column;
+           background:#0b0d10e6;border:1px solid #ffffff2a;border-radius:8px;overflow:hidden;font-size:11px;box-shadow:0 4px 18px #0008}
+.l3d-debug-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid #ffffff1f;color:#cfe3ff;flex-wrap:wrap}
+.l3d-debug-head strong{font-size:11px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l3d-debug-head span#l3dDebugBuild{color:#7d93ad;font-weight:400}
+.l3d-debug-btns{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.l3d-debug-btns button{font-size:10px;padding:2px 7px;border-radius:10px;background:#171b20;border:1px solid #ffffff2a;color:#dbe6f2;cursor:pointer}
+.l3d-debug-btns button:hover{border-color:var(--blue);color:#fff}
+.l3d-debug-log{margin:0;padding:7px 8px;overflow:auto;color:#a9e6b8;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+               font-size:10.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:160px}
+.l3d-debug-log .err{color:#ff9d9d}
+.l3d-debug-log .warn{color:#ffd88a}
+.l3d-debug.collapsed .l3d-debug-log{display:none}
 .tour-overlay{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
 .tov{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;padding:3px 8px 3px 3px;border-radius:16px;
      background:#0d0f12cc;border:1px solid #ffffff55;color:#fff;font-size:11px;white-space:nowrap;pointer-events:auto;cursor:pointer;
@@ -303,6 +380,106 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tov-jumps{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:7px;pointer-events:auto}
 .tov-jump{padding:3px 9px;border-radius:14px;background:#0d0f12cc;border:1px solid var(--line);color:var(--muted);font-size:10.5px;cursor:pointer}
 .tov-jump:hover{color:#fff;border-color:var(--blue)}
+/* Навигация внутри локального 3D-просмотрщика: кнопки перехода — обычные
+   DOM-элементы (#l3dJumps), их left/top каждый кадр пересчитываются в
+   updateNavLabels() по окружности вокруг направления взгляда камеры, так
+   что кнопка двигается и прячется в такт повороту взгляда.
+
+   Внешний вид кнопки — по образцу настоящего компонента Zillow 3D Home
+   (класс dollhouse-navigation-arrow-puck из присланного .mhtml): белый круг
+   80×80 с внутренним отступом 15, полупрозрачный (opacity .5) в покое и
+   непрозрачный при наведении/фокусе (opacity 1, с той же длительностью
+   перехода .2s), а внутри — стрелка-шеврон, собранная из двух границ
+   (border-top + border-right, повёрнутых на 45°) — тот же самый приём, что
+   и в оригинале (см. .egjmtU в исходном файле), а не треугольник или точка.
+   У нас кнопка сделана чуть компактнее оригинальных 80px (см. предыдущую
+   правку «немного уменьши размер кнопок»), но сама стилистика — один в
+   один: белый круг + чёрный шеврон + подпись комнаты белым текстом над
+   кнопкой. Поворот шеврона выставляется в JS (см. updateNavLabels()) так,
+   чтобы он всегда «смотрел» в ту сторону экрана, где физически лежит
+   кнопка — ровно тот эффект, которого Zillow добивается настоящим 3D-CSS-
+   поворотом всего пака (rotateX/rotateY/rotateZ) вокруг общей точки обзора. */
+.l3d-navpt{
+  position:absolute;
+  left:50%;
+  top:0;
+  width:56px;
+  height:56px;
+  padding:11px;
+  margin:0;
+  box-sizing:border-box;
+  transform:translate(-50%,-50%);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  pointer-events:auto;
+  background:#fff;
+  border:0;
+  border-radius:50%;
+  font:inherit;
+  color:#000;
+  opacity:.55;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);
+  -webkit-tap-highlight-color:transparent;
+  transition:left .10s linear,top .10s linear,transform .10s linear,opacity .2s ease-in-out;
+  z-index:4;
+}
+.l3d-navpt:hover,.l3d-navpt:focus-visible{
+  opacity:1;
+  outline:none;
+}
+.l3d-navpt-arrow{
+  display:block;
+  height:1.3em;
+  width:1.3em;
+  border-top:5px solid #000;
+  border-right:5px solid #000;
+  box-sizing:border-box;
+}
+.l3d-navpt-label{
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 7px);
+  transform:translateX(-50%);
+  font-size:14px;
+  font-weight:500;
+  font-family:"Open Sans",Tahoma,Geneva,sans-serif;
+  color:#fff;
+  text-shadow:0 1px 4px #000,0 0 8px #000;
+  white-space:nowrap;
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  pointer-events:none;
+}
+.l3d-navpt:hover,.l3d-navpt:focus-visible{
+  background:rgba(255,255,255,.98);
+  transform:translate(-50%,-50%) scale(1.06);
+  outline:none;
+}
+
+/* Миникарта — только в режиме «только 3D» (data-layout=tour) */
+.minimap{position:absolute;left:12px;bottom:12px;z-index:6;width:220px;background:#0d0f12e6;border:1px solid #ffffff2a;
+  border-radius:10px;overflow:hidden;box-shadow:0 6px 22px #000a;backdrop-filter:blur(4px);display:none;flex-direction:column}
+.app[data-layout=tour] .minimap:not([hidden]){display:flex}
+.minimap.expanded{width:min(380px,46vw);height:min(340px,50vh)}
+.minimap-head{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid #ffffff1a;color:#dbe6f2;font-size:11px;font-weight:600}
+.minimap-head span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.minimap-close{background:transparent;border:0;color:#9ab;cursor:pointer;padding:2px 6px;border-radius:6px;font-size:12px;line-height:1}
+.minimap-close:hover{background:#ffffff14;color:#fff}
+.minimap-body{position:relative;flex:1;min-height:140px;background:#111;overflow:hidden}
+.minimap.expanded .minimap-body{min-height:0}
+.minimap-body img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+.minimap-layer{position:absolute;inset:0;pointer-events:none}
+.minimap-layer .mm-cam,.minimap-layer .mm-marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer}
+.minimap-layer .mm-cam{width:14px;height:14px;border-radius:50%;background:#0d0f12cc;border:1.5px solid #fff9;box-shadow:0 1px 4px #0008}
+.minimap-layer .mm-cam.active{background:var(--blue);border-color:#fff;width:16px;height:16px;z-index:2}
+.minimap-layer .mm-cam-fov{position:absolute;left:50%;top:50%;width:28px;height:28px;transform:translate(-50%,-50%) rotate(0deg);
+  pointer-events:none;z-index:-1;opacity:.55;fill:var(--blue)}
+.minimap-layer .mm-marker{width:12px;height:12px;border-radius:50%;background:#1c4b8f;border:1.5px solid #fff;color:#fff;
+  font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px #0008}
+.minimap-layer .mm-marker.sel{outline:2px solid #4da3ff}
 .tour-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.5}
 #tourBtn.on,#tourHere.on{border-color:var(--blue);color:var(--blue);background:rgba(77,163,255,.16)}
 .spot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:2px dashed var(--blue);
@@ -497,6 +674,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .small{font-size:10.5px;color:var(--muted)}
 .save-grid{display:flex;flex-direction:column;gap:6px}
 .save-grid button{text-align:left;padding:9px 11px}
+.save-grid button.save-hl{outline:2px solid var(--blue);outline-offset:-2px}
 .check{display:flex;align-items:center;gap:7px;margin:5px 0;font-size:11.5px;color:var(--text)}
 .check input{width:auto}
 
@@ -533,6 +711,8 @@ button .ic{pointer-events:none}
 <symbol id="i-turn-cw" viewBox="0 0 16 16"><path d="M3.4 8.6a4.6 4.6 0 1 0 1.5-3.5"/><path d="M4.6 1.8v3.5h3.5"/></symbol>
 <symbol id="i-turn-ccw" viewBox="0 0 16 16"><path d="M12.6 8.6a4.6 4.6 0 1 1-1.5-3.5"/><path d="M11.4 1.8v3.5H7.9"/></symbol>
 <symbol id="i-close" viewBox="0 0 16 16"><path d="M3.2 3.2 12.8 12.8M12.8 3.2 3.2 12.8" stroke-width="1.6" stroke-linecap="round"/></symbol>
+<symbol id="i-camera" viewBox="0 0 16 16"><path d="M2 5.7h2.3l1-1.7h5.4l1 1.7H14v7.1H2z"/><circle cx="8" cy="9.3" r="2.35"/></symbol>
+<symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.3"/><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3M12.4 12.4l-1.3-1.3M4.9 4.9 3.6 3.6"/></symbol>
 </defs></svg>
 <div class="app" data-ui="editor" data-layout="plan" id="appRoot">
   <header class="top">
@@ -546,7 +726,7 @@ button .ic{pointer-events:none}
       <button id="reviewBtn" title="Случайно выбрать режим повторения (1–5) и начать">Повторение</button>
       <button class="primary" id="saveBtn">Сохранить</button>
     </div>
-    <input accept=".mplace,.zip" hidden="" id="fileOpen" type="file"/>
+    <input accept=".mplace,.mpalace,.3dview,.zip" hidden="" id="fileOpen" type="file"/>
   </header>
   <div class="workbench">
     <nav class="activity" aria-label="Режимы">
@@ -554,7 +734,7 @@ button .ic{pointer-events:none}
       <button type="button" class="abtn" data-ui="tour" id="abTour" title="3D-тур"><svg class="ic"><use href="#i-cube"/></svg></button>
       <div class="ab-sep"></div>
       <button type="button" class="abtn" id="newBtn" title="Новый дворец"><svg class="ic"><use href="#i-plus"/></svg></button>
-      <button type="button" class="abtn" id="openBtn" title="Открыть .mplace"><svg class="ic"><use href="#i-folder"/></svg></button>
+      <button type="button" class="abtn" id="openBtn" title="Открыть .mplace / .mpalace / .3dview"><svg class="ic"><use href="#i-folder"/></svg></button>
       <button type="button" class="abtn primary-act" id="abSave" title="Сохранить"><svg class="ic"><use href="#i-save"/></svg></button>
       <div class="ab-spacer"></div>
       <button type="button" class="abtn" id="abUpload" title="Загрузить планы"><svg class="ic"><use href="#i-upload"/></svg></button>
@@ -623,27 +803,60 @@ button .ic{pointer-events:none}
       </div>
       <div class="canvas-ctl" id="markerCtl">
         <label for="markerSize">Размер маркера</label>
-        <input id="markerSize" type="range" min="16" max="72" value="30"/>
-        <output id="markerSizeVal" for="markerSize">30</output>
+        <input id="markerSize" type="range" min="1" max="144" value="72"/>
+        <output id="markerSizeVal" for="markerSize">72</output>
       </div>
     </section>
     <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0"
          title="Тяните, чтобы изменить ширину панелей. Двойной щелчок — поровну"><span></span></div>
     <aside class="tour" id="tourPanel">
-      <div class="tour-toolbar">
-        <input id="tourUrl" placeholder="Любая https-ссылка на 3D: Matterport, iGUIDE, Zillow…" aria-label="Ссылка на 3D-тур"/>
-        <button class="primary" id="tourApply">Открыть</button>
-        <button type="button" id="tourWindowBtn" title="Открыть тур отдельным окном справа" aria-label="Открыть в отдельном окне"><svg class="ic"><use href="#i-window"/></svg></button>
-        <button type="button" id="tourDownload" title="Как скачать Offline iGUIDE">Скачать</button>
+      <button type="button" id="tourSettingsBtn" class="icon-action" title="Настройки 3D-вида" aria-label="Настройки 3D-вида" aria-expanded="false"><svg class="ic"><use href="#i-gear"/></svg></button>
+      <div class="tour-toolbar" id="tourToolbar">
+        <span class="tour-toolbar-live" id="tourToolbarLive" style="display:flex;flex:1;gap:8px;align-items:center;min-width:0">
+          <input id="tourUrl" placeholder="Любая https-ссылка на 3D: Matterport, iGUIDE, Kuula…" aria-label="Ссылка на 3D-тур"/>
+          <button class="primary" id="tourApply">Открыть</button>
+          <button type="button" id="tourWindowBtn" title="Открыть тур отдельным окном справа" aria-label="Открыть в отдельном окне"><svg class="ic"><use href="#i-window"/></svg></button>
+          <button type="button" id="tourDownload" title="Как скачать Offline iGUIDE">Скачать</button>
+        </span>
+        <span class="tour-toolbar-local" id="tourToolbarLocal" hidden style="flex:1;display:flex;gap:8px;align-items:center;min-width:0">
+          <select id="l3dPanoPicker" aria-label="Выбрать импортированную панораму" style="max-width:280px;flex:1;min-width:0"></select>
+          <span class="l3d-rot" style="display:flex;gap:4px;align-items:center;margin-left:auto;flex:none" title="Поворот колец-переходов этой панорамы. Сохраняется вместе с дворцом.">
+            <button type="button" id="l3dRotCCW" title="Повернуть переходы на 15° против часовой">⟲</button>
+            <span class="small" id="l3dRotVal" style="min-width:34px;text-align:center">90°</span>
+            <button type="button" id="l3dRotCW" title="Повернуть переходы на 15° по часовой">⟳</button>
+            <button type="button" id="l3dRotReset" title="Сбросить поворот">Сброс</button>
+          </span>
+        </span>
         <span class="tour-host" id="tourHost"></span>
       </div>
       <div class="tour-body" id="tourBody">
+        <div class="local3d" id="local3d">
+          <canvas id="local3dCanvas"></canvas>
+          <div class="l3d-room" id="l3dRoom"></div>
+          <div class="tour-empty" id="l3dHint"><div class="guide"><strong>Локальный 3D-тур</strong>
+            <p class="guide-lead">Импортируйте .3dview / .mpalace, затем переключайтесь между панорамами списком сверху или кнопками перехода внизу экрана. В режиме «только 3D» в углу — миникарта этажа с камерами и локусами.</p>
+          </div></div>
+          <div class="l3d-error" id="l3dError"><div class="guide"><strong>3D не отобразился</strong>
+            <p class="guide-lead" id="l3dErrorMsg"></p>
+          </div></div>
+          <div class="tov-jumps" id="l3dJumps"></div>
+          <div class="minimap" id="minimap" hidden>
+            <div class="minimap-head">
+              <span id="minimapTitle">План</span>
+              <button type="button" class="minimap-close" id="minimapExpand" title="Развернуть / свернуть">▣</button>
+            </div>
+            <div class="minimap-body" id="minimapBody">
+              <img id="minimapImg" alt=""/>
+              <div class="minimap-layer" id="minimapLayer"></div>
+            </div>
+          </div>
+        </div>
         <div class="tour-empty" id="tourEmpty">
           <div class="guide">
             <strong>3D-тур</strong>
             <p class="guide-lead">Вставьте ссылку на тур в поле сверху и нажмите «Открыть». Ниже — как найти эту ссылку на почти любом сайте.</p>
             <ol class="guide-steps">
-              <li><b>Откройте страницу объявления</b> с 3D-туром (Zillow, Redfin, сайт агентства).</li>
+              <li><b>Откройте страницу объявления</b> с 3D-туром (Redfin, сайт агентства).</li>
               <li><b>Посмотрите, чей это тур.</b> Логотип обычно виден в углу самого тура: Matterport, iGUIDE, Kuula, CloudPano.</li>
               <li><b>Откройте инструменты разработчика</b> — <kbd>F12</kbd> или <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> (на Mac <kbd>⌥</kbd>+<kbd>⌘</kbd>+<kbd>I</kbd>), вкладка <b>Elements</b>.</li>
               <li><b>Найдите тур в разметке:</b> <kbd>Ctrl</kbd>+<kbd>F</kbd> внутри панели и поиск по слову <code>iframe</code>, либо по названию сервиса — <code>matterport</code>, <code>youriguide</code>, <code>kuula</code>.</li>
@@ -658,8 +871,8 @@ button .ic{pointer-events:none}
               <tr><td>CloudPano</td><td><code class="copy" role="button" tabindex="0" data-copy="https://app.cloudpano.com/tours/ID" title="Щёлкните — образец скопируется в буфер обмена">app.cloudpano.com/tours/<i>ID</i></code></td><td class="ok">встраивается</td></tr>
               <tr><td>Asteroom</td><td><code class="copy" role="button" tabindex="0" data-copy="https://my.asteroom.com/player/?id=ID" title="Щёлкните — образец скопируется в буфер обмена">my.asteroom.com/player/?id=<i>ID</i></code></td><td class="ok">встраивается</td></tr>
               <tr><td>EyeSpy360</td><td><code class="copy" role="button" tabindex="0" data-copy="https://eyespy360.com/en-gb/tour/ID" title="Щёлкните — образец скопируется в буфер обмена">eyespy360.com/…/tour/<i>ID</i></code></td><td class="ok">встраивается</td></tr>
-              <tr><td>Zillow 3D Home</td><td><code class="copy" role="button" tabindex="0" data-copy="https://www.zillow.com/view-imx/ID" title="Щёлкните — образец скопируется в буфер обмена">zillow.com/view-imx/<i>ID</i></code></td><td class="no">только отдельным окном</td></tr>
             </table>
+            <p class="guide-note"><b>Zillow 3D Home:</b> сайт блокирует показ тура во фрейме, вставка ссылки сюда не поможет. Вместо этого — офлайн-выгрузка без единого клика: <code>python3 zillow_tour_grabber.py</code> → вставьте ссылку на тур в открывшееся окошко → получится файл <code>data.3dview</code> с панорамами, планом и точной привязкой комнат. Откройте его кнопкой «Открыть» в этом редакторе (или перетащите на окно) — появятся этаж, локусы и свой 3D-просмотр панорам, без всякого iframe.</p>
 </div>
         </div>
         <div class="tour-status" id="tourStatus" hidden></div>
@@ -682,30 +895,35 @@ button .ic{pointer-events:none}
 
 <div class="modal" id="saveModal"><div class="dialog narrow">
   <h2>Сохранить</h2>
-  <p class="small">Файл .mplace хранит дворец целиком и открывается обратно в редакторе. Экспорт создаёт итоговые изображения.</p>
-  <div class="section props">
-    <h3>Свойства дворца</h3>
-    <div class="field"><label for="purpose">Назначение</label><input id="purpose" placeholder="Например: выступление"/></div>
-    <div class="field"><label for="source">Ссылка на оригинал</label><input id="source" placeholder="https://…"/></div>
-    <div class="field"><label for="explain">Пояснения</label><textarea id="explain" placeholder="Краткое описание дворца…"></textarea></div>
-    <div class="field"><label for="notes">Заметки дворца</label><textarea id="notes" placeholder="Заметка…"></textarea></div>
-  </div>
+  <p class="small">Файл .mplace хранит дворец целиком (план, маркеры) и открывается обратно в редакторе. Если в дворец импортированы локальные панорамы из .3dview, доступен .mpalace — тот же файл, но со встроенными панорамами: он не зависит от исходного .3dview.</p>
   <div class="section">
-    <h3>Имя файла</h3>
+    <h3>Дворец</h3>
     <div class="field">
+      <label for="fileName">Имя файла</label>
       <input id="fileName" placeholder="Новый дворец памяти"/>
       <div class="small" id="fileNameHint">Расширение добавляется автоматически. Пусто — берётся название дворца.</div>
     </div>
+    <div class="field"><label for="source">Ссылка на оригинал</label><input id="source" placeholder="https://…"/></div>
   </div>
   <div class="section">
     <h3>Проект</h3>
     <div class="save-grid">
+      <button class="primary save-hl" id="saveMpalaceBtn" hidden>Сохранить .mpalace<br/><span class="small" style="color:#00303f">Рекомендуется — со встроенными панорамами, независим от .3dview</span></button>
       <button class="primary" id="saveProjectBtn">Сохранить .mplace<br/><span class="small" style="color:#00303f">Все этажи, изображения и маркеры</span></button>
       <button id="saveJsonBtn">JSON<br/><span class="small">Только данные, без изображений</span></button>
     </div>
   </div>
   <div class="section">
-    <h3>Экспорт PNG</h3>
+    <button type="button" id="openExportBtn" style="width:100%">Экспорт в PNG / PDF…</button>
+  </div>
+  <div style="text-align:right"><button id="closeSaveModal">Закрыть</button></div>
+</div></div>
+
+<div class="modal" id="exportModal"><div class="dialog narrow">
+  <h2>Экспорт</h2>
+  <p class="small">Экспорт создаёт итоговые изображения плана — для печати или показа вне редактора.</p>
+  <div class="section">
+    <h3>PNG</h3>
     <div class="row">
       <div class="field"><label for="pngScope">Что</label><select id="pngScope"><option value="current">Текущий этаж</option><option value="all">Все этажи (ZIP)</option></select></div>
       <div class="field"><label for="pngScale">Качество</label><select id="pngScale"><option value="1">1× — как есть</option><option selected value="2">2× — чёткое</option><option value="3">3× — печать</option></select></div>
@@ -716,10 +934,10 @@ button .ic{pointer-events:none}
     </div>
     <label class="check"><input checked id="pngMarkers" type="checkbox"/> Маркеры</label>
     <label class="check"><input checked id="pngNumbers" type="checkbox"/> Номера маркеров</label>
-    <div class="save-grid" style="margin-top:8px"><button id="exportPngBtn">Экспортировать PNG</button></div>
+    <div class="save-grid" style="margin-top:8px"><button class="primary" id="exportPngBtn">Экспортировать PNG</button></div>
   </div>
   <div class="section">
-    <h3>Экспорт PDF</h3>
+    <h3>PDF</h3>
     <div class="row">
       <div class="field"><label for="pdfScope">Что</label><select id="pdfScope"><option value="all">Все этажи</option><option value="current">Текущий этаж</option></select></div>
       <div class="field"><label for="pdfFormat">Страница</label><select id="pdfFormat"><option selected value="a4">A4</option><option value="a3">A3</option><option value="fit">По размеру плана</option></select></div>
@@ -730,20 +948,20 @@ button .ic{pointer-events:none}
     </div>
     <label class="check"><input checked id="pdfTitles" type="checkbox"/> Заголовок с названием и номером этажа</label>
     <label class="check"><input checked id="pdfMarkers" type="checkbox"/> Маркеры с номерами</label>
-    <div class="save-grid" style="margin-top:8px"><button id="exportPdfBtn">Экспортировать PDF</button></div>
+    <div class="save-grid" style="margin-top:8px"><button class="primary" id="exportPdfBtn">Экспортировать PDF</button></div>
   </div>
-  <div style="text-align:right"><button id="closeSaveModal">Закрыть</button></div>
+  <div style="text-align:right"><button id="backToSaveModal">Назад</button> <button id="closeExportModal">Закрыть</button></div>
 </div></div>
 
 <div class="modal" id="modal"><div class="dialog wide">
   <h2 id="modalTitle">Новый дворец</h2>
-  <p class="small" id="planHint">Загрузите планы этажей и при желании укажите 3D-тур.</p>
+  <p class="small" id="planHint">Вставьте данные: планы этажей и, при желании, ссылку на 3D-тур.</p>
   <div class="field"><label for="wizardTourUrl">Ссылка на 3D-тур (любой сервис)</label>
-    <input id="wizardTourUrl" placeholder="https://… Matterport, iGUIDE, Zillow, Kuula, CloudPano…"/>
+    <input id="wizardTourUrl" placeholder="https://… Matterport, iGUIDE, Kuula, CloudPano…"/>
   </div>
   <p class="small">Этажи можно менять местами перетаскиванием. Вставка плана из буфера: Ctrl+V. Обрезка — ✂ с изменением размера рамки.</p>
   <div id="pending"></div>
-  <div class="drop" id="drop" tabindex="0">Перетащите PNG/JPG/PDF сюда<br/>или выберите файлы</div>
+  <div class="drop" id="drop" tabindex="0">Вставить данные<br/>перетащите сюда или выберите файлы</div>
   <div style="text-align:right"><button id="closeModal">Отмена</button> <button class="primary" id="applyPlans">Создать / добавить</button></div>
 </div></div>
 
@@ -805,7 +1023,7 @@ function bindAction(sel, fn, label){
 }
 bindAction('#newBtn', () => newPalace(), '＋ Новый');
 bindAction('#openBtn', () => { const f = $('#fileOpen'); if(!f) throw new Error('нет поля выбора файла'); f.value = ''; f.click(); }, 'Открыть');
-bindAction('#saveBtn', () => { const m = $('#saveModal'); if(!m) throw new Error('нет окна сохранения'); syncFileNameField(); m.classList.add('show'); }, 'Сохранить');
+bindAction('#saveBtn', () => { const m = $('#saveModal'); if(!m) throw new Error('нет окна сохранения'); syncFileNameField(); const mb = $('#saveMpalaceBtn'); if(mb) mb.hidden = !hasLocalPanos(); m.classList.add('show'); }, 'Сохранить');
 
 /* Собственные диалоги вместо системных: Chrome умеет навсегда заблокировать
    alert/confirm («Не давать этой странице создавать диалоговые окна»), после чего
@@ -864,12 +1082,17 @@ function blankState(){
   const now = new Date().toISOString();
   return { version:FORMAT_VERSION, name:'Новый дворец памяти', purpose:'', source:'', explain:'', notes:'',
            created:now, edited:now, levels:[], active:0, mode:'edit', tool:'select',
-           zoom:1, rotation:0, markerSize:30, splitRatio:0.5, tourForceEmbed:false, tour:'', tourWidth:TOUR_WIDTH_DEFAULT, tourOpen:false, uiMode:'editor', layout:'plan', tourFollow:true, tourAutoBind:false, tourTags:true, tourYawFlip:false, tourSummary:null, panoSpots:{},
-           tourPanels:{ link:true, sync:true, info:true }, dirty:false };
+           zoom:1, rotation:0, markerSize:72, splitRatio:0.5, tourForceEmbed:false, tour:'', tourWidth:TOUR_WIDTH_DEFAULT, tourOpen:false, uiMode:'editor', layout:'plan', tourFollow:true, tourAutoBind:false, tourTags:true, tourYawFlip:false, tourSummary:null, panoSpots:{},
+           tourPanels:{ link:true, sync:true, info:true }, dirty:false,
+           /* Локальные панорамы, импортированные из .3dview (Zillow Tour Grabber и т.п.) —
+              не зависят от живого iframe-тура. Ключ — panoId, см. importThreeDViewZip(). */
+           panoramas:{} };
 }
 const state = blankState();
 let pending = [], drag = null, pan = null, planRenderToken = 0, suppressMarkerClick = false;
 let routeDrag = null;
+/* Какая локальная панорама сейчас показана в 3D-панели — вид, не сохраняется в файл. */
+let activeLocalPano = null;
 /* Сквозной номер локуса — тот же, что виден на фишке и на плане */
 function routeNum(li, i){
   return state.levels.slice(0, li).reduce((n, f) => n + ((f && f.markers) ? f.markers.length : 0), 0) + i + 1;
@@ -1022,7 +1245,7 @@ function touch(){ state.edited = new Date().toISOString(); state.dirty = true; s
 /* Для полей, меняющихся часто (текстовые поля, ползунки) — та же отметка "изменено",
    но запись в историю отмены откладывается, чтобы Cmd+Z не откатывал по одному символу. */
 function touchSoft(){ state.edited = new Date().toISOString(); state.dirty = true; scheduleHistoryPushSoft(); }
-function markerSize(){ const n = Number(state.markerSize); return (n >= 10 && n <= 200) ? n : 30; }
+function markerSize(){ const n = Number(state.markerSize); return (n >= 1 && n <= 144) ? n : 72; }
 
 /* ---------- история отмены (Cmd+Z / Ctrl+Z, Shift+Cmd+Z / Ctrl+Y — повтор) ----------
    Снимки — неглубокая копия этажей: строки (изображения base64, имена) переиспользуются
@@ -1453,7 +1676,7 @@ function drawPlan(){
       if(!reviewMarkerVisible(i)) return;
       const d = document.createElement('div');
       const resultClass = reviewMarkerResultClass(i);
-      d.className = 'marker' + (m.dragging ? ' dragging' : '') + (l.selected === i ? ' selected' : '') + (m.pano ? ' pinned' : '') + resultClass;
+      d.className = 'marker' + (m.dragging ? ' dragging' : '') + (l.selected === i ? ' selected' : '') + ((m.pano || m.localPano) ? ' pinned' : '') + resultClass;
       d.dataset.mi = String(i);
       d.textContent = i + 1 + off;
       d.style.left = m.x + 'px';
@@ -1495,10 +1718,67 @@ function drawPlan(){
       };
       p.appendChild(d);
     });
+    renderPlanCameras(p, l);
     reviewDrawGuessOverlay(p, im.naturalWidth, im.naturalHeight);
   };
   im.onerror = () => { if(token === planRenderToken){ clearPlan(); status('Не удалось отобразить изображение этажа'); } };
   im.src = l.src;
+}
+/* Значки камеры на плане — интеграция плана с локальным 3D (п.2 запроса):
+   каждая импортированная из .3dview панорама с известным plan_px рисуется на
+   плане как кликабельный значок; клик переносит в панель «Локальный 3D» в
+   эту самую точку. Отдельно от локусов (.marker) — локус ставит человек
+   вручную для техники памяти, а это то, что реально существует в .3dview,
+   независимо от того, привязан ли к нему локус. */
+function panoramasForLevel(l){
+  if(!l || !state.panoramas) return [];
+  const ids = Object.keys(state.panoramas);
+  const anyLevelHasFloorId = (state.levels || []).some(lv => lv && lv.floorId != null);
+  return ids.filter(id => {
+    const p = state.panoramas[id];
+    if(!p || !p.planPx || !isFinite(p.planPx.x) || !isFinite(p.planPx.y)) return false;
+    if(l.floorId != null) return p.floorId === l.floorId;
+    /* Дворцы, сохранённые до появления floorId на этаже (или импорт без
+       floorId вовсе) — если НИ у одного этажа floorId не проставлен,
+       считаем, что это один этаж, и показываем на нём все панорамы, а не
+       ничего. */
+    return !anyLevelHasFloorId;
+  });
+}
+function renderPlanCameras(p, l){
+  const show3d = state.layout === 'tour' || state.layout === 'split' || state.layout === 'split-rev';
+  if(!show3d) return;
+  const ids = panoramasForLevel(l);
+  /* Размер значка камеры — привязан к тому же ползунку «Размер маркера»
+     (markerSize()), которым пользователь уже управляет размером локусов
+     (см. drawPlan(): `d.style.width = d.style.height = size + 'px'` у
+     .marker). Раньше .plan-cam был зашит фиксированными 22px в CSS и вообще
+     не реагировал на этот ползунок — из-за этого при увеличенном размере
+     локусов камера рядом с ними выглядела непропорц. мелкой (жалоба
+     пользователя). Камера сделана чуть меньше локуса (коэффициент 0.62),
+     чтобы визуально не спорить с номерами локусов, но расти вместе с ними. */
+  const camSize = Math.max(52, Math.round(markerSize() * 1.24));
+  ids.forEach(id => {
+    const pano = state.panoramas[id];
+    const d = document.createElement('div');
+    d.className = 'plan-cam' + (activeLocalPano === id ? ' active' : '');
+    d.style.left = pano.planPx.x + 'px';
+    d.style.top = pano.planPx.y + 'px';
+    d.style.width = d.style.height = camSize + 'px';
+    d.title = 'Перейти в 3D: ' + (pano.room || id);
+    d.setAttribute('role', 'button');
+    d.tabIndex = 0;
+    d.innerHTML = '<svg class="ic"><use href="#i-camera"/></svg>';
+    /* Клик по значку камеры — переход в 3D (п.2), но так же, как и переход
+       по кольцу внутри самого 3D (см. l3dGoLocalPano()), обязан подсветить
+       локус, ПРИВЯЗАННЫЙ к этой панораме, если он есть — иначе список
+       локусов слева и сама 3D-панель показывали бы «разные точки одного и
+       того же места» (синхронизация локусов, п.3 запроса). */
+    const go = () => { syncMarkerFromLocalPano(id); setActiveLocalPano(id, true); };
+    d.onclick = e => { e.stopPropagation(); go(); };
+    d.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); go(); } };
+    p.appendChild(d);
+  });
 }
 
 function renderRoute(){
@@ -1519,8 +1799,8 @@ function renderRoute(){
     ms.forEach((m, i) => {
       num++;
       html += '<button class="r' + (cur && l.selected === i ? ' sel' : '') + '" draggable="true" data-l="' + li + '" data-i="' + i + '"' +
-              ' title="' + esc('Этаж ' + (li + 1) + ', локус ' + num + (m.pano ? ' · привязан к туру' : '')) + '">' + num +
-              (m.pano ? '<span class="rb" title="Привязан к 3D-туру"><svg class="ic sm"><use href="#i-dot"/></svg></span>' : '') + '</button>';
+              ' title="' + esc('Этаж ' + (li + 1) + ', локус ' + num + ((m.pano || m.localPano) ? ' · привязан к 3D' : '')) + '">' + num +
+              ((m.pano || m.localPano) ? '<span class="rb" title="Привязан к 3D"><svg class="ic sm"><use href="#i-dot"/></svg></span>' : '') + '</button>';
     });
     html += '</div>';
   });
@@ -1628,6 +1908,8 @@ function selectMarker(i){
   const l = level(); if(!l) return;
   l.selected = i;
   drawPlan(); renderRoute();
+  const m = l.markers && l.markers[i];
+  if(m && m.localPano) setActiveLocalPano(m.localPano, true);
 }
 
 function deleteMarker(i){
@@ -1686,8 +1968,8 @@ function openPlansModal(asWizard){
   const m = $('#modal'); if(m) m.classList.add('show');
   setText('#modalTitle', asWizard ? 'Новый дворец' : 'Планирование этажей');
   setText('#planHint', asWizard
-    ? 'Загрузите планы (PNG/JPG/PDF), при необходимости обрежьте их и укажите ссылку на 3D-тур.'
-    : ('Изображения будут добавлены как этажи. Сейчас этажей: ' + state.levels.length));
+    ? 'Вставьте данные: планы этажей, при необходимости обрежьте их и укажите ссылку на 3D-тур.'
+    : ('Вставьте данные — они будут добавлены как этажи. Сейчас этажей: ' + state.levels.length));
   const tw = $('#wizardTourUrl');
   if(tw && document.activeElement !== tw) tw.value = state.tour || '';
   renderPending();
@@ -1975,6 +2257,7 @@ function buildSerializableState(){
       name: l.name || ('Этаж #' + (i + 1)),
       image: 'images/level-' + (i + 1) + '.png',
       w: l.w || null, h: l.h || null,
+      floorId: l.floorId != null ? l.floorId : null,
       rotation: l.rotation || 0, flip: !!l.flip,
       brightness: l.brightness || 100, contrast: l.contrast || 100,
       walls: (l.walls || []).filter(w => w && isFinite(w.x1) && isFinite(w.y1) && isFinite(w.x2) && isFinite(w.y2))
@@ -1985,10 +2268,20 @@ function buildSerializableState(){
       markers: (l.markers || []).map(m => ({
         x: m.x, y: m.y, note: m.note || '',
         pano: m.pano || null,
-        camera: m.camera || null
+        camera: m.camera || null,
+        localPano: m.localPano || null
       }))
     }))
   };
+  return copy;
+}
+/* .mpalace хранит ссылки на локальные панорамы (localPano/panoramas) — .mplace
+   от них сознательно очищается, чтобы оставаться лёгким форматом «план + маркеры»,
+   независимым от 3D. */
+function buildSerializableStateForMplace(){
+  const copy = buildSerializableState();
+  copy.kind = 'mplace';
+  copy.levels.forEach(l => l.markers.forEach(m => { m.localPano = null; }));
   return copy;
 }
 function b64ToBlob(b64, mime){
@@ -2018,7 +2311,7 @@ async function saveMplace(){
   if(!window.JSZip) throw new Error('Библиотека ZIP не загрузилась. Проверьте подключение к интернету.');
   if(!state.levels.length){ notify('В дворце нет ни одного этажа — сначала загрузите планы.'); return; }
   status('Сохранение…');
-  const z = new JSZip(), copy = buildSerializableState();
+  const z = new JSZip(), copy = buildSerializableStateForMplace();
   const images = z.folder('images');
   for(let i = 0; i < state.levels.length; i++){
     const blob = await srcToPngBlob(state.levels[i].src);
@@ -2031,6 +2324,53 @@ async function saveMplace(){
   state.edited = copy.edited;
   state.dirty = false;
   status('Файл .mplace сохранён (' + state.levels.length + ' этаж(ей))');
+}
+/* .mpalace — тот же .mplace, но со встроенными файлами локальных панорам
+   (импортированных из .3dview): результат самодостаточен и не зависит от
+   исходного .3dview/data-архива — их можно потом удалить. */
+async function saveMpalace(){
+  if(!window.JSZip) throw new Error('Библиотека ZIP не загрузилась. Проверьте подключение к интернету.');
+  if(!state.levels.length){ notify('В дворце нет ни одного этажа — сначала загрузите планы.'); return; }
+  const panoIds = Object.keys(state.panoramas || {});
+  if(!panoIds.length){ notify('В этом дворце нет локальных панорам — сохраните как .mplace, либо сначала импортируйте .3dview.'); return; }
+  status('Сохранение .mpalace…');
+  const z = new JSZip(), copy = buildSerializableState();
+  copy.kind = 'mpalace';
+  const images = z.folder('images');
+  for(let i = 0; i < state.levels.length; i++){
+    const blob = await srcToPngBlob(state.levels[i].src);
+    if(blob) images.file('level-' + (i + 1) + '.png', blob);
+    else copy.levels[i].image = null;
+  }
+  const panoFolder = z.folder('panoramas');
+  copy.panoramas = {};
+  const extOfMime = mime => /avif/i.test(mime || '') ? 'avif' : /jpe?g/i.test(mime || '') ? 'jpg' : /webp/i.test(mime || '') ? 'webp' : 'png';
+  for(let k = 0; k < panoIds.length; k++){
+    const panoId = panoIds[k], p = state.panoramas[panoId] || {}, base = safeFileName(panoId);
+    const meta = {
+      mode: 'none',
+      room: p.room || '', roomId: p.roomId != null ? p.roomId : null,
+      floorId: p.floorId != null ? p.floorId : null, world: p.world || null, planPx: p.planPx || null,
+      headingDeg: p.headingDeg != null ? p.headingDeg : null, order: p.order != null ? p.order : null,
+      navYawOffsetDeg: isFinite(p.navYawOffsetDeg) ? p.navYawOffsetDeg : 90,
+      destinations: Array.isArray(p.destinations) ? p.destinations : []
+    };
+    if(p.data){
+      const ext = extOfMime(p.mime), fname = base + '.' + ext;
+      panoFolder.file(fname, b64ToBlob(p.data.split(',')[1], p.mime || 'image/avif'));
+      meta.mode = 'equirect';
+      meta.file = 'panoramas/' + fname;
+    }
+    /* иначе (mode:'none') — у точки вообще нет фото (см. «фото недоступно» в
+       локальном просмотрщике), но комната/координаты/переходы всё равно сохраняются. */
+    copy.panoramas[panoId] = meta;
+  }
+  z.file('palace.json', JSON.stringify(copy, null, 2));
+  const blob = await z.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:6 } });
+  downloadBlob(blob, outName() + '.mpalace');
+  state.edited = copy.edited;
+  state.dirty = false;
+  status('Файл .mpalace сохранён (' + state.levels.length + ' этаж(ей), панорам: ' + panoIds.length + ') — независим от .3dview');
 }
 function exportJson(){
   const blob = new Blob([JSON.stringify(buildSerializableState(), null, 2)], { type:'application/json' });
@@ -2058,7 +2398,8 @@ async function loadMplaceBuffer(buffer){
                                                      .map(m => ({
                                                        x:Number(m.x), y:Number(m.y), note:m.note || '',
                                                        pano:m.pano || null,
-                                                       camera:m.camera || null
+                                                       camera:m.camera || null,
+                                                       localPano:m.localPano || null
                                                      })) : [];
     l.walls = Array.isArray(l.walls) ? l.walls.filter(w => w && isFinite(w.x1) && isFinite(w.y1) && isFinite(w.x2) && isFinite(w.y2))
                                                .map(w => ({ x1:Number(w.x1), y1:Number(w.y1), x2:Number(w.x2), y2:Number(w.y2) })) : [];
@@ -2066,6 +2407,7 @@ async function loadMplaceBuffer(buffer){
       ? { color: { r:Number(l.autoWalls.color.r), g:Number(l.autoWalls.color.g), b:Number(l.autoWalls.color.b) }, tol: Number(l.autoWalls.tol) || 44 }
       : null;
     l.selected = null;
+    l.floorId = l.floorId != null ? l.floorId : null;
     l.name = l.name || ('Этаж #' + (i + 1));
     let file = z.file(l.image || ('images/level-' + (i + 1) + '.png'));
     if(!file){
@@ -2081,6 +2423,56 @@ async function loadMplaceBuffer(buffer){
     /* формат прошлых версий: изображение лежало прямо в palace.json */
     if(!l.src && typeof levels[i].src === 'string') l.src = levels[i].src;
   }
+  /* .mpalace: локальные панорамы, встроенные в архив (panoramas/*), — .mplace
+     их не пишет, поэтому здесь просто ничего не найдётся и получится {}. */
+  const panoramas = {};
+  if(data.panoramas && typeof data.panoramas === 'object'){
+    const ids = Object.keys(data.panoramas);
+    /* Читает один файл панорамы по точному пути из palace.json, а если его вдруг
+       не нашлось (архив правили руками / версия расходится) — по имени без учёта
+       расширения, тем же приёмом, что был здесь раньше для .mplace-совместимости. */
+    const readPanoFile = async (path) => {
+      if(!path) return null;
+      let entry = z.file(path);
+      if(!entry){
+        const base = String(path).replace(/^panoramas\//, '').replace(/\.[a-z0-9]+$/i, '');
+        const found = z.file(new RegExp('^panoramas/' + base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.[a-z0-9]+$', 'i'));
+        if(found && found.length) entry = found[0];
+      }
+      if(!entry) return null;
+      try{
+        const bytes = await entry.async('uint8array');
+        const extMime = /\.avif$/i.test(path) ? 'image/avif' : /\.jpe?g$/i.test(path) ? 'image/jpeg' :
+                        /\.webp$/i.test(path) ? 'image/webp' : 'image/png';
+        return { dataURL: bufferToDataURL(bytes, extMime), mime: extMime };
+      }catch(err){ return null; /* повреждённый файл — пропускаем, план и маркер всё равно откроются */ }
+    };
+    for(let k = 0; k < ids.length; k++){
+      const panoId = ids[k], meta = data.panoramas[panoId] || {};
+      const common = {
+        room: meta.room || '', roomId: meta.roomId != null ? meta.roomId : null,
+        floorId: meta.floorId != null ? meta.floorId : null, world: meta.world || null,
+        planPx: meta.planPx || null, headingDeg: meta.headingDeg != null ? meta.headingDeg : null,
+        order: meta.order != null ? meta.order : null,
+        navYawOffsetDeg: isFinite(meta.navYawOffsetDeg) ? meta.navYawOffsetDeg : 90,
+        destinations: Array.isArray(meta.destinations) ? meta.destinations : []
+      };
+      /* mode:'cubemap' встречается только в .mpalace, сохранённых во время
+         короткого периода поддержки Matterport (см. историю) — Matterport
+         больше не поддерживается, поэтому такие записи деградируют до «нет
+         фото», но комната/координаты/переходы читаются как обычно. */
+      if(meta.mode === 'equirect' || (meta.file && meta.mode !== 'cubemap')){
+        const res = await readPanoFile(meta.file);
+        panoramas[panoId] = res
+          ? Object.assign({ mode:'equirect', data:res.dataURL, mime:res.mime }, common)
+          : Object.assign({ mode:'none' }, common);
+      }else{
+        panoramas[panoId] = Object.assign({ mode:'none' }, common);
+      }
+    }
+  }
+  symmetrizeNeighborLinks(panoramas); /* подчищает и старые сохранённые .mpalace без обратных переходов */
+  fresh.panoramas = panoramas;
   Object.assign(state, fresh, {
     name: data.name || 'Дворец памяти',
     purpose: data.purpose || '', source: data.source || '', explain: data.explain || '', notes: data.notes || '',
@@ -2105,25 +2497,297 @@ async function loadMplaceBuffer(buffer){
     created: data.created || fresh.created, edited: data.edited || fresh.edited,
     levels: levels,
     rotation: Number(data.rotation) || 0,
-    markerSize: Number(data.markerSize) || 30,
+    markerSize: Number(data.markerSize) || 72,
     active: Math.max(0, Math.min(Number(data.active) || 0, Math.max(0, levels.length - 1))),
     dirty: false
   });
   state.zoom = 1;
+  activeLocalPano = null;
+  if(Object.keys(state.panoramas || {}).length && state.layout === 'plan') state.layout = 'split';
   const v = $('#viewport'); if(v) v.style.transform = '';
   render();
   resetHistory();
-  status('Открыт дворец «' + state.name + '» · этажей: ' + levels.length + ' · формат ' + (data.version || '1.0'));
+  const panoCount = Object.keys(state.panoramas || {}).length;
+  status('Открыт дворец «' + state.name + '» · этажей: ' + levels.length +
+         (panoCount ? ' · локальных панорам: ' + panoCount : '') +
+         ' · формат ' + (data.kind || data.version || '1.0'));
 }
 function openFileObject(file){
   if(!file) return;
   const r = new FileReader();
   r.onload = async () => {
-    try{ await loadMplaceBuffer(r.result); }
-    catch(err){ notify('Не удалось открыть файл .mplace: ' + (err && err.message ? err.message : 'архив повреждён или palace.json отсутствует') + '.'); }
+    try{ await openAnyArchiveBuffer(r.result); }
+    catch(err){ notify('Не удалось открыть файл: ' + (err && err.message ? err.message : 'архив повреждён или формат не распознан') + '.'); }
   };
   r.onerror = () => notify('Не удалось прочитать файл.');
   r.readAsArrayBuffer(file);
+}
+
+function hasLocalPanos(){
+  return !!(state.panoramas && Object.keys(state.panoramas).length);
+}
+
+/* Three.js загружается только при фактическом открытии локального 3D.
+   На плане библиотека и WebGL-контекст вообще не создаются. */
+let threeLoadPromise = null;
+function ensureThreeLoaded(){
+  if(window.THREE) return Promise.resolve(window.THREE);
+  if(threeLoadPromise) return threeLoadPromise;
+  threeLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    s.async = true;
+    s.onload = () => window.THREE ? resolve(window.THREE) : reject(new Error('three.js загрузился без window.THREE'));
+    s.onerror = () => reject(new Error('Не удалось загрузить three.js'));
+    document.head.appendChild(s);
+  });
+  return threeLoadPromise;
+}
+function bufferToDataURL(bytes, mime){
+  let bin = '';
+  for(let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(k, k + 0x8000));
+  return 'data:' + mime + ';base64,' + btoa(bin);
+}
+function mimeByExt(name){
+  if(/\.avif$/i.test(name)) return 'image/avif';
+  if(/\.jpe?g$/i.test(name)) return 'image/jpeg';
+  if(/\.webp$/i.test(name)) return 'image/webp';
+  if(/\.png$/i.test(name)) return 'image/png';
+  return 'application/octet-stream';
+}
+/* Открытие любого файла через «Открыть»/drag&drop: сам определяет, что внутри
+   архива — сохранённый дворец (.mplace/.mpalace, есть palace.json) или сырой
+   экспорт 3D-тура (.3dview, есть links.json, см. zillow_tour_grabber.py). */
+async function openAnyArchiveBuffer(buffer){
+  if(!window.JSZip) throw new Error('Библиотека ZIP не загрузилась. Проверьте подключение к интернету.');
+  let zip;
+  try{ zip = await JSZip.loadAsync(buffer); }
+  catch(err){ throw new Error('это не zip-архив или он повреждён'); }
+  if(zip.file('palace.json')){
+    await loadMplaceBuffer(buffer);
+    return;
+  }
+  if(zip.file('links.json')){
+    /* «Открыть» = открыть новый файл, а не добавить его этажи к предыдущему.
+       Раньше state.levels/state.panoramas сохранялись и новый .3dview
+       начинал нумероваться поверх старого дворца, из-за чего путались этажи. */
+    Object.assign(state, blankState());
+    activeLocalPano = null;
+    try{ localViewer.dispose(); }catch(err){}
+    pending = [];
+    drag = null; pan = null;
+    await importThreeDViewZip(zip);
+    return;
+  }
+  throw new Error('не найден ни palace.json (.mplace/.mpalace), ни links.json (.3dview)');
+}
+/* ---------- импорт .3dview (см. 3d_tour_grabber.py / 3D_Tour_Grabber.md) ----------
+   Добавляет новые этажи с планом(-ами) к текущему дворцу и заполняет
+   state.panoramas локальными фото — без единого клика по туру и без какого-либо
+   обращения к сайту-источнику. Локусы на план НЕ ставятся автоматически: это
+   инструмент техники памяти, точки должен размещать сам человек, осознанно —
+   импорт лишь готовит план и панорамы, а привязка локуса к панораме делается
+   вручную (см. bindMarkerToLocalPano/панель «Локальный 3D»). Поддерживается
+   только Zillow (1 фото-файл на точку, официальный план с сайта) — как в новой
+   схеме links.json (platform/id/floor{id,label}/files[]/neighbors/extra), так
+   и в старой (panoId/floorId/file/destinations, прежняя Zillow-only версия
+   grabber'а) через фолбэки по именам полей. Matterport-туры в PALACE больше не
+   импортируются напрямую — только как встраиваемая живая ссылка (см. поле
+   «3D-тур» и importThreeDViewZip ниже, который сразу отклоняет такой архив). */
+/* Ищет первое числовое значение среди перечисленных ключей объекта — так
+   опциональные поля с углом/азимутом можно подхватить под разными именами,
+   если grabber (или будущая версия 3d_tour_grabber.py) когда-нибудь начнёт
+   их отдавать, не ломая разбор архивов, где этих полей нет вовсе. */
+function firstFiniteField(obj, keys){
+  if(!obj) return null;
+  for(let i = 0; i < keys.length; i++){
+    const v = obj[keys[i]];
+    if(v != null && isFinite(v)) return Number(v);
+  }
+  return null;
+}
+function normalizeThreeDViewLink(link){
+  const floor = (link && link.floor && typeof link.floor === 'object') ? link.floor : null;
+  const floorId = floor ? (floor.id != null ? floor.id : null) : (link.floorId != null ? link.floorId : null);
+  const w = link.world || null;
+  const world = (w && (isFinite(w.x) || isFinite(w.y) || isFinite(w.z)))
+    ? { x:Number(w.x), y:Number(w.y), z:Number(w.z) } : null;
+  const px = link.plan_px || link.planPx || null;
+  const planPx = (px && isFinite(px.x) && isFinite(px.y)) ? { x:Number(px.x), y:Number(px.y) } : null;
+  const files = Array.isArray(link.files) ? link.files.filter(Boolean) : (link.file ? [link.file] : []);
+  const neighbors = (Array.isArray(link.neighbors) ? link.neighbors : (Array.isArray(link.destinations) ? link.destinations : []))
+    .map(d => {
+      const angleDeg = firstFiniteField(d, ['angleDeg', 'angle', 'degrees', 'heading', 'bearing', 'departureAngle', 'yaw']);
+      return {
+        panoId: (d && (d.id != null ? d.id : d.panoId)) || null,
+        room: (d && d.room) || '',
+        angleDeg: angleDeg
+      };
+    })
+    .filter(d => d.panoId != null);
+  const extra = link.extra || {};
+  const headingDeg = firstFiniteField(extra, ['headingDeg', 'heading', 'rotationDeg', 'rotation', 'yawDeg', 'yaw', 'bearing']);
+  return {
+    id: link.id != null ? link.id : link.panoId,
+    platform: link.platform || 'zillow',
+    room: link.room || '',
+    floorId: floorId,
+    floorLabel: floor ? (floor.label || null) : null,
+    world: world,
+    planPx: planPx,
+    files: files,
+    planFile: link.plan_file || null,
+    neighbors: neighbors,
+    headingDeg: headingDeg,
+    roomId: extra.roomId != null ? extra.roomId : (link.roomId != null ? link.roomId : null),
+    order: extra.order != null ? extra.order : (link.order != null ? link.order : null)
+  };
+}
+/* Одно фото на точку (Zillow avif) — просто читаем файл. Если файла нет
+   (скачивание не удалось) — «фото недоступно», но сама точка/переходы к ней
+   всё равно остаются в дворце. */
+async function loadPanoFile(zip, files){
+  const fn = files && files[0];
+  if(!fn) return { mode:'none' };
+  const entry = zip.file(fn);
+  if(!entry) return { mode:'none' };
+  const bytes = await entry.async('uint8array');
+  const mime = mimeByExt(fn);
+  return { mode:'equirect', data: bufferToDataURL(bytes, mime), mime:mime };
+}
+async function importThreeDViewZip(zip){
+  const linksEntry = zip.file('links.json');
+  if(!linksEntry) throw new Error('в архиве нет links.json — это не .3dview от 3D Tour Grabber');
+  const rawLinks = JSON.parse(await linksEntry.async('string'));
+  if(!Array.isArray(rawLinks) || !rawLinks.length) throw new Error('links.json пуст — нечего импортировать');
+  if(rawLinks[0] && rawLinks[0].platform === 'matterport'){
+    throw new Error('это архив с Matterport-тура — локальный импорт Matterport в PALACE не поддерживается. ' +
+      'Вставьте живую ссылку на тур в поле «3D-тур» (m.matterport.com/show/…) — он встраивается как обычный iframe.');
+  }
+  const points = rawLinks.map(normalizeThreeDViewLink);
+
+  let floorNames = {};
+  try{
+    const rawEntry = zip.file('raw_data.json') || zip.file('richMedia_raw.json');
+    if(rawEntry){
+      const raw = JSON.parse(await rawEntry.async('string'));
+      (raw.floors || []).forEach(f => { if(f && f.id != null && f.name) floorNames[f.id] = f.name; });
+    }
+  }catch(err){ /* необязательные данные (актуально для Zillow) — молча пропускаем */ }
+
+  /* Группируем по этажу. Если в raw_data есть список floors — используем
+     именно его порядок; иначе сохраняем порядок первого появления в links.json.
+     Это убирает зависимость номера этажа от порядка панорам в архиве. */
+  const floorOrder = [], groups = {};
+  points.forEach(p => {
+    const key = p.floorId != null ? String(p.floorId) : '__single__';
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(p);
+  });
+  const rawFloorOrder = [];
+  try{
+    const rawEntry = zip.file('raw_data.json') || zip.file('richMedia_raw.json');
+    if(rawEntry){
+      const raw = JSON.parse(await rawEntry.async('string'));
+      (raw.floors || []).forEach(f => {
+        if(f && f.id != null){
+          const key = String(f.id);
+          if(groups[key] && !rawFloorOrder.includes(key)) rawFloorOrder.push(key);
+        }
+      });
+    }
+  }catch(err){}
+  Object.keys(groups).forEach(key => {
+    if(!rawFloorOrder.includes(key)) rawFloorOrder.push(key);
+  });
+  rawFloorOrder.forEach(key => floorOrder.push(key));
+
+  const baseIndex = state.levels.length;
+  let addedLevels = 0, addedPanoramas = 0, skippedNoPlan = 0, skippedNoPhoto = 0;
+  const newPanoramas = Object.assign({}, state.panoramas);
+
+  for(let g = 0; g < floorOrder.length; g++){
+    const key = floorOrder[g], group = groups[key];
+    let planFile = (group.find(p => p.planFile) || {}).planFile || null;
+    if(!planFile && floorOrder.length === 1 && zip.file('plan.png')) planFile = 'plan.png';
+    let levelObj = null;
+    if(planFile){
+      const planEntry = zip.file(planFile);
+      if(planEntry){
+        const bytes = await planEntry.async('uint8array');
+        const floorId = group[0] && group[0].floorId;
+        const label = (group[0] && group[0].floorLabel) || (floorId != null && floorNames[floorId]) || null;
+        const name = label || ('Этаж ' + (baseIndex + addedLevels + 1) + ' (импорт)');
+        levelObj = {
+          name: name, src: bufferToDataURL(bytes, mimeByExt(planFile)), w:null, h:null,
+          rotation:0, flip:false, brightness:100, contrast:100,
+          floorId: floorId != null ? floorId : null,
+          markers: [], walls: [], autoWalls: null, selected: null
+        };
+        state.levels.push(levelObj);
+        addedLevels++;
+      }else skippedNoPlan += group.length;
+    }else skippedNoPlan += group.length;
+
+    for(let i = 0; i < group.length; i++){
+      const p = group[i];
+      if(!p.id) continue;
+      const rec = await loadPanoFile(zip, p.files);
+      newPanoramas[p.id] = Object.assign({
+        room: p.room || '', roomId: p.roomId != null ? p.roomId : null,
+        floorId: p.floorId != null ? p.floorId : null, world: p.world, planPx: p.planPx || null,
+        headingDeg: p.headingDeg != null ? p.headingDeg : null,
+        order: p.order != null ? p.order : null,
+        navYawOffsetDeg: 90, /* дефолтный поворот колец-переходов по запросу пользователя (было 0) */
+        destinations: p.neighbors
+      }, rec);
+      if(rec.mode !== 'none') addedPanoramas++; else skippedNoPhoto++;
+    }
+  }
+
+  if(!addedLevels && !addedPanoramas) throw new Error('в links.json не нашлось ни одной панорамы с файлом или планом этажа');
+
+  const addedSymmetric = symmetrizeNeighborLinks(newPanoramas);
+  state.panoramas = newPanoramas;
+  if(addedLevels) state.active = baseIndex;
+  if(state.layout === 'plan') state.layout = 'split'; /* план + панорама одновременно */
+  activeLocalPano = null;
+  touch();
+  render();
+  let msg = 'Импорт .3dview: этажей +' + addedLevels + ', панорам +' + addedPanoramas +
+            ' · локусы не расставлены — поставьте их на плане и привяжите к панораме в панели «Локальный 3D»';
+  if(skippedNoPhoto) msg += ' · без фото (не скачалось): ' + skippedNoPhoto;
+  if(skippedNoPlan) msg += ' · без плана этажа: ' + skippedNoPlan;
+  if(addedSymmetric) msg += ' · добавлено обратных переходов: ' + addedSymmetric + ' (чтобы можно было вернуться напрямую, без лишней точки)';
+  status(msg);
+}
+/* Источник данных (Zillow richMedia.panos[].destinations) иногда отдаёт связь
+   только в одну сторону — A → B есть, а B → A в исходных данных нет, хотя
+   физически дверь одна и та же и пройти можно в обе стороны. Раньше это и
+   давало жалобу «нельзя перейти сразу, приходится идти в обход через другую
+   точку»: обратного перехода просто не было в данных. Здесь достраиваем
+   граф переходов до симметричного — если у B ещё нет ссылки на A, добавляем
+   её автоматически (не наоборот: существующие связи не трогаем и не
+   дублируем). Возвращает, сколько обратных переходов было добавлено. */
+function symmetrizeNeighborLinks(panoramas){
+  let added = 0;
+  const ids = Object.keys(panoramas);
+  ids.forEach(aId => {
+    const a = panoramas[aId];
+    const dests = Array.isArray(a && a.destinations) ? a.destinations : [];
+    dests.forEach(d => {
+      if(!d || d.panoId == null) return;
+      const b = panoramas[d.panoId];
+      if(!b) return;
+      if(!Array.isArray(b.destinations)) b.destinations = [];
+      const already = b.destinations.some(x => x && x.panoId === aId);
+      if(!already){
+        b.destinations.push({ panoId: aId, room: a.room || '', angleDeg: null });
+        added++;
+      }
+    });
+  });
+  return added;
 }
 
 /* ---------- экспорт изображений ---------- */
@@ -2612,6 +3276,7 @@ const tourApi = {
   }
 };
 addEventListener('message', e => { try{ tourApi.onMessage(e); }catch(err){} });
+addEventListener('resize', () => { if(hasLocalPanos()) localViewer.resize(); });
 
 /* Локус ↔ панорама тура */
 function bindMarkerToTour(){
@@ -3226,9 +3891,1094 @@ function setTourFrameSrc(url){
   }
 
 }
+/* ---------- диагностика локального 3D ----------
+   Пользователь сообщает, что холст остаётся чёрным без единой ошибки даже
+   после того, как ensure() уже был обёрнут в try/catch — то есть либо это
+   старая закэшированная копия файла, либо реальная причина в чём-то, что
+   существующие проверки не ловят (гонка с размером канваса, DOM/CSS в
+   конкретном окружении и т.п.). Вместо очередной догадки — всегда видимая
+   на экране (без открытия консоли разработчика) панель лога, куда пишется
+   каждый шаг инициализации и показа панорамы, плюс кнопки «Копировать» и
+   «Скачать .txt», чтобы можно было прислать реальную трассировку. BUILD —
+   метка сборки: если пользователь видит в панели другую дату/метку, чем
+   в этом файле, значит браузер показывает старую закэшированную версию. */
+const L3D_BUILD = 'diag-1 · 2026-09-19 18:40 UTC';
+const l3dLogLines = [];
+function l3dTime(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' +
+         String(d.getSeconds()).padStart(2, '0') + '.' + String(d.getMilliseconds()).padStart(3, '0');
+}
+function l3dLog(level, msg){
+  const line = '[' + l3dTime() + '] ' + (level === 'err' ? 'ОШИБКА · ' : level === 'warn' ? '! ' : '') + msg;
+  l3dLogLines.push(line);
+  if(l3dLogLines.length > 500) l3dLogLines.shift();
+  const box = $('#l3dDebugLog');
+  if(box){
+    const row = document.createElement('div');
+    if(level === 'err') row.className = 'err';
+    else if(level === 'warn') row.className = 'warn';
+    row.textContent = line;
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+  /* Всегда через console.log (даже для err/warn) — иначе после хука console.warn/
+     console.error ниже (перехват «нативных» предупреждений браузера/three.js в
+     панель) это привело бы к бесконечной рекурсии. */
+  try{ console.log('[palace:3d]' + (level === 'err' ? ' ОШИБКА' : level === 'warn' ? ' !' : ''), msg); }catch(e){}
+}
+/* Первый раунд реальных логов показал: весь конвейер (WebGL создаётся, AVIF
+   декодируется в реальные цвета, текстура назначается) отчитывается об успехе
+   без единой ошибки — а видимый холст всё равно оставался чёрным. Значит либо
+   браузер теряет WebGL-контекст уже ПОСЛЕ успешной инициализации (это не
+   бросает исключение и ничего не ловится текущими try/catch — контекст просто
+   отключается, и render() дальше молча ничего не рисует), либо GPU реально
+   рисует что-то другое, чем ожидается. Ни один из логов первого раунда не
+   проверял, что именно оказалось на экране ПОСЛЕ применения текстуры — только
+   что сами шаги отработали без исключений. Добавляем: 1) перехват
+   webglcontextlost/restored, 2) перехват console.warn/console.error браузера
+   (родные предупреждения WebGL/three.js, которые раньше были видны только в
+   консоли разработчика), 3) реальное чтение пикселя с ВИДИМОГО canvas через
+   gl.readPixels после каждого применения текстуры — то есть проверяем не
+   «код не упал», а «GPU реально нарисовал не-чёрный кадр». */
+(function hookConsoleIntoDebugPanel(){
+  const origWarn = console.warn ? console.warn.bind(console) : null;
+  const origError = console.error ? console.error.bind(console) : null;
+  const fmt = args => args.map(a => { try{ return (a && a.stack) ? a.stack : (typeof a === 'string' ? a : JSON.stringify(a)); }catch(e){ return String(a); } }).join(' ');
+  if(origWarn) console.warn = function(...args){ try{ l3dLog('warn', '[браузер] ' + fmt(args)); }catch(e){} return origWarn(...args); };
+  if(origError) console.error = function(...args){ try{ l3dLog('err', '[браузер] ' + fmt(args)); }catch(e){} return origError(...args); };
+  window.addEventListener('error', e => { try{ l3dLog('err', 'window.onerror: ' + (e && e.message) + (e && e.filename ? (' @ ' + e.filename + ':' + e.lineno) : '')); }catch(err){} });
+})();
+function l3dFullLogText(){
+  let webgl = 'н/д';
+  try{
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl');
+    if(gl){
+      const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+      const vendor = dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR);
+      const renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      webgl = vendor + ' / ' + renderer;
+    }else{
+      webgl = 'getContext вернул null (WebGL недоступен)';
+    }
+  }catch(err){ webgl = 'исключение при проверке: ' + (err && err.message || err); }
+  return [
+    '=== PALACE — диагностика локального 3D ===',
+    'Build: ' + L3D_BUILD,
+    'Время отправки лога: ' + new Date().toString(),
+    'URL страницы: ' + location.href,
+    'В iframe (top !== self): ' + (window.top !== window.self),
+    'User-Agent: ' + navigator.userAgent,
+    'window.THREE: ' + (window.THREE ? ('есть, THREE.REVISION=' + (THREE.REVISION || '?')) : 'ОТСУТСТВУЕТ'),
+    'GPU/WebGL (независимая проверка): ' + webgl,
+    'devicePixelRatio: ' + (window.devicePixelRatio || 1),
+    'window.innerWidth/innerHeight: ' + window.innerWidth + 'x' + window.innerHeight,
+    '=== Журнал событий (' + l3dLogLines.length + ') ===',
+    l3dLogLines.join('\n')
+  ].join('\n');
+}
+function l3dCopyLog(){
+  const text = l3dFullLogText();
+  const done = ok => status(ok ? 'Лог диагностики скопирован в буфер обмена' : 'Не удалось скопировать — используйте «Скачать .txt»');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(() => done(true), () => done(false));
+  }else{
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      done(ok);
+    }catch(err){ done(false); }
+  }
+}
+function l3dSaveLog(){
+  try{
+    const blob = new Blob([l3dFullLogText()], { type:'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'palace-3d-diagnostics.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    status('Файл лога сохранён (palace-3d-diagnostics.txt)');
+  }catch(err){ notify('Не удалось сохранить файл лога: ' + (err && err.message || err)); }
+}
+/* Ручная проверка «прямо сейчас» — пользователь нажимает кнопку ИМЕННО в тот
+   момент, когда видит чёрный экран (а не полагается на автоматические
+   проверки, которые срабатывают на долю секунды раньше/позже и могут не
+   застать реальный момент проблемы). Первые логи уже доказали через
+   gl.readPixels, что GPU в целом рисует правильные (не чёрные) пиксели в
+   drawing buffer WebGL — а пользователь всё равно видит чёрный экран. Значит
+   дело не в рендере, а в том, композитит ли браузер этот canvas на экран —
+   например, что-то может визуально перекрывать canvas сверху, или на нём
+   самом стоит CSS-свойство (opacity/filter/mix-blend-mode/clip-path и т.п.),
+   из-за которого его содержимое не видно глазом, хотя внутри WebGL всё
+   нарисовано верно. document.elementFromPoint() — самая прямая проверка:
+   она говорит, что браузер СЧИТАЕТ находящимся сверху в этой точке экрана. */
+function l3dInspectNow(){
+  l3dLog('info', '=== РУЧНАЯ ПРОВЕРКА ПО КНОПКЕ (нажата в момент наблюдаемой проблемы) ===');
+  const canvas = $('#local3dCanvas');
+  if(!canvas){ l3dLog('err', 'ручная проверка: #local3dCanvas не найден в DOM'); return; }
+  try{
+    const gl = localViewer.renderer && localViewer.renderer.getContext();
+    if(gl){
+      if(gl.isContextLost && gl.isContextLost()) l3dLog('err', 'ручная проверка: gl.isContextLost() = true ПРЯМО СЕЙЧАС');
+      const cw = canvas.width, ch = canvas.height;
+      const px = new Uint8Array(4);
+      gl.readPixels(Math.floor(cw / 2), Math.floor(ch / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      l3dLog('info', 'ручная проверка: пиксель GL drawing buffer ПРЯМО СЕЙЧАС: rgba(' + px[0] + ',' + px[1] + ',' + px[2] + ',' + px[3] + ')');
+    }else{
+      l3dLog('err', 'ручная проверка: нет активного WebGL-контекста (localViewer.renderer отсутствует) — значит рендерер вообще не создан в данный момент');
+    }
+  }catch(err){ l3dLog('warn', 'ручная проверка: исключение при readPixels: ' + (err && err.stack || err)); }
+  try{
+    const durl = canvas.toDataURL('image/png');
+    l3dLog('info', 'ручная проверка: canvas.toDataURL() вернул строку длиной ' + durl.length + ' символов (полностью чёрный/пустой кадр обычно даёт заметно более короткую/однородную строку)');
+  }catch(err){ l3dLog('warn', 'ручная проверка: canvas.toDataURL() бросил исключение: ' + (err && err.message || err)); }
+  try{
+    const r = canvas.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    l3dLog('info', 'ручная проверка: canvas.getBoundingClientRect()=' + JSON.stringify({x:r.left, y:r.top, w:r.width, h:r.height}));
+    const topEl = document.elementFromPoint(cx, cy);
+    if(!topEl){
+      l3dLog('warn', 'ручная проверка: document.elementFromPoint(центр canvas) вернул null (точка вне окна?)');
+    }else if(topEl === canvas){
+      l3dLog('info', 'ручная проверка: document.elementFromPoint(центр canvas) = САМ CANVAS — сверху в этой точке ничего не перекрывает, браузер должен показывать именно его содержимое.');
+    }else{
+      const desc = (topEl.id ? ('#' + topEl.id) : topEl.tagName) + (topEl.className ? ('.' + String(topEl.className).replace(/\s+/g,'.')) : '');
+      l3dLog('err', 'ручная проверка: document.elementFromPoint(центр canvas) = ' + desc + ' — ЭТО НЕ CANVAS! ' +
+        'Именно этот элемент физически перекрывает 3D-просмотрщик в данной точке экрана и является причиной чёрного экрана.');
+    }
+  }catch(err){ l3dLog('warn', 'ручная проверка: elementFromPoint бросил исключение: ' + (err && err.message || err)); }
+  try{
+    let el = canvas, chain = [], hops = 0;
+    while(el && hops < 10){
+      const cs = getComputedStyle(el);
+      chain.push({
+        el: el.id ? ('#' + el.id) : (el.className ? (el.tagName + '.' + String(el.className).replace(/\s+/g,'.')) : el.tagName),
+        opacity: cs.opacity, visibility: cs.visibility, display: cs.display,
+        filter: cs.filter !== 'none' ? cs.filter : undefined,
+        mixBlendMode: cs.mixBlendMode !== 'normal' ? cs.mixBlendMode : undefined,
+        clipPath: cs.clipPath !== 'none' ? cs.clipPath : undefined,
+        transform: cs.transform !== 'none' ? cs.transform : undefined,
+        zIndex: cs.zIndex, position: cs.position, overflow: cs.overflow,
+        bg: cs.backgroundColor
+      });
+      el = el.parentElement;
+      hops++;
+    }
+    l3dLog('info', 'ручная проверка: цепочка стилей canvas → предки (до 10 уровней): ' + JSON.stringify(chain));
+  }catch(err){ l3dLog('warn', 'ручная проверка: исключение при обходе стилей предков: ' + (err && err.message || err)); }
+  l3dLog('info', '=== КОНЕЦ РУЧНОЙ ПРОВЕРКИ ===');
+  status('Диагностика записана в лог — скопируйте его и пришлите');
+}
+/* ---------- локальный 360°-просмотрщик панорам из .3dview/.mpalace ----------
+   Полностью независим от iframe/tourApi: панорамы уже лежат в state.panoramas
+   (dataURL), маркер связан напрямую по panoId (m.localPano) — без калибровки
+   по углу камеры, в отличие от живого тура выше. */
+const localViewer = {
+  renderer:null, scene:null, camera:null, mesh:null, texture:null, navGroup:null, navMeshes:[], _raycaster:null,
+  yaw:0, pitch:0, fov:75, dragging:false, lastX:0, lastY:0, raf:null, currentId:null, canvas:null, ro:null,
+  velYaw:0, velPitch:0, /* инерция после отпускания перетаскивания, см. bindEvents()/tick() */
+  /* Показывает понятную причину прямо поверх холста, а не тихий чёрный экран —
+     нет window.THREE (CDN не загрузился/нет сети) или браузер не смог
+     декодировать фото — раньше в обоих случаях холст просто оставался пустым. */
+  reportError(msg){
+    const box = $('#l3dError'), text = $('#l3dErrorMsg');
+    if(text) text.textContent = msg;
+    if(box) box.classList.add('show');
+  },
+  clearError(){
+    const box = $('#l3dError');
+    if(box) box.classList.remove('show');
+  },
+  ensure(canvas){
+    l3dLog('info', 'ensure() вызван, canvas=' + (canvas ? (canvas.id || 'без id') : 'null') +
+      ', уже инициализирован=' + !!(this.renderer && this.canvas === canvas));
+    if(this.renderer && this.canvas === canvas) return;
+    this.dispose();
+    if(!canvas){ l3dLog('warn', 'ensure(): canvas не передан, выходим'); return; }
+    if(!window.THREE){
+      l3dLog('err', 'window.THREE отсутствует — библиотека three.js не загрузилась (нет сети / заблокирован cdnjs.cloudflare.com)');
+      this.reportError('3D-библиотека (three.js) не загрузилась — проверьте подключение к интернету и обновите страницу.');
+      return;
+    }
+    l3dLog('info', 'window.THREE найден, THREE.REVISION=' + (THREE.REVISION || '?'));
+    /* Проверяем WebGL напрямую, ДО обращения к three.js: в некоторых встроенных
+       окнах предпросмотра (песочница с ограничениями — именно там раньше был
+       тихий чёрный экран без единой ошибки) WebGL отключён совсем, и
+       getContext(...) просто возвращает null. Проверяем на отдельном,
+       никуда не подключённом canvas — если попробовать прямо на настоящем,
+       можно случайно забрать не тот тип контекста и сломать всё для three.js. */
+    let probe = null, probeType = null;
+    try{
+      const test = document.createElement('canvas');
+      probe = test.getContext('webgl2'); if(probe) probeType = 'webgl2';
+      if(!probe){ probe = test.getContext('webgl'); if(probe) probeType = 'webgl'; }
+      if(!probe){ probe = test.getContext('experimental-webgl'); if(probe) probeType = 'experimental-webgl'; }
+    }catch(err){
+      probe = null;
+      l3dLog('err', 'исключение при пробном getContext(): ' + (err && err.stack || err));
+    }
+    if(!probe){
+      l3dLog('err', 'пробный canvas.getContext() вернул null для webgl2/webgl/experimental-webgl — WebGL недоступен в этом окне');
+      this.reportError('WebGL недоступен в этом окне (часто бывает во встроенном превью с ограничениями) — ' +
+        'откройте файл index.html в отдельной вкладке настоящего браузера (Chrome/Firefox/Edge), там 3D заработает.');
+      return;
+    }
+    try{
+      const dbg = probe.getExtension('WEBGL_debug_renderer_info');
+      const vendor = dbg ? probe.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : probe.getParameter(probe.VENDOR);
+      const renderer = dbg ? probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : probe.getParameter(probe.RENDERER);
+      l3dLog('info', 'пробный контекст (' + probeType + ') получен: ' + vendor + ' / ' + renderer);
+    }catch(err){ l3dLog('warn', 'пробный контекст получен (' + probeType + '), но не удалось прочитать vendor/renderer: ' + (err && err.message || err)); }
+    l3dLog('info', 'реальный canvas перед созданием WebGLRenderer: clientWidth=' + canvas.clientWidth +
+      ', clientHeight=' + canvas.clientHeight + ', getBoundingClientRect=' + JSON.stringify(canvas.getBoundingClientRect ? (r => ({w:r.width,h:r.height}))(canvas.getBoundingClientRect()) : null));
+    /* THREE.WebGLRenderer тоже может бросить исключение при создании контекста
+       (например, если WebGL формально есть, но с урезанными правами) — раньше
+       это исключение никто не ловил, и весь просмотрщик молча оставался
+       неинициализированным, без единого признака ошибки на экране. */
+    try{
+      this.canvas = canvas;
+      this.renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias:true, alpha:false, preserveDrawingBuffer:true });
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.scene = new THREE.Scene();
+      this.camera = new THREE.PerspectiveCamera(this.fov, 1, 0.1, 1100);
+      this.camera.rotation.order = 'YXZ';
+      const geo = new THREE.SphereGeometry(500, 60, 40);
+      geo.scale(-1, 1, 1);
+      this.mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x14161a }));
+      this.scene.add(this.mesh);
+      this.navGroup = new THREE.Group();
+      this.scene.add(this.navGroup);
+      this.navMeshes = [];
+      l3dLog('info', 'WebGLRenderer/Scene/Camera/Mesh созданы успешно');
+      /* Ключевая проверка: контекст может отвалиться уже ПОСЛЕ успешной
+         инициализации (нехватка видеопамяти, системный лимит на число
+         одновременных WebGL-контекстов, GPU-процесс браузера упал) — это НЕ
+         бросает исключение, ничего не ловится существующими try/catch,
+         render() просто молча перестаёт что-либо рисовать. Раньше это было
+         совершенно невидимо. */
+      const self0 = this;
+      canvas.addEventListener('webglcontextlost', function onLost(e){
+        e.preventDefault();
+        l3dLog('err', 'СОБЫТИЕ webglcontextlost — браузер ПРИНУДИТЕЛЬНО отключил WebGL-контекст во время работы ' +
+          '(типичные причины: нехватка видеопамяти, слишком много одновременных WebGL-контекстов на странице, ' +
+          'сбой GPU-процесса браузера). statusMessage=' + (e && e.statusMessage));
+        self0.reportError('WebGL-контекст был отключён браузером во время работы (не хватило ресурсов GPU) — ' +
+          'обновите страницу; если повторяется — закройте другие 3D/видео-вкладки и приложения.');
+      }, false);
+      canvas.addEventListener('webglcontextrestored', function onRestored(){
+        l3dLog('warn', 'СОБЫТИЕ webglcontextrestored — браузер восстановил контекст, пересоздаём сцену и текстуру');
+        self0.dispose();
+        self0.currentId = null;
+        renderLocalViewer();
+      }, false);
+    }catch(err){
+      this.renderer = null; this.scene = null; this.camera = null; this.mesh = null; this.canvas = null;
+      l3dLog('err', 'исключение при создании THREE.WebGLRenderer/Scene/Camera/Mesh: ' + (err && err.stack || err));
+      this.reportError('Не удалось запустить 3D (' + (err && err.message ? err.message : 'ошибка WebGL') +
+        ') — попробуйте открыть index.html в отдельной вкладке браузера.');
+      return;
+    }
+    this.bindEvents(canvas);
+    this.resize();
+    l3dLog('info', 'после первого resize(): canvas.width=' + canvas.width + ', canvas.height=' + canvas.height +
+      ' (backing store), clientWidth=' + canvas.clientWidth + ', clientHeight=' + canvas.clientHeight);
+    if(!canvas.clientWidth || !canvas.clientHeight){
+      l3dLog('warn', 'canvas имеет нулевой clientWidth/clientHeight в момент инициализации — 3D может отрисоваться в буфер 1x1 ' +
+        'и выглядеть как чёрный экран, пока ResizeObserver не поймает реальный размер');
+    }
+    /* Подстраховка от гонки с раскладкой: канвас может стать видимым (панель
+       переключилась в 'split'/полноэкранный тур) уже после ensure(), когда его
+       clientWidth/clientHeight ещё 0 — ResizeObserver подхватит реальный размер
+       сам, не полагаясь на то, что кто-то вручную вызовет resize() в нужный момент. */
+    if(window.ResizeObserver){
+      this.ro = new ResizeObserver(() => {
+        l3dLog('info', 'ResizeObserver сработал: clientWidth=' + canvas.clientWidth + ', clientHeight=' + canvas.clientHeight);
+        this.resize();
+      });
+      this.ro.observe(canvas);
+    }else{
+      l3dLog('warn', 'window.ResizeObserver отсутствует в этом браузере — размер канваса не будет обновляться автоматически');
+    }
+    this.requestRender();
+  },
+  requestRender(){
+    if(this.raf || !this.renderer || !this.camera) return;
+    const self = this;
+    this.raf = requestAnimationFrame(() => {
+      self.raf = null;
+      try{
+        self.tick();
+      }catch(err){
+        l3dLog('err', 'исключение внутри tick(): ' + (err && err.stack || err));
+        self.reportError('3D остановлен из-за ошибки рендера — обновите страницу.');
+        return;
+      }
+      if(!self.dragging && (Math.abs(self.velYaw) > 0.002 || Math.abs(self.velPitch) > 0.002)){
+        self.requestRender();
+      }
+    });
+  },
+  bindEvents(canvas){
+    if(canvas._l3dBound) return;
+    canvas._l3dBound = true;
+    const self = this;
+    let downX = 0, downY = 0, moved = 0;
+    canvas.addEventListener('pointerdown', e => {
+      self.dragging = true; self.lastX = e.clientX; self.lastY = e.clientY;
+      downX = e.clientX; downY = e.clientY; moved = 0;
+      self.velYaw = 0; self.velPitch = 0; /* новый жест — гасим доездку от предыдущего */
+      try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    canvas.addEventListener('pointermove', e => {
+      /* Наведение на кнопки перехода теперь обычный CSS :hover на самих
+         DOM-кнопках (см. большой комментарий у clearLocalNavMeshes выше) —
+         никакой дополнительной работы тут при простом движении мыши без
+         перетаскивания больше не требуется. */
+      if(!self.dragging) return;
+      const dx = e.clientX - self.lastX, dy = e.clientY - self.lastY;
+      self.lastX = e.clientX; self.lastY = e.clientY;
+      moved += Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY);
+      /* Полная инверсия по уточнённому (третьему) ТЗ пользователя — на этот
+         раз сформулировано через направление ВЗГЛЯДА (а не «куда уезжает
+         картинка», как раньше): «зажатая мышка вверх — вид вниз, вправо —
+         вид влево» — классическая игровая настройка invert Y. Горизонталь
+         (вправо-тянешь — вид влево) уже давала это же поведение при
+         предыдущей формуле, поэтому yaw не трогаем; pitch — меняем знак на
+         противоположный тому, что было до этого сообщения. */
+      const dYaw = dx * 0.15, dPitch = dy * 0.15;
+      self.yaw += dYaw;
+      self.pitch = Math.max(-85, Math.min(85, self.pitch + dPitch));
+      /* Инерция — после отпускания палец/курсор «докручивает» ракурс ещё
+         немного и плавно тормозит, вместо жёсткой мгновенной остановки
+         (запрошенное «сделать перемещение лучше»). */
+      self.velYaw = dYaw; self.velPitch = dPitch;
+      self.requestRender();
+    });
+    const stop = e => {
+      const wasClick = self.dragging && moved < 6;
+      self.dragging = false;
+      if(wasClick){ self.velYaw = 0; self.velPitch = 0; }
+    };
+    canvas.addEventListener('pointerup', stop);
+    canvas.addEventListener('pointercancel', () => { self.dragging = false; });
+    canvas.addEventListener('pointerleave', () => { self.dragging = false; });
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      self.fov = Math.max(30, Math.min(100, self.fov + (e.deltaY > 0 ? 4 : -4)));
+      if(self.camera){ self.camera.fov = self.fov; self.camera.updateProjectionMatrix(); }
+      self.requestRender();
+    }, { passive:false });
+  },
+  setImage(dataURL, resetView, arrivalYawDeg){
+    const preview = dataURL ? (dataURL.slice(0, 40) + '… длина=' + dataURL.length) : 'null/пусто';
+    l3dLog('info', 'setImage() вызван, currentId=' + this.currentId + ', dataURL=' + preview);
+    if(!window.THREE || !this.mesh){
+      l3dLog('warn', 'setImage(): нет window.THREE (' + !!window.THREE + ') или this.mesh (' + !!this.mesh + ') — выходим без установки текстуры');
+      return;
+    }
+    if(resetView){
+      /* Раньше при каждом переходе вид всегда сбрасывался на yaw=0 — а это
+         произвольное направление конкретного фото, никак не связанное с
+         тем, откуда пришёл человек, и нередко оказывалось «лицом в стену»
+         (жалоба «ставит перемещение в стенах»). Если переход шёл через
+         кольцо (см. l3dGoLocalPano/renderLocalJumps), там уже известно
+         направление, в котором это кольцо стояло у предыдущей панорамы —
+         продолжаем смотреть примерно туда же, как будто прошли вперёд через
+         дверь, а не как будто нас поставили лицом в случайную сторону. */
+      this.yaw = (arrivalYawDeg != null && isFinite(arrivalYawDeg)) ? arrivalYawDeg : 0;
+      this.pitch = 0;
+      this.velYaw = 0; this.velPitch = 0;
+    }
+    this.canvas && this.canvas.classList.add('l3d-fading'); /* короткое затемнение на смену кадра — см. CSS .l3d-fading */
+    const self = this;
+    const targetId = this.currentId;
+    /* Важно: текстуру создаём из <canvas>, а НЕ напрямую из <img>/TextureLoader —
+       в части браузеров/GPU-драйверов texImage2D из AVIF-декодированного <img>
+       заливает грань чёрным (сам <img> декодируется нормально, проверено), а
+       рисование на canvas 2D и текстура из него работают надёжно всегда. */
+    const img = new Image();
+    img.onload = () => {
+      l3dLog('info', 'img.onload сработал: naturalWidth=' + img.naturalWidth + ', naturalHeight=' + img.naturalHeight +
+        (self.currentId !== targetId ? ' (точка уже сменилась, currentId=' + self.currentId + ' — текстура НЕ применяется)' : ''));
+      if(self.currentId !== targetId) return; /* точку уже сменили, пока фото грузилось */
+      if(!img.naturalWidth || !img.naturalHeight){
+        l3dLog('err', 'изображение "загрузилось", но naturalWidth/naturalHeight = 0 — вероятно, битые данные или неподдерживаемый формат, декодированный молча');
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || 1; canvas.height = img.naturalHeight || 1;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      /* Оптимизация (п.3 запроса «максимально оптимизируй сайт»): раньше
+         здесь ПРИ КАЖДОМ переходе между панорамами автоматически читался
+         пиксель с этого offscreen-canvas (ctx.getImageData) И, двумя
+         кадрами позже, ещё и с реального WebGL-канваса (gl.readPixels) —
+         оба вызова форсируют синхронный сброс GPU-конвейера (браузер обязан
+         дождаться реальной отрисовки, прежде чем отдать пиксель), то есть
+         на каждый клик по кнопке перехода уходило заметно больше времени
+         GPU/CPU, чем нужно для собственно показа фото. Эти проверки были
+         добавлены для одноразовой диагностики бага «чёрный экран» и с тех
+         пор гоняются вхолостую на КАЖДОЙ панораме у КАЖДОГО пользователя.
+         Ручная проверка по кнопке (см. l3dInspectNow(), панель справа)
+         делает то же самое — но только когда её действительно просят, а не
+         на каждый переход, поэтому автоматические проверки убраны отсюда, а
+         диагностика осталась доступна по требованию. */
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      if(self.texture) self.texture.dispose();
+      self.texture = tex;
+      self.mesh.material.map = tex;
+      self.mesh.material.color.set(0xffffff);
+      self.mesh.material.needsUpdate = true;
+      self.clearError();
+      l3dLog('info', 'текстура применена к материалу сферы, mesh.material.needsUpdate=true');
+      self.requestRender();
+      requestAnimationFrame(() => { if(self.canvas) self.canvas.classList.remove('l3d-fading'); });
+    };
+    img.onerror = (ev) => {
+      l3dLog('err', 'img.onerror сработал для панорамы ' + targetId + ' — браузер не смог декодировать формат (событие: ' + (ev && ev.type) + ')');
+      if(self.canvas) self.canvas.classList.remove('l3d-fading');
+      if(self.currentId !== targetId) return;
+      self.reportError('Не удалось декодировать фото этой панорамы — браузер не поддерживает её формат (обычно AVIF) или файл повреждён.');
+    };
+    img.src = dataURL;
+  },
+  /* Убирает текстуру, когда у точки вообще нет фото (скачивание не удалось) —
+     вместо панорамы просто нейтральный фон, переходы «→ Комната» работают. */
+  clearImage(){
+    if(this.texture){ this.texture.dispose(); this.texture = null; }
+    if(this.mesh){ this.mesh.material.map = null; this.mesh.material.color.set(0x14161a); this.mesh.material.needsUpdate = true; }
+  },
+  /* record — запись из state.panoramas (см. importThreeDViewZip): mode
+     'equirect' (панорама есть) или 'none' (фото недоступно). */
+  show(canvas, panoId, record, arrivalYawDeg){
+    l3dLog('info', 'show() вызван: panoId=' + panoId + ', mode=' + (record && record.mode) +
+      ', есть data=' + !!(record && record.data) + ', сменился ли currentId=' + (this.currentId !== panoId));
+    this.clearError();
+    if(!window.THREE){
+      ensureThreeLoaded().then(() => {
+        if(this.canvas === canvas || !this.renderer) this.show(canvas, panoId, record, arrivalYawDeg);
+      }).catch(err => this.reportError(err.message || 'Не удалось загрузить three.js'));
+      return;
+    }
+    this.ensure(canvas);
+    if(this.currentId !== panoId){
+      this.currentId = panoId;
+      if(record && record.mode === 'equirect' && record.data){
+        this.setImage(record.data, true, arrivalYawDeg);
+      }else{
+        l3dLog('info', 'у панорамы ' + panoId + ' нет фото (mode=' + (record && record.mode) + ') — показываем нейтральный фон вместо текстуры');
+        this.yaw = (arrivalYawDeg != null && isFinite(arrivalYawDeg)) ? arrivalYawDeg : 0;
+        this.pitch = 0;
+        this.velYaw = 0; this.velPitch = 0;
+        this.clearImage();
+      }
+    }
+    this.resize();
+  },
+  resize(){
+    if(!this.renderer || !this.canvas){ l3dLog('warn', 'resize() вызван без активного renderer/canvas — пропускаем'); return; }
+    const w = this.canvas.clientWidth || 1, h = this.canvas.clientHeight || 1;
+    this.renderer.setSize(w, h, false);
+    if(this.camera){ this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
+    l3dLog('info', 'resize(): установлен размер рендера ' + w + 'x' + h + (w === 1 || h === 1 ? ' (подозрительно мало — возможно, реальный размер контейнера ещё 0)' : ''));
+  },
+  tick(){
+    if(!this.renderer || !this.camera) return;
+    /* Инерция взгляда: пока не идёт активное перетаскивание, «докручиваем»
+       yaw/pitch остаточной скоростью жеста и плавно её гасим — без этого
+       перетаскивание останавливалось мгновенно и ощущалось резко/дёргано. */
+    if(!this.dragging && (Math.abs(this.velYaw) > 0.002 || Math.abs(this.velPitch) > 0.002)){
+      this.yaw += this.velYaw;
+      this.pitch = Math.max(-85, Math.min(85, this.pitch + this.velPitch));
+      this.velYaw *= 0.9; this.velPitch *= 0.9;
+      if(Math.abs(this.velYaw) < 0.002) this.velYaw = 0;
+      if(Math.abs(this.velPitch) < 0.002) this.velPitch = 0;
+    }
+    this.camera.rotation.y = THREE.MathUtils.degToRad(this.yaw);
+    this.camera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
+    this.renderer.render(this.scene, this.camera);
+    this.updateNavLabels();
+    try{ updateMinimapCamHeading(); }catch(e){}
+  },
+  /* Подписи комнат у точек перехода — обычные DOM-элементы (#l3dJumps), но их
+     left/top на экране каждый кадр пересчитываются проекцией НАСТОЯЩЕЙ 3D-
+     позиции того же кольца через текущую камеру — поэтому подпись движется,
+     сжимается и прячется за спиной ровно как сам объект сцены, при любом
+     повороте взгляда (см. критику пользователя: раньше был плоский оверлей,
+     который вообще не зависел от ракурса). */
+  updateNavLabels(retriesLeft){
+    if(!this.navMeshes || !this.navMeshes.length || !this.canvas) return;
+    const rect = this.canvas.getBoundingClientRect();
+    if(!rect.width || !rect.height){
+      /* Баг: у первой панорамы, показанной сразу после загрузки .3dview/
+         .mpalace, контейнер иногда ещё имеет нулевой размер в момент этого
+         вызова (см. аналогичную заметку в resize() выше) — кнопки переходов
+         так и оставались скрыты, пока пользователь не потрогает вид (это
+         запускало tick()/updateNavLabels() ещё раз, уже с нормальным
+         размером). Вместо тихого отказа — пробуем ещё раз на следующем
+         кадре, ограниченное число раз, чтобы не зациклиться, если контейнер
+         действительно скрыт для показа. */
+      const left = (retriesLeft == null ? 20 : retriesLeft) - 1;
+      if(left >= 0) requestAnimationFrame(() => this.updateNavLabels(left));
+      return;
+    }
+
+    /*
+      Навигация полностью 2D: кнопки раскладываются по окружности вокруг
+      направления взгляда камеры. При вращении камеры относительный угол
+      каждой кнопки меняется, поэтому кнопки «едут» по окружности вслед за
+      взглядом.
+
+      БЫЛО (жалоба пользователя): центр окружности лежал ЗНАЧИТЕЛЬНО ниже
+      нижнего края экрана (centerY = height + radiusY*0.78), а радиусX/Y
+      были независимыми (эллипс), поэтому на экране умещалась только узкая
+      верхушка дуги около «прямо по курсу» (rel≈0) — любая точка, чуть более
+      развёрнутая относительно текущего взгляда, уже проецировалась НИЖЕ
+      нижнего края экрана и была невидима, хотя технически считалась
+      «показанной» (display:flex). Отсюда и ощущение «кнопки видно только
+      под определённым углом».
+
+      СТАЛО: настоящая окружность (один радиус на оба измерения) с центром
+      РОВНО на нижнем крае экрана (centerY = rect.height). Для точки на
+      окружности y(θ) = centerY − R·cos(θ): при θ=0° (прямо по курсу)
+      y = height − R (верхняя точка дуги), при θ=±90° (ровно сбоку) y =
+      height (нижний край экрана). Значит ВЕСЬ передний полукруг θ∈[-90°,90°]
+      всегда лежит в пределах [height−R, height] ⊂ экрана — то есть минимум
+      половина окружности (её верхняя половина, которая и нужна — всё, что
+      не позади камеры) гарантированно видна целиком, а не только точка
+      θ=0. R дополнительно ограничен и высотой (чтобы сверху осталось место
+      под подпись комнаты), и половиной ширины (чтобы кнопки на θ=±90° не
+      вылезали за боковые края). */
+    const arcDeg = 90;
+    /* Зона угасания перед исчезновением (п.1 текущей правки): раньше кнопка,
+       дойдя до края дуги (|rel|→90°), просто «прилипала» там и оставалась
+       видна как есть — на экране это выглядело как кнопка, наполовину
+       обрезанная нижним краем экрана (см. скриншот жалобы — «Laundry room»/
+       «Living room»/«Office» торчат обрубками снизу). Теперь в последние
+       fadeDeg градусов перед краем кнопка плавно тает по opacity до 0, а по
+       достижении самого края (|rel|≥arcDeg) скрывается полностью
+       (display:none) — то есть по-настоящему исчезает, а не зависает
+       обрезанной. */
+    const fadeDeg = 22;
+    const padTop = 46;   // место сверху под подпись комнаты у кнопки θ=0
+    const padSide = 32;  // половина ширины кнопки + отступ, чтобы не резало по бокам
+    /* Диаметр появления кнопок: раньше радиус доходил до 480px и кнопки на
+       краях дуги (θ≈±90°) оказывались у самых боковых краёв экрана — «на
+       пол-экрана». Теперь радиус небольшой и завязан на размер контейнера
+       мягче (0.22 ширины), с низким потолком (170px) — весь веер кнопок
+       укладывается в компактную область у центра низа экрана.
+       По высоте дуга — приплюснутый эллипс, а не окружность: сначала на 25%
+       (radiusY = radiusX·0.75), а по текущей правке ещё на 10% сверху
+       (итоговый коэффициент 0.75·0.9 = 0.675) — та же ширина расположения
+       кнопок, но заметно более низкий, компактный свод над центром низа
+       экрана. */
+    const radiusX = Math.max(70, Math.min(rect.width * 0.22, 170));
+    const radiusY = Math.min(radiusX * 0.675, rect.height - padTop);
+    const centerX = rect.width * 0.5;
+    const centerY = rect.height;
+    const cameraYaw = this.yaw;
+    /* Максимальная «просадка» кнопки вглубь экрана по Z на самом краю дуги
+       (см. ниже) — привязана к radiusX, чтобы масштаб эффекта был
+       соразмерен размеру самой дуги на любом экране. */
+    const maxDepth = radiusX;
+
+    this.navMeshes.forEach(nm => {
+      const el = nm.labelEl;
+      if(!el) return;
+
+      let rel = ((nm.yawDeg - cameraYaw + 540) % 360) - 180;
+      const absRel = Math.abs(rel);
+      /* За пределами arcDeg (позади камеры) кнопка полностью скрыта — не
+         просто прозрачна, а убрана из раскладки, чтобы не ловить клики и не
+         торчать призраком у края. */
+      if(absRel >= arcDeg){
+        el.style.display = 'none';
+        return;
+      }
+      /* Показываем только передний полукруг (см. пояснение выше) —
+         направления позади камеры притягиваются к боковым краям дуги, а не
+         уходят за пределы видимой половины окружности. */
+      const clamped = Math.max(-arcDeg, Math.min(arcDeg, rel));
+      const a = THREE.MathUtils.degToRad(clamped);
+
+      /* Знак у X отзеркален (п.1 предыдущей правки): раньше правый разворот
+         взгляда (rel>0) отправлял кнопку влево от центра и наоборот —
+         визуально это читалось как «кнопки перепутаны сторонами». */
+      let x = centerX - Math.sin(a) * radiusX;
+      let y = centerY - Math.cos(a) * radiusY;
+      /* Подстраховка на случай совсем нестандартных пропорций контейнера —
+         не даём кнопке вылезти за видимую область даже на её крайних точках. */
+      x = Math.max(padSide, Math.min(rect.width - padSide, x));
+      y = Math.max(padTop * 0.5, Math.min(rect.height, y));
+
+      el.style.display = 'flex';
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+
+      /* Поворот шеврона внутри кнопки (см. большой комментарий у .l3d-navpt
+         в CSS). Приём с двумя границами (border-top+border-right) даёт «носик»
+         стрелки, направленный на northeast (45° по часовой от «вверх») при
+         нулевом повороте — поэтому, чтобы носик смотрел на экранный угол
+         θ (0°=вверх, по часовой), нужен поворот R = θ − 45°. Экранный угол
+         здесь равен −clamped (тот же отзеркаленный знак, что и у X выше —
+         иначе стрелка указывала бы в сторону, противоположную положению
+         самой кнопки на экране). */
+      const arrowEl = el.firstElementChild;
+      if(arrowEl) arrowEl.style.transform = 'rotate(' + (-clamped - 45) + 'deg)';
+
+      /* Настоящая 3D-глубина (п.2 текущей правки), а не просто CSS scale:
+         кнопка дальше от направления взгляда «отъезжает» вглубь экрана по
+         Z (translateZ отрицательный) внутри перспективного контейнера
+         (#l3dJumps, см. perspective там же) — благодаря этому она реально
+         становится меньше и слегка смещается к центру дуги за счёт самой
+         перспективной проекции браузера, а не потому что мы вручную
+         посчитали множитель. Раньше вместо этого был CSS `scale()` —
+         визуально плоское, однородное уменьшение что «в ширину», что «в
+         высоту», без ощущения третьей координаты; ровно это и просили
+         заменить. 0 в центре (θ=0, кнопка «на месте»), maxDepth на самом
+         краю дуги. */
+      const edge = Math.min(1, absRel / arcDeg);
+      const depth = maxDepth * edge;
+      /* Угасание у самого края дуги (см. fadeDeg выше): 0 всюду до
+         (arcDeg−fadeDeg), затем плавно растёт до 1 ровно к arcDeg, где
+         кнопка в следующем кадре уже скрывается веткой display:none выше. */
+      const fadeStart = arcDeg - fadeDeg;
+      const fade = absRel <= fadeStart ? 0 : Math.min(1, (absRel - fadeStart) / fadeDeg);
+      el.style.opacity = String((1 - edge * 0.18) * (1 - fade));
+      el.style.transform = 'translate(-50%,-50%) translateZ(' + (-depth).toFixed(1) + 'px)';
+    });
+  },
+  dispose(){
+    if(this.renderer) l3dLog('info', 'dispose(): освобождаем предыдущий renderer/сцену');
+    if(this.raf){ cancelAnimationFrame(this.raf); this.raf = null; }
+    if(this.texture){ this.texture.dispose(); this.texture = null; }
+    if(this.ro){ this.ro.disconnect(); this.ro = null; }
+    clearLocalNavMeshes();
+    this.navGroup = null;
+    const jumpsBox = document.getElementById('l3dJumps'); if(jumpsBox) jumpsBox.innerHTML = '';
+    if(this.renderer){ this.renderer.dispose(); this.renderer = null; }
+    this.scene = null; this.camera = null; this.mesh = null; this.canvas = null; this.currentId = null;
+    this._lostLogged = false; this._glErrChecked = false;
+  }
+};
+/* === Точки перехода в локальном 3D (см. пояснение выше renderLocalJumps) ===
+   Раньше здесь ещё стояли l3dDirFromYawPitch()/l3dMakeNavTexture() —
+   остатки более ранней версии, где кольца перехода были настоящими
+   3D-объектами сцены с raycast'ом по клику/наведению. С переходом на
+   обычные 2D DOM-кнопки (см. renderLocalJumps/updateNavLabels выше) эти
+   функции, а также l3dPointerToNDC/l3dRaycastNav/l3dHoverNavTest/
+   l3dClickNavTest, стали мёртвым кодом: l3dRaycastNav всегда возвращал
+   null, а l3dHoverNavTest всё равно вызывался на КАЖДОЕ движение мыши над
+   канвасом (см. bindEvents), просто вхолостую переписывая cursor=''. Это и
+   лишний код, и лишняя работа на каждый pointermove — убрано целиком (п.3
+   запроса «максимально оптимизируй сайт»); наведение курсора на кнопки
+   теперь обычное дело CSS (`.l3d-navpt{cursor:pointer}`), клик — обычный
+   onclick на самой кнопке (см. renderLocalJumps). */
+function clearLocalNavMeshes(){
+  const lv = localViewer;
+  if(lv.navMeshes && lv.navMeshes.length){
+    lv.navMeshes.forEach(nm => {
+      if(nm.mesh && lv.navGroup){
+        lv.navGroup.remove(nm.mesh);
+        if(nm.mesh.geometry) nm.mesh.geometry.dispose();
+        if(nm.mesh.material) nm.mesh.material.dispose();
+      }
+      if(nm.labelEl) nm.labelEl.remove();
+    });
+  }
+  lv.navMeshes = [];
+}
+/* arrivalYawDeg — направление, в котором стояло кольцо перехода у ПРЕДЫДУЩЕЙ
+   панорамы (см. renderLocalJumps): используется как начальный yaw НОВОЙ
+   панорамы, чтобы после перехода человек продолжал смотреть примерно туда
+   же, куда шёл, а не в случайную сторону конкретного фото (см. setImage()). */
+let l3dPendingArrivalYaw = null;
+function l3dGoLocalPano(panoId, arrivalYawDeg){
+  if(!panoId || !state.panoramas[panoId]) return;
+  l3dPendingArrivalYaw = (arrivalYawDeg != null && isFinite(arrivalYawDeg)) ? arrivalYawDeg : null;
+  syncMarkerFromLocalPano(panoId);
+  setActiveLocalPano(panoId, false);
+}
+function pickDefaultLocalPano(){
+  const l = level();
+  const allIds = Object.keys(state.panoramas || {});
+  const anyLevelHasFloorId = (state.levels || []).some(lv => lv && lv.floorId != null);
+  /* По запросу пользователя: при КАЖДОЙ загрузке дворца по умолчанию должен
+     открываться вход в дом, если он размечен (room содержит «вход»/
+     «прихожая»/entry/entrance/foyer) — даже если на плане уже был выбран
+     другой локус (см. ветки ниже). Сначала ищем среди панорам активного
+     этажа (та же логика, что и запасной выбор в конце функции — не
+     подсовывать локацию с другого этажа), если там входа нет — среди всех. */
+  if(allIds.length){
+    const entranceRx = /вход|прихож|entry|entrance|foyer/i;
+    const findEntrance = ids => ids.find(id => entranceRx.test((state.panoramas[id] && state.panoramas[id].room) || ''));
+    const scopedIds = (anyLevelHasFloorId && l) ? allIds.filter(id => state.panoramas[id] && state.panoramas[id].floorId === l.floorId) : allIds;
+    const entrance = findEntrance(scopedIds) || findEntrance(allIds);
+    if(entrance) return entrance;
+  }
+  if(l){
+    if(l.selected != null && l.markers[l.selected] && l.markers[l.selected].localPano) return l.markers[l.selected].localPano;
+    const withPano = (l.markers || []).find(m => m && m.localPano);
+    if(withPano) return withPano.localPano;
+  }
+  if(!allIds.length) return null;
+  /* Синхронизация этажа плана и 3D-вида (п.1 более раннего запроса): если у
+     дворца вообще есть деление панорам по этажам (floorId проставлен хоть у
+     одной), то и запасной выбор панорамы должен браться СТРОГО с активного
+     на плане этажа, а не с первой попавшейся панорамы дворца — иначе после
+     переключения этажа на плане 3D-панель могла молча остаться показывать
+     комнату с ДРУГОГО этажа. */
+  if(anyLevelHasFloorId && l){
+    const onFloor = allIds.filter(id => state.panoramas[id] && state.panoramas[id].floorId === l.floorId);
+    return onFloor.length ? onFloor[0] : null; /* на этом этаже панорам нет — не подсовывать чужую */
+  }
+  return allIds[0];
+}
+function syncMarkerFromLocalPano(panoId){
+  for(let li = 0; li < state.levels.length; li++){
+    const l = state.levels[li];
+    const ms = (l && l.markers) ? l.markers : [];
+    for(let i = 0; i < ms.length; i++){
+      if(ms[i].localPano === panoId){
+        if(state.active !== li){ state.active = li; state.layout = state.layout === 'plan' ? 'split' : state.layout; render(); }
+        const cur = state.levels[state.active];
+        cur.selected = i;
+        drawPlan(); renderRoute();
+        return;
+      }
+    }
+  }
+  /* Ни один локус не привязан к этой панораме (обычное дело — локусы для
+     техники памяти ставит человек вручную) — но план всё равно должен
+     переключиться на нужный этаж и подсветить значок камеры: полная
+     синхронизация плана с 3D-видом, а не только для явно привязанных
+     локусов (п.1 запроса пользователя). */
+  const pano = state.panoramas && state.panoramas[panoId];
+  if(pano && pano.floorId != null){
+    const li = state.levels.findIndex(l => l && l.floorId === pano.floorId);
+    if(li >= 0 && li !== state.active){
+      state.active = li;
+      state.layout = state.layout === 'plan' ? 'split' : state.layout;
+      render();
+      return;
+    }
+  }
+  const cur = level();
+  if(cur) cur.selected = null;
+  drawPlan();
+}
+/* Точки перехода — обычные 2D DOM-кнопки (см. renderLocalJumps/
+   updateNavLabels выше), уложенные по дуге вокруг текущего направления
+   взгляда; их экранное положение и лёгкая просадка по Z (см. updateNavLabels)
+   зависят от yaw камеры, поэтому визуально они «едут» и тают у краёв при
+   повороте взгляда, хоть и не являются настоящими объектами 3D-сцены.
+
+   Направление (азимут) каждой кнопки выбирается по приоритету —
+   см. l3dNavYawDeg():
+    1) явный угол на связи (d.angleDeg) — Zillow ДЕЙСТВИТЕЛЬНО отдаёт его
+       для большинства связей (проверено на реальном .mpalace пользователя,
+       см. l3dExplicitAngleToYaw() — раньше считалось, что это поле почти
+       никогда не заполнено, это было ошибочное предположение);
+    2) реальный азимут ИЗ ПИКСЕЛЬНЫХ КООРДИНАТ НА ПЛАНЕ (planPx.x/planPx.y)
+       текущей точки к точке назначения — это ТОТ ЖЕ кадр координат, в
+       котором пользователь визуально сверяет план (см. renderPlanCameras());
+       ось Y там растёт ВНИЗ по изображению (как обычный экранный пиксель),
+       поэтому здесь применяется зеркалирующая поправка знака (см. ниже),
+       иначе левые/правые кольца получаются переставлены местами относительно
+       плана;
+    3) если planPx нет хотя бы у одной из точек — тот же расчёт, но по
+       мировым координатам (world.x/world.y) с той же поправкой знака;
+    4) если координат нет вовсе ни у одной из точек — равномерно по кругу,
+       как раньше (нейтральный фолбэк, а не гадание).
+   Во всех случаях, кроме голого фолбэка (4), абсолютную привязку «куда
+   именно смотрит yaw=0 на конкретном фото» формат не хранит (ни явный угол
+   Zillow, ни положение на плане — это не ориентация камеры), поэтому весь
+   набор колец ОДНОЙ панорамы может быть повёрнут на какой-то один и тот же
+   угол относительно плана — но их взаимное расположение (кто слева, кто
+   справа, кто сзади) относительно друг друга теперь верное. Подробный
+   численный разбор — см. статус проекта, раунд 7.
+   Клик обрабатывается обычным onclick на самой кнопке (см. renderLocalJumps),
+   без какого-либо raycast'а — кнопки и так настоящие DOM-элементы. */
+function l3dBearingYawDeg(dx, dy){
+  /* dx/dy — разница координат «куда» минус «откуда» в кадре, где Y растёт
+     ВНИЗ (как в пикселях плана).
+     yaw в этом вьювере растёт при повороте взгляда ВЛЕВО (против часовой),
+     а обычный компасный азимут (0°=вверх/«от себя», далее по часовой)
+     растёт вправо — поэтому здесь нужен минус, иначе кольца становятся
+     зеркальными по горизонтали относительно плана. */
+  return -Math.atan2(dx, -dy) * 180 / Math.PI;
+}
+/* Явный d.angleDeg — это СЫРОЕ значение из Zillow (проходит как есть через
+   3d_tour_grabber.py → first_number()), а не наш yaw. На реальном .mpalace
+   пользователя (раунд 7) сравнение с истинным геометрическим азимутом по
+   плану (l3dBearingYawDeg на planPx) показало: ВНУТРИ одной панорамы порядок
+   её собственных исходящих связей по d.angleDeg — ЗЕРКАЛЬНЫЙ (обратный)
+   относительно истинного порядка по плану (проверено на 4 панорамах с 3-4
+   связями каждая — включая ИМЕННО ту хаб-панораму «Hallway», где
+   пользователь заметил, что Family room и Living room стоят не на своих
+   местах), а разброс между d.angleDeg и планом внутри одной панорамы мал
+   (обычно 1–10°, т.е. один и тот же неизвестный сдвиг «нуля» этой
+   конкретной фотографии), но сильно различается МЕЖДУ разными панорамами
+   (от -177° до +147° в реальных данных) — то есть единой глобальной
+   константы-поправки (как временная ручная +90°, раунд 6) не существует и
+   существовать не может: у Zillow нет общей компасной привязки между
+   фотографиями, только СВОЯ у каждой. Поэтому единственно верное действие —
+   ИНВЕРТИРОВАТЬ ЗНАК d.angleDeg (убирает зеркалирование, доказано численно
+   на реальных данных), а остаточный неизвестный сдвиг на конкретном фото
+   принять как неустранимое ограничение формата (как и раньше).
+
+   РАУНД 8 — доразобрались, ПОЧЕМУ этот остаточный сдвиг не мелочь. Прямая
+   проверка на реальных фото (не только сверка с планом на бумаге, а
+   буквально «повернуть камеру на вычисленный yaw и посмотреть, что там на
+   фото») показала: для одних переходов конкретной панорамы всё сходится
+   идеально (например, «Hallway» у панорамы Foyer — камера действительно
+   упирается в нужный коридор), а для других переходов ТОЙ ЖЕ панорамы (её
+   же Bathroom/Laundry room/Driveway) — нет: там, где по расчёту должна
+   быть ванная, на фото лестница, и т.п. При этом порядок и относительный
+   разброс между несколькими выходами ОДНОЙ панорамы остаются верными
+   (см. раунд 7 — численно проверено ещё раз) — то есть это не свежий баг
+   в математике, а именно то и есть «свой неизвестный ноль yaw» у КОНКРЕТНОЙ
+   фотографии, просто он не всегда мал (как показалось на примере раунда 7),
+   а может быть и большим. Раз он у каждой фотографии свой и заранее не
+   вычислим из данных — единственный честный выход, вместо очередного
+   угадывания одной глобальной константы (раунд 6, доказанно не работает
+   универсально), — дать пользователю ручную настройку РОВНО на то время и
+   ровно для той панорамы, где это заметно: `pano.navYawOffsetDeg` (по
+   умолчанию 0, хранится в .mpalace/.mplace) добавляется к вычисленному yaw
+   ВСЕХ исходящих переходов ЭТОЙ панорамы — крутилка в тулбаре локального
+   3D (см. #l3dRotCCW/#l3dRotCW/#l3dRotReset) сохраняет её сразу и на месте
+   пересчитывает кольца, без необходимости снова просить помощи. */
+function l3dExplicitAngleToYaw(angleDeg){
+  return -angleDeg;
+}
+function l3dNavYawDeg(fromPano, toPanoId, explicitAngleDeg, fallbackIndex, fallbackCount){
+  const offset = (fromPano && isFinite(fromPano.navYawOffsetDeg)) ? fromPano.navYawOffsetDeg : 90;
+  if(explicitAngleDeg != null && isFinite(explicitAngleDeg)){
+    return l3dExplicitAngleToYaw(explicitAngleDeg) + offset;
+  }
+  const to = state.panoramas[toPanoId];
+  const fpx = fromPano && fromPano.planPx, tpx = to && to.planPx;
+  if(fpx && tpx && isFinite(fpx.x) && isFinite(fpx.y) && isFinite(tpx.x) && isFinite(tpx.y)){
+    const dx = tpx.x - fpx.x, dy = tpx.y - fpx.y;
+    if(dx || dy) return l3dBearingYawDeg(dx, dy) + offset;
+  }
+  const fw = fromPano && fromPano.world, tw = to && to.world;
+  if(fw && tw && isFinite(fw.x) && isFinite(fw.y) && isFinite(tw.x) && isFinite(tw.y)){
+    const dx = tw.x - fw.x, dy = tw.y - fw.y;
+    if(dx || dy) return l3dBearingYawDeg(dx, dy) + offset;
+  }
+  return (360 / fallbackCount) * fallbackIndex + offset;
+}
+function renderLocalJumps(p){
+  const box = $('#l3dJumps'); if(!box) return;
+  box.innerHTML = '';
+  clearLocalNavMeshes();
+
+  const dests = (p && Array.isArray(p.destinations))
+    ? p.destinations.filter(d => d && d.panoId != null && state.panoramas[d.panoId])
+    : [];
+  if(!dests.length) return;
+
+  dests.forEach((d, i) => {
+    const yawDeg = l3dNavYawDeg(p, d.panoId, d.angleDeg, i, dests.length);
+    const label = document.createElement('button');
+    label.type = 'button';
+    label.className = 'l3d-navpt';
+    label.setAttribute('aria-label', 'Перейти: ' + (d.room || 'далее'));
+    label.title = 'Перейти: ' + (d.room || 'далее');
+    label.innerHTML = '<span class="l3d-navpt-arrow"></span><span class="l3d-navpt-label">' + esc(d.room || 'далее') + '</span>';
+
+    const go = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      l3dGoLocalPano(d.panoId, yawDeg);
+    };
+    label.onclick = go;
+    box.appendChild(label);
+
+    localViewer.navMeshes.push({
+      mesh: null,
+      panoId: d.panoId,
+      room: d.room,
+      labelEl: label,
+      arrivalYawDeg: yawDeg,
+      yawDeg
+    });
+  });
+
+  localViewer.updateNavLabels();
+}
+/* Список импортированных панорам для ручной привязки (см. bindMarkerToLocalPano) —
+   выбор в этом списке не трогает локусы, только меняет, что показано в 3D. */
+function renderLocalPanoPicker(){
+  const sel = $('#l3dPanoPicker');
+  if(!sel) return;
+  const ids = Object.keys(state.panoramas || {});
+  sel.innerHTML = ids.map(id => {
+    const p = state.panoramas[id] || {};
+    const label = (p.room || String(id)) + (p.mode === 'none' ? ' (нет фото)' : '');
+    return '<option value="' + esc(String(id)) + '">' + esc(label) + '</option>';
+  }).join('');
+  if(activeLocalPano && state.panoramas[activeLocalPano]) sel.value = activeLocalPano;
+}
+function renderLocalViewer(){
+  const box = $('#local3d'), canvas = $('#local3dCanvas');
+  const layout = state.layout || 'plan';
+  if(layout !== 'tour' && layout !== 'split' && layout !== 'split-rev') return;
+  if(!box){ l3dLog('err', 'renderLocalViewer(): #local3d не найден в DOM — разметка страницы повреждена или это не та версия index.html'); return; }
+  box.classList.add('show');
+  l3dLog('info', 'renderLocalViewer(): #local3d.classList=' + box.className + ', box hidden атрибут=' + box.hidden +
+    ', box.getBoundingClientRect=' + JSON.stringify((r => ({w:r.width,h:r.height}))(box.getBoundingClientRect())));
+  renderLocalPanoPicker();
+  /* Синхронизация этажа плана и 3D-вида (п.1 запроса пользователя): активная
+     панорама обязана принадлежать ТЕКУЩЕМУ активному на плане этажу. Переход
+     ИЗ 3D (клик по кольцу/значку камеры/списку — см. l3dGoLocalPano(),
+     renderPlanCameras(), #l3dPanoPicker) уже переключает нужный этаж плана
+     ДО вызова render() (см. syncMarkerFromLocalPano()), так что здесь к этому
+     моменту state.active уже верный. А вот переключение этажа СО СТОРОНЫ
+     плана (клики по вкладкам этажей, ярлыкам маршрута и т.п. — selectLevel())
+     раньше вообще не трогало activeLocalPano — из-за этого план мог
+     показывать один этаж, а 3D-панель молча продолжала показывать комнату с
+     другого. Проверяем это ЗДЕСЬ, один раз, при каждом рендере панели — тогда
+     не важно, из какого именно места произошло переключение этажа. */
+  const activeFloorLevel = level();
+  const anyLevelHasFloorId = (state.levels || []).some(lv => lv && lv.floorId != null);
+  let activePanoRec = (activeLocalPano && state.panoramas[activeLocalPano]) ? state.panoramas[activeLocalPano] : null;
+  if(activePanoRec && anyLevelHasFloorId && activeFloorLevel && activePanoRec.floorId !== activeFloorLevel.floorId){
+    activePanoRec = null; /* активная панорама осталась с прежнего этажа — план уже переключился, 3D обязан последовать */
+  }
+  const panoId = activePanoRec ? activeLocalPano : pickDefaultLocalPano();
+  const p = panoId ? state.panoramas[panoId] : null;
+  if(!p){
+    l3dLog('warn', 'renderLocalViewer(): нет ни одной панорамы для показа (panoId=' + panoId + ') — state.panoramas ключей: ' + Object.keys(state.panoramas || {}).length);
+    activeLocalPano = null; /* иначе на плане нового этажа мог бы "залипнуть" значок камеры с прошлого этажа как активный */
+    box.classList.remove('has-image');
+    setText('#l3dRoom', '');
+    renderLocalJumps(null);
+    l3dSyncRotUI(null);
+    return;
+  }
+  activeLocalPano = panoId;
+  box.classList.add('has-image');
+  setText('#l3dRoom', (p.room || String(panoId)) + (p.mode === 'none' ? ' — фото недоступно' : ''));
+  l3dSyncRotUI(p);
+  const arrivalYawDeg = l3dPendingArrivalYaw;
+  l3dPendingArrivalYaw = null; /* разовое значение — потребили и сбросили */
+  if(canvas) localViewer.show(canvas, panoId, p, arrivalYawDeg);
+  else l3dLog('err', 'renderLocalViewer(): #local3dCanvas не найден в DOM');
+  renderLocalJumps(p);
+  /* Подсветка значка камеры на плане (см. renderPlanCameras) следует за
+     активной панорамой при любом способе переключения — клик по кольцу
+     перехода внутри 3D, по значку камеры на плане или через выпадающий
+     список панорам. */
+  if(level() === levelOfPanorama(panoId)) drawPlan();
+}
+function levelOfPanorama(panoId){
+  const pano = state.panoramas && state.panoramas[panoId];
+  if(!pano) return level();
+  if(pano.floorId == null) return level();
+  return state.levels.find(l => l && l.floorId === pano.floorId) || level();
+}
+/* Ручная поправка «своего нуля yaw» ОДНОЙ конкретной панорамы — см. большой
+   комментарий над l3dNavYawDeg() (раунд 8) о том, почему это не глобальная
+   константа. Значение хранится в pano.navYawOffsetDeg и складывается с
+   вычисленным yaw КАЖДОГО исходящего перехода этой панорамы — крутить нужно
+   один раз на панораму, а не на каждое отдельное кольцо. */
+function l3dSyncRotUI(p){
+  const val = $('#l3dRotVal');
+  if(val) val.textContent = Math.round((p && isFinite(p.navYawOffsetDeg)) ? p.navYawOffsetDeg : 90) + '°';
+  const disabled = !p;
+  ['#l3dRotCCW', '#l3dRotCW', '#l3dRotReset'].forEach(sel => { const b = $(sel); if(b) b.disabled = disabled; });
+}
+function l3dNudgeNavRotation(deltaDeg){
+  const p = activeLocalPano && state.panoramas[activeLocalPano];
+  if(!p) return;
+  let next = (isFinite(p.navYawOffsetDeg) ? p.navYawOffsetDeg : 90) + deltaDeg;
+  next = ((next % 360) + 360) % 360;
+  if(next > 180) next -= 360; /* храним в (-180,180] — просто для читаемости в UI */
+  p.navYawOffsetDeg = next;
+  touch();
+  l3dSyncRotUI(p);
+  renderLocalJumps(p);
+}
+function l3dResetNavRotation(){
+  const p = activeLocalPano && state.panoramas[activeLocalPano];
+  if(!p) return;
+  p.navYawOffsetDeg = 90; /* «сброс» возвращает к новому дефолту (90°), а не к 0 */
+  touch();
+  l3dSyncRotUI(p);
+  renderLocalJumps(p);
+}
+/* Ручная привязка локуса к импортированной панораме — аналог bindMarkerToTour,
+   но без калибровки угла камеры: локальная панорама и так известна для точного
+   места на плане, поэтому один клик вместо двухшаговой привязки к живому туру. */
+function bindMarkerToLocalPano(){
+  const l = level();
+  if(!l || l.selected == null || !l.markers[l.selected]){ notify('Сначала поставьте или выберите локус на плане.'); return; }
+  const sel = $('#l3dPanoPicker');
+  const panoId = sel && sel.value;
+  if(!panoId || !state.panoramas[panoId]){ notify('Сначала выберите панораму в списке сверху.'); return; }
+  l.markers[l.selected].localPano = panoId;
+  touch(); drawPlan(); renderRoute(); renderTourBar();
+  const p = state.panoramas[panoId];
+  status('Локус ' + (l.selected + 1 + floorOffset()) + ' привязан к панораме «' + (p.room || panoId) + '»');
+}
+function unbindMarkerFromLocalPano(){
+  const l = level();
+  if(!l || l.selected == null || !l.markers[l.selected]){ notify('Сначала выберите локус на плане.'); return; }
+  const m = l.markers[l.selected];
+  if(!m.localPano){ status('У этого локуса и так нет привязки к панораме'); return; }
+  m.localPano = null;
+  touch(); drawPlan(); renderRoute(); renderTourBar();
+  status('Привязка локуса к панораме снята');
+}
+/* Показывает панораму локуса m (если она есть) в панели 3D; focusPanel — открыть
+   панель принудительно (как при клике по локусу), иначе просто обновить контент,
+   если панель и так уже открыта (например, клик по «далее» внутри просмотрщика). */
+function setActiveLocalPano(panoId, focusPanel){
+  if(!panoId || !state.panoramas || !state.panoramas[panoId]) return;
+  activeLocalPano = panoId;
+  if(focusPanel) openTour(true, true);
+  else renderTour();
+  renderMinimap();
+}
 function renderTour(){
-  const panel = $('#tourPanel'), body = $('#tourBody'), empty = $('#tourEmpty');
+  const panel = $('#tourPanel'), body = $('#tourBody'), empty = $('#tourEmpty'), local = $('#local3d');
   if(!panel || !body) return;
+  const liveWrap = $('#tourToolbarLive'), localWrap = $('#tourToolbarLocal');
+  const local3d = hasLocalPanos();
+  if(liveWrap) liveWrap.style.display = local3d ? 'none' : '';
+  if(localWrap) localWrap.hidden = !local3d;
+  /* НАЙДЕННАЯ ПРИЧИНА «чёрного экрана» в локальном 3D: #tourFrame (iframe для
+     живого встроенного тура) — сосед #local3d в том же #tourBody, и CSS
+     кладёт его тем же position:absolute;inset:0 поверх той же области
+     (.tour-body iframe{...}). setTourFrameSrc('') ниже только чистит src,
+     САМ элемент iframe никогда не скрывался — а у пустого iframe (без src)
+     остаётся собственный непрозрачный фон (#1f1f1f/#0d0f12, оба почти
+     чёрные), и, будучи позже в DOM (без z-index), он рисуется ПОВЕРХ canvas
+     локального 3D. WebGL при этом рендерил правильную картинку всё это
+     время (подтверждено диагностикой через gl.readPixels) — её просто было
+     не видно за этим невидимым тёмным iframe. Явно прячем/показываем сам
+     элемент, а не только его src. */
+  const liveFrame = $('#tourFrame');
+  if(liveFrame){
+    liveFrame.style.display = local3d ? 'none' : '';
+    try{ l3dLog('info', 'renderTour(): #tourFrame.style.display = "' + liveFrame.style.display + '" (local3d=' + local3d + ') — раньше этот iframe никогда не прятался и перекрывал canvas'); }catch(e){}
+  }
+  if(local3d){
+    setTourFrameSrc('');
+    showTourStatus('hide');
+    if(empty) empty.style.display = 'none';
+    setText('#tourHost', 'офлайн · .3dview');
+    renderLocalViewer();
+    return;
+  }
+  if(local) local.classList.remove('show');
   const field = $('#tourUrl');
   if(field && document.activeElement !== field) field.value = state.tour || '';
   const view = tourViewPath();
@@ -3370,6 +5120,8 @@ function applySplitRatio(){
   state.splitRatio = a / 100;
   root.style.setProperty('--split-a', a.toFixed(2) + '%');
   root.style.setProperty('--split-b', (100 - a).toFixed(2) + '%');
+  if((state.layout === 'tour' || state.layout === 'split' || state.layout === 'split-rev') && localViewer.renderer)
+    requestAnimationFrame(() => localViewer.resize());
 }
 (function initSplitter(){
   const grip = $('#splitter');
@@ -3442,8 +5194,84 @@ function applyLayout(){
     state.tourOpen = showTour;
   }
   applySplitRatio();
-  if(layout === 'tour' || layout === 'split' || layout === 'split-rev') renderTour();
+  const show3d = layout === 'tour' || layout === 'split' || layout === 'split-rev';
+  if(show3d) renderTour();
+  else{
+    if(localViewer.renderer) localViewer.dispose();
+    document.querySelectorAll('#plan .plan-cam').forEach(el => el.remove());
+  }
+  if(show3d && hasLocalPanos() && localViewer.renderer) requestAnimationFrame(() => localViewer.resize());
+  renderMinimap();
 }
+/* Миникарта этажа в режиме «только 3D»: план + локусы + камеры.
+   Клик по камере переключает панораму; активная камера с конусом обзора. */
+function renderMinimap(){
+  const box = $('#minimap');
+  if(!box) return;
+  const show = (state.layout === 'tour') && hasLocalPanos();
+  box.hidden = !show;
+  if(!show) return;
+  const l = level();
+  const title = $('#minimapTitle');
+  if(title) title.textContent = (l && l.name) ? l.name : ('Этаж ' + ((state.active || 0) + 1));
+  const img = $('#minimapImg');
+  const layer = $('#minimapLayer');
+  if(!img || !layer) return;
+  if(!l || !l.src){
+    img.removeAttribute('src');
+    layer.innerHTML = '';
+    return;
+  }
+  if(img.getAttribute('src') !== l.src){
+    img.onload = () => layoutMinimapMarkers(l, img, layer);
+    img.src = l.src;
+  }else{
+    layoutMinimapMarkers(l, img, layer);
+  }
+}
+function layoutMinimapMarkers(l, img, layer){
+  const body = $('#minimapBody');
+  if(!body || !img.naturalWidth || !img.naturalHeight) return;
+  const bw = body.clientWidth || 1, bh = body.clientHeight || 1;
+  const nw = img.naturalWidth, nh = img.naturalHeight;
+  const scale = Math.min(bw / nw, bh / nh);
+  const dw = nw * scale, dh = nh * scale;
+  const ox = (bw - dw) / 2, oy = (bh - dh) / 2;
+  const planW = l.w || nw, planH = l.h || nh;
+  const toX = x => ox + (x / planW) * dw;
+  const toY = y => oy + (y / planH) * dh;
+  let html = '';
+  /* Локусы */
+  (l.markers || []).forEach((m, i) => {
+    if(!m || m.x == null || m.y == null) return;
+    const sel = l.selected === i ? ' sel' : '';
+    html += '<div class="mm-marker' + sel + '" style="left:' + toX(m.x) + 'px;top:' + toY(m.y) + 'px" title="Локус ' + (i + 1) + '">' + (i + 1) + '</div>';
+  });
+  /* Камеры панорам этого этажа */
+  const floorId = l.floorId;
+  Object.keys(state.panoramas || {}).forEach(id => {
+    const p = state.panoramas[id];
+    if(!p) return;
+    if(floorId != null && p.floorId != null && p.floorId !== floorId) return;
+    const px = p.planPx;
+    if(!px || !isFinite(px.x) || !isFinite(px.y)) return;
+    const active = activeLocalPano === id;
+    html += '<div class="mm-cam' + (active ? ' active' : '') + '" data-pano="' + esc(String(id)) +
+      '" style="left:' + toX(px.x) + 'px;top:' + toY(px.y) + 'px" title="' + esc(p.room || id) + '"></div>';
+  });
+  layer.innerHTML = html;
+  layer.querySelectorAll('.mm-cam').forEach(el => {
+    el.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = el.getAttribute('data-pano');
+      if(!id) return;
+      syncMarkerFromLocalPano(id);
+      setActiveLocalPano(id, false);
+      renderMinimap();
+    });
+  });
+}
+function updateMinimapCamHeading(){ /* область видимости на мини-карте отключена */ }
 function setUiMode(mode, silent){
   if(mode === 'welcome') mode = 'plan';   /* стартовый экран убран */
   if(mode === 'split'){
@@ -3495,6 +5323,8 @@ function flash(msg){
 function resetPalace(){
   planRenderToken++;
   Object.assign(state, blankState());
+  activeLocalPano = null;
+  try{ localViewer.dispose(); }catch(err){}
   pending = [];
   drag = null; pan = null;
   const v = $('#viewport'); if(v) v.style.transform = '';
@@ -3535,9 +5365,23 @@ on('#fileOpen', 'change', e => {
 });
 on('#closeSaveModal', 'click', () => { const m = $('#saveModal'); if(m) m.classList.remove('show'); });
 on('#saveModal', 'mousedown', e => { if(e.target && e.target.id === 'saveModal') e.currentTarget.classList.remove('show'); });
+on('#openExportBtn', 'click', () => {
+  const sm = $('#saveModal'); if(sm) sm.classList.remove('show');
+  const em = $('#exportModal'); if(em) em.classList.add('show');
+});
+on('#backToSaveModal', 'click', () => {
+  const em = $('#exportModal'); if(em) em.classList.remove('show');
+  const sm = $('#saveModal'); if(sm) sm.classList.add('show');
+});
+on('#closeExportModal', 'click', () => { const m = $('#exportModal'); if(m) m.classList.remove('show'); });
+on('#exportModal', 'mousedown', e => { if(e.target && e.target.id === 'exportModal') e.currentTarget.classList.remove('show'); });
 on('#saveProjectBtn', 'click', async () => {
   try{ await saveMplace(); }
   catch(err){ status('Ошибка сохранения'); notify('Не удалось сохранить .mplace: ' + (err && err.message ? err.message : err)); }
+});
+on('#saveMpalaceBtn', 'click', async () => {
+  try{ await saveMpalace(); }
+  catch(err){ status('Ошибка сохранения'); notify('Не удалось сохранить .mpalace: ' + (err && err.message ? err.message : err)); }
 });
 on('#saveJsonBtn', 'click', () => {
   try{ exportJson(); }
@@ -3560,7 +5404,7 @@ on('#abUpload', 'click', openPlansModal);
 on('#abUploadMenu', 'click', openPlansModal);
 on('#menuFile', 'click', () => {
   const m = $('#saveModal');
-  if(m){ syncFileNameField(); m.classList.add('show'); }
+  if(m){ syncFileNameField(); const mb = $('#saveMpalaceBtn'); if(mb) mb.hidden = !hasLocalPanos(); m.classList.add('show'); }
 });
 on('#closeModal', 'click', closePlansModal);
 on('#drop', 'click', () => {
@@ -3756,6 +5600,8 @@ window.onkeydown = e => {
     const am = $('#askModal');
     if(am && am.classList.contains('show')){ am.classList.remove('show'); return; }
     const sm = $('#saveModal'); if(sm) sm.classList.remove('show');
+    const em = $('#exportModal'); if(em) em.classList.remove('show');
+    closeTourSettings();
     const pm = $('#modal'); if(pm && pm.classList.contains('show')) closePlansModal();
     return;
   }
@@ -3870,8 +5716,9 @@ function updateCompass(){
   const c = $('#compass'); if(c) c.setAttribute('aria-valuenow', String(Math.round(deg)));
 }
 /* Коэффициент связи «поворот мыши вокруг компаса» → «поворот плана».
-   1 означает строгое соответствие 1:1 и меняется только здесь. */
-const ROTATE_RATIO = 1;
+   1 означает строгое соответствие 1:1 и меняется только здесь.
+   По запросу пользователя — 2 (план крутится вдвое быстрее движения мыши). */
+const ROTATE_RATIO = 2;
 (function initCompass(){
   const c = $('#compass'); if(!c) return;
   const field = $('#compassVal');
@@ -4008,6 +5855,47 @@ $$('.tsec-head').forEach(h => {
 });
 on('#tourBind', 'click', bindMarkerToTour);
 on('#tourUnbind', 'click', unbindMarkerFromTour);
+on('#l3dPanoPicker', 'change', e => {
+  const panoId = e.target.value;
+  syncMarkerFromLocalPano(panoId);
+  setActiveLocalPano(panoId, false);
+});
+on('#l3dRotCCW', 'click', () => l3dNudgeNavRotation(15));
+on('#l3dRotCW', 'click', () => l3dNudgeNavRotation(-15));
+on('#l3dRotReset', 'click', l3dResetNavRotation);
+/* Верхняя панель 3D-вида — всплывающая: по умолчанию скрыта, открывается
+   кнопкой-шестерёнкой в углу и закрывается повторным кликом, кликом мимо
+   или Escape (см. window.onkeydown). */
+function closeTourSettings(){
+  const tb = $('#tourToolbar'); if(tb) tb.classList.remove('open');
+  const btn = $('#tourSettingsBtn'); if(btn) btn.setAttribute('aria-expanded', 'false');
+}
+on('#tourSettingsBtn', 'click', e => {
+  e.stopPropagation();
+  const tb = $('#tourToolbar'), btn = $('#tourSettingsBtn');
+  if(!tb || !btn) return;
+  const open = !tb.classList.contains('open');
+  tb.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', String(open));
+});
+document.addEventListener('pointerdown', e => {
+  const tb = $('#tourToolbar');
+  if(!tb || !tb.classList.contains('open')) return;
+  if(e.target.closest && e.target.closest('#tourToolbar, #tourSettingsBtn')) return;
+  closeTourSettings();
+});
+on('#minimapExpand', 'click', () => {
+  const m = $('#minimap'); if(!m) return;
+  m.classList.toggle('expanded');
+  renderMinimap();
+});
+(function initL3dDebugPanel(){
+  /* Панель диагностики убрана из UI — инициализация больше не нужна. */
+  const build = null; /* $('#l3dDebugBuild') */
+  if(build) build.textContent = '· ' + L3D_BUILD;
+  l3dLog('info', 'Диагностическая панель инициализирована. Build: ' + L3D_BUILD);
+  l3dLog('info', 'window.THREE на момент загрузки страницы: ' + (window.THREE ? 'уже есть' : 'ещё нет (нормально, если тур не открыт)'));
+})();
 on('#tourFollow', 'change', e => {
   state.tourFollow = !!e.target.checked;
   touch(); renderTourBar();
@@ -4060,7 +5948,7 @@ on('#tourWindowBtn', 'click', () => openTourWindow(state.tour));
 bindGuideCopy();
 on('#tourUrl', 'keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); applyTourUrl(); } e.stopPropagation(); });
 on('#markerSize', 'input', e => {
-  state.markerSize = Number(e.target.value) || 30;
+  state.markerSize = Number(e.target.value) || 72;
   setText('#markerSizeVal', markerSize());
   if(level()) drawPlan();
   touchSoft();
@@ -4096,9 +5984,9 @@ document.body.ondrop = e => {
   document.body.style.outline = '';
   const files = (e.dataTransfer && e.dataTransfer.files) ? Array.prototype.slice.call(e.dataTransfer.files) : [];
   if(!files.length) return;
-  const mplace = files.find(f => /\.(mplace|zip)$/i.test(f.name));
+  const mplace = files.find(f => /\.(mplace|mpalace|3dview|zip)$/i.test(f.name));
   if(mplace){
-    if(state.dirty){ ask('Есть несохранённые изменения. Открыть другой дворец?', () => openFileObject(mplace), { yes:'Открыть' }); return; }
+    if(state.dirty){ ask('Есть несохранённые изменения. Открыть другой файл?', () => openFileObject(mplace), { yes:'Открыть' }); return; }
     openFileObject(mplace);
     return;
   }
