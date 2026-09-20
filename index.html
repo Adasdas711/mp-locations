@@ -481,7 +481,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px #0008}
 .minimap-layer .mm-marker.sel{outline:2px solid #4da3ff}
 .tour-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.5}
-#tourBtn.on,#tourHere.on{border-color:var(--blue);color:var(--blue);background:rgba(77,163,255,.16)}
+#tourBtn.on,#tourHere.on,#l3dPlaceCam.on{border-color:var(--blue);color:var(--blue);background:rgba(77,163,255,.16)}
 .spot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:2px dashed var(--blue);
       background:rgba(77,163,255,.2);display:flex;align-items:center;justify-content:center;font-size:12px;z-index:2;pointer-events:none}
 .spot::after{content:'';position:absolute;width:6px;height:6px;border-radius:50%;background:var(--blue)}
@@ -713,6 +713,7 @@ button .ic{pointer-events:none}
 <symbol id="i-close" viewBox="0 0 16 16"><path d="M3.2 3.2 12.8 12.8M12.8 3.2 3.2 12.8" stroke-width="1.6" stroke-linecap="round"/></symbol>
 <symbol id="i-camera" viewBox="0 0 16 16"><path d="M2 5.7h2.3l1-1.7h5.4l1 1.7H14v7.1H2z"/><circle cx="8" cy="9.3" r="2.35"/></symbol>
 <symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.3"/><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3M12.4 12.4l-1.3-1.3M4.9 4.9 3.6 3.6"/></symbol>
+<symbol id="i-transparent" viewBox="0 0 16 16"><rect x="1.6" y="1.6" width="5.2" height="5.2"/><rect x="9.2" y="9.2" width="5.2" height="5.2"/><rect x="9.2" y="1.6" width="5.2" height="5.2" opacity=".4"/><rect x="1.6" y="9.2" width="5.2" height="5.2" opacity=".4"/></symbol>
 </defs></svg>
 <div class="app" data-ui="editor" data-layout="plan" id="appRoot">
   <header class="top">
@@ -747,15 +748,30 @@ button .ic{pointer-events:none}
         </div>
       </div>
   <main class="main">
-    <aside class="left" id="planTools">
-      <button class="tool active" data-tool="select" title="Выбор" aria-label="Выбор"><svg class="ic"><use href="#i-cursor"/></svg></button>
-      <button class="tool" data-tool="marker" title="Маркер" aria-label="Маркер"><svg class="ic"><use href="#i-pin"/></svg></button>
-      <span class="tool-sep"></span>
-      <button class="tool" id="zoomOut" title="Уменьшить" aria-label="Уменьшить"><svg class="ic"><use href="#i-minus"/></svg></button>
-      <button class="tool" id="zoomIn" title="Увеличить" aria-label="Увеличить"><svg class="ic"><use href="#i-plus"/></svg></button>
-      <button class="tool" id="resetView" title="Сбросить вид" aria-label="Сбросить вид"><svg class="ic"><use href="#i-fit"/></svg></button>
-    </aside>
     <section class="stage" id="stage">
+      <!-- Тулбар плана (выбор/маркер/зум/прозrachный фон) раньше был отдельным
+           сиблингом #stage внутри .main и позиционировался `position:absolute;
+           left:12px` ОТНОСИТЕЛЬНО .main — то есть всегда прилипал к левому
+           краю ВСЕГО приложения. В обычном split это визуально совпадало с
+           панелью плана (она тоже слева), но при перевёрнутом split (план
+           справа, 3D слева — см. swapPanes()/data-layout=split-rev) тулбар
+           оставался слева, то есть оказывался поверх панели 3D, а не плана —
+           баг, на который пожаловался пользователь. Перенесён внутрь #stage
+           (которое само `position:relative`) — теперь `left:12px` считается
+           от границ панели плана, а не всего приложения, и следует за ней
+           при любом порядке панелей (flex `order` в CSS меняет ТОЛЬКО то,
+           где панель стоит по счёту, а не систему координат для абсолютно
+           спозиционированных детей внутри неё). -->
+      <aside class="left" id="planTools">
+        <button class="tool active" data-tool="select" title="Выбор" aria-label="Выбор"><svg class="ic"><use href="#i-cursor"/></svg></button>
+        <button class="tool" data-tool="marker" title="Маркер" aria-label="Маркер"><svg class="ic"><use href="#i-pin"/></svg></button>
+        <span class="tool-sep"></span>
+        <button class="tool" id="zoomOut" title="Уменьшить" aria-label="Уменьшить"><svg class="ic"><use href="#i-minus"/></svg></button>
+        <button class="tool" id="zoomIn" title="Увеличить" aria-label="Увеличить"><svg class="ic"><use href="#i-plus"/></svg></button>
+        <button class="tool" id="resetView" title="Сбросить вид" aria-label="Сбросить вид"><svg class="ic"><use href="#i-fit"/></svg></button>
+        <span class="tool-sep"></span>
+        <button class="tool" id="planTransparentBg" title="Убрать белый фон плана и сделать его прозрачным" aria-label="Прозрачный фон плана"><svg class="ic"><use href="#i-transparent"/></svg></button>
+      </aside>
       <div class="floor-overlay" id="floorOverlay"></div>
       <div class="review-bar" id="reviewBar" hidden>
         <button class="rv-stop" id="reviewStop" title="Остановить повторение и посмотреть итоги" aria-label="Остановить"><svg class="ic"><use href="#i-close"/></svg></button>
@@ -820,6 +836,7 @@ button .ic{pointer-events:none}
         </span>
         <span class="tour-toolbar-local" id="tourToolbarLocal" hidden style="flex:1;display:flex;gap:8px;align-items:center;min-width:0">
           <select id="l3dPanoPicker" aria-label="Выбрать импортированную панораму" style="max-width:280px;flex:1;min-width:0"></select>
+          <button type="button" id="l3dPlaceCam" title="Поставить эту панораму на план: нажмите, затем щёлкните на плане точку съёмки" aria-label="Поставить камеру на план" style="flex:none"><svg class="ic sm"><use href="#i-camera"/></svg> На план</button>
           <span class="l3d-rot" style="display:flex;gap:4px;align-items:center;margin-left:auto;flex:none" title="Поворот колец-переходов этой панорамы. Сохраняется вместе с дворцом.">
             <button type="button" id="l3dRotCCW" title="Повернуть переходы на 15° против часовой">⟲</button>
             <span class="small" id="l3dRotVal" style="min-width:34px;text-align:center">90°</span>
@@ -1200,6 +1217,21 @@ function setPlacingSpot(on){
   placingSpot = !!on;
   const b = $('#tourHere');
   if(b) b.classList.toggle('on', placingSpot);
+}
+/* Ручная расстановка камеры импортированной панорамы на плане (п.2 запроса
+   пользователя — «добавить на план координаты мест съёмок для постановки
+   меток с камерой на нём»): у панорам, полученных из нового формата richMedia
+   Zillow («showcase» — см. grabber.py), нет мировых координат/официального
+   плана с привязкой масштаба, поэтому автоматически вычислить planPx
+   (см. renderPlanCameras()/panoramasForLevel()) не из чего. Этот режим даёт
+   человеку самому один раз щёлкнуть по плану в точке съёмки — дальше значок
+   камеры показывается уже автоматически, как и для панорам с готовым planPx
+   из .3dview. */
+let placingCam = false;
+function setPlacingCam(on){
+  placingCam = !!on;
+  const b = $('#l3dPlaceCam');
+  if(b) b.classList.toggle('on', placingCam);
 }
 /* Двухшаговая привязка: { level, index } после клика по плану, пока ждём клик по зоне тура */
 let pendingBind = null;
@@ -1939,7 +1971,7 @@ function syncTools(){
 function applyMode(){
   const view = state.mode === 'view';
   setText('#modeBtn', view ? 'Редакт.' : 'Просмотр');
-  $$('.left button[data-tool], #saveModal .props input, #saveModal .props textarea').forEach(x => { x.disabled = view; });
+  $$('.left button[data-tool], #planTransparentBg, #l3dPlaceCam, #saveModal .props input, #saveModal .props textarea').forEach(x => { x.disabled = view; });
   const c = $('#compass'); if(c) c.style.display = view ? 'none' : '';
   const mc = $('#markerCtl'); if(mc) mc.style.display = view ? 'none' : '';
   const st = $('#stage'); if(st) st.classList.toggle('mode-view', view);
@@ -2188,6 +2220,60 @@ function loadImage(src){
     im.onerror = () => reject(new Error('Изображение не загрузилось'));
     im.src = src;
   });
+}
+/* Прозрачный фон плана (п.1 запроса пользователя): у многих планов —
+   особенно у растеризованного из SVG plan.png (см. grabber.py,
+   _rasterize_svg_to_png) и у официального hero.png с Zillow — вокруг самого
+   плана сплошная белая заливка, которая в тёмном интерфейсе выглядит грубым
+   белым прямоугольником. В отличие от crop/яркости/контраста (см.
+   openCropEditor/pageEdit выше), которые в этом файле применяются только к
+   ещё не добавленным (pending) изображениям, эта функция работает на уже
+   импортированном плане текущего этажа — то есть годится и для планов,
+   пришедших из .3dview.
+   Убираем фон заливкой (flood fill) от рамки изображения — так стираются
+   только белые пиксели, СВЯЗАННЫЕ с внешним краем, а не любые белые пиксели
+   вообще: иначе, например, светлая заливка комнаты внутри плана тоже
+   превратилась бы в дыру. */
+async function stripPlanWhiteBackground(){
+  if(state.mode !== 'edit'){ notify('Переключитесь в режим редактирования, чтобы изменить план.'); return; }
+  const l = level();
+  if(!l || !l.src){ notify('Сначала откройте план этажа.'); return; }
+  let im;
+  try{ im = await loadImage(l.src); }catch(err){ notify('Не удалось загрузить изображение плана.'); return; }
+  const w = im.naturalWidth, h = im.naturalHeight;
+  if(!w || !h) return;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(im, 0, 0);
+  let imgData;
+  try{ imgData = ctx.getImageData(0, 0, w, h); }catch(err){ notify('Не удалось обработать изображение плана (возможно, оно с другого источника и защищено от чтения).'); return; }
+  const data = imgData.data;
+  const TOL = 18; /* насколько пиксель должен быть близок к чистому белому (255,255,255) */
+  const isNearWhite = idx => data[idx] >= 255 - TOL && data[idx + 1] >= 255 - TOL && data[idx + 2] >= 255 - TOL;
+  const visited = new Uint8Array(w * h);
+  const stack = [];
+  for(let x = 0; x < w; x++){ stack.push(x, 0); stack.push(x, h - 1); }
+  for(let y = 0; y < h; y++){ stack.push(0, y); stack.push(w - 1, y); }
+  let removed = 0;
+  while(stack.length){
+    const py = stack.pop(), px = stack.pop();
+    if(px < 0 || py < 0 || px >= w || py >= h) continue;
+    const pi = py * w + px;
+    if(visited[pi]) continue;
+    visited[pi] = 1;
+    const idx = pi * 4;
+    if(data[idx + 3] !== 0){
+      if(!isNearWhite(idx)) continue; /* не белый — граница плана/стена, дальше через него не идём */
+      data[idx + 3] = 0;
+      removed++;
+    }
+    stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1);
+  }
+  if(!removed){ notify('Белый фон по краям плана не найден — возможно, он уже прозрачный или края плана не белые.'); return; }
+  ctx.putImageData(imgData, 0, 0);
+  l.src = c.toDataURL('image/png');
+  touch(); drawPlan();
+  status('Фон плана сделан прозрачным (' + Math.round(100 * removed / (w * h)) + '% изображения)');
 }
 async function addFiles(files){
   const list = Array.prototype.slice.call(files || []);
@@ -4269,7 +4355,7 @@ const localViewer = {
     canvas.addEventListener('pointerleave', () => { self.dragging = false; });
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
-      self.fov = Math.max(30, Math.min(100, self.fov + (e.deltaY > 0 ? 4 : -4)));
+      self.fov = Math.max(30, Math.min(150, self.fov + (e.deltaY > 0 ? 4 : -4))); /* максимум отдаления поднят со 100° до 150° (+50%, по просьбе пользователя) */
       if(self.camera){ self.camera.fov = self.fov; self.camera.updateProjectionMatrix(); }
       self.requestRender();
     }, { passive:false });
@@ -4282,16 +4368,24 @@ const localViewer = {
       return;
     }
     if(resetView){
-      /* Раньше при каждом переходе вид всегда сбрасывался на yaw=0 — а это
-         произвольное направление конкретного фото, никак не связанное с
-         тем, откуда пришёл человек, и нередко оказывалось «лицом в стену»
-         (жалоба «ставит перемещение в стенах»). Если переход шёл через
-         кольцо (см. l3dGoLocalPano/renderLocalJumps), там уже известно
-         направление, в котором это кольцо стояло у предыдущей панорамы —
-         продолжаем смотреть примерно туда же, как будто прошли вперёд через
-         дверь, а не как будто нас поставили лицом в случайную сторону. */
-      this.yaw = (arrivalYawDeg != null && isFinite(arrivalYawDeg)) ? arrivalYawDeg : 0;
-      this.pitch = 0;
+      /* Раньше при каждом переходе вид либо всегда сбрасывался на yaw=0
+         (до раунда 4) — произвольное направление конкретного фото, никак не
+         связанное с тем, откуда пришёл человек, нередко оказывалось «лицом в
+         стену» — либо доворачивался на вычисленный «угол кольца» (раунды
+         4–10) — попытка сымитировать «прошли вперёд через дверь», основанная
+         на хрупкой геометрии (angleDeg/planPx/navYawOffsetDeg), которую
+         пришлось чинить много раз подряд (см. claude/palace-status.md,
+         раунды 5–10). Пользователь прямо попросил ПРОСТО СОХРАНЯТЬ
+         направление обзора при переходе:
+         `this.yaw`/`this.pitch` теперь НЕ трогаем вовсе: куда смотрел
+         человек секунду назад, туда и продолжает смотреть после смены
+         панорамы — как при реальной ходьбе вперёд через проём. Это заодно
+         устраняет саму причину «лицом в стену»: смотрел в сторону
+         кольца/камеры — и после перехода видит перед собой ту же сторону
+         экрана. `arrivalYawDeg` по-прежнему принимается параметром (и
+         прокидывается из l3dGoLocalPano/renderLocalJumps) на случай, если
+         понадобится вернуть точную доводку по конкретному переходу — но
+         сейчас сознательно не применяется. */
       this.velYaw = 0; this.velPitch = 0;
     }
     this.canvas && this.canvas.classList.add('l3d-fading'); /* короткое затемнение на смену кадра — см. CSS .l3d-fading */
@@ -4372,8 +4466,7 @@ const localViewer = {
         this.setImage(record.data, true, arrivalYawDeg);
       }else{
         l3dLog('info', 'у панорамы ' + panoId + ' нет фото (mode=' + (record && record.mode) + ') — показываем нейтральный фон вместо текстуры');
-        this.yaw = (arrivalYawDeg != null && isFinite(arrivalYawDeg)) ? arrivalYawDeg : 0;
-        this.pitch = 0;
+        /* Направление обзора сохраняем и здесь — см. подробный комментарий в setImage() выше. */
         this.velYaw = 0; this.velPitch = 0;
         this.clearImage();
       }
@@ -5270,6 +5363,29 @@ function layoutMinimapMarkers(l, img, layer){
       renderMinimap();
     });
   });
+  /* Расстановка камеры кликом ПО МИНИКАРТЕ (п.1 запроса — «миникарту 3D-вида»):
+     миникарта видна только в режиме «только 3D» (см. renderMinimap(), show =
+     layout==='tour'), где сама панель плана (#stage) скрыта — то есть кнопка
+     «На план» (см. setPlacingCam/on('#l3dPlaceCam')) в этом режиме нечем
+     ловить клик, если ловить только по #stage. Обратное преобразование
+     координат — ровно инверсия toX/toY выше. Переобъявляется при каждом
+     рендере миникарты (см. layoutMinimapMarkers) — назначение через
+     .onclick, а не addEventListener, само заменяет предыдущий обработчик. */
+  body.onclick = e => {
+    if(!placingCam) return;
+    if(e.target && e.target.closest && e.target.closest('.mm-cam, .mm-marker, button')) return;
+    if(state.mode !== 'edit'){ notify('Переключитесь в режим редактирования, чтобы поставить камеру на план.'); return; }
+    const rect = body.getBoundingClientRect();
+    const bx = e.clientX - rect.left, by = e.clientY - rect.top;
+    if(bx < ox || by < oy || bx > ox + dw || by > oy + dh) return; /* клик мимо самой картинки плана */
+    const px = (bx - ox) * planW / dw, py = (by - oy) * planH / dh;
+    const p = activeLocalPano && state.panoramas[activeLocalPano];
+    if(!p){ setPlacingCam(false); return; }
+    p.planPx = { x: Math.round(px), y: Math.round(py) };
+    setPlacingCam(false);
+    touch(); renderMinimap();
+    status('Камера «' + (p.room || activeLocalPano) + '» поставлена на план — значок появился на миникарте');
+  };
 }
 function updateMinimapCamHeading(){ /* область видимости на мини-карте отключена */ }
 function setUiMode(mode, silent){
@@ -5492,6 +5608,17 @@ on('#stage', 'click', e => {
            ' — теперь локусы показываются в туре по их настоящему положению');
     return;
   }
+  if(placingCam){
+    const pc = planPoint(e.clientX, e.clientY);
+    if(!insidePlan(pc)) return;
+    const p = activeLocalPano && state.panoramas[activeLocalPano];
+    if(!p){ setPlacingCam(false); return; }
+    p.planPx = { x: Math.round(pc.x), y: Math.round(pc.y) };
+    setPlacingCam(false);
+    touch(); render(); renderMinimap();
+    status('Камера «' + (p.room || activeLocalPano) + '» поставлена на план — значок появился на этаже');
+    return;
+  }
   if(state.tool !== 'marker'){
     if(state.tool === 'select' && l.selected != null){ l.selected = null; drawPlan(); renderRoute(); }
     return;
@@ -5597,6 +5724,7 @@ window.onkeydown = e => {
   if(e.key === 'Escape'){
     if(pendingBind){ clearPendingBind(); status('Привязка локуса отменена'); return; }
     if(placingSpot){ setPlacingSpot(false); status('Отметка точки съёмки отменена'); return; }
+    if(placingCam){ setPlacingCam(false); status('Расстановка камеры на план отменена'); return; }
     const am = $('#askModal');
     if(am && am.classList.contains('show')){ am.classList.remove('show'); return; }
     const sm = $('#saveModal'); if(sm) sm.classList.remove('show');
@@ -5690,6 +5818,7 @@ function applyZoom(z, cx, cy){
 }
 on('#zoomIn', 'click', () => applyZoom(state.zoom*1.2));
 on('#zoomOut', 'click', () => applyZoom(state.zoom/1.2));
+on('#planTransparentBg', 'click', () => { stripPlanWhiteBackground(); });
 on('#resetView', 'click', () => {
   state.zoom = 1; state.rotation = 0;
   const v = $('#viewport'); if(v) v.style.transform = '';
@@ -5859,6 +5988,16 @@ on('#l3dPanoPicker', 'change', e => {
   const panoId = e.target.value;
   syncMarkerFromLocalPano(panoId);
   setActiveLocalPano(panoId, false);
+});
+on('#l3dPlaceCam', 'click', () => {
+  if(state.mode !== 'edit'){ notify('Переключитесь в режим редактирования, чтобы поставить камеру на план.'); return; }
+  if(!activeLocalPano || !state.panoramas[activeLocalPano]){ notify('Сначала выберите панораму в списке сверху.'); return; }
+  if(!level()){ notify('Сначала выберите этаж плана.'); return; }
+  setPlacingCam(!placingCam);
+  const p = state.panoramas[activeLocalPano];
+  status(placingCam
+    ? 'Щёлкните на плане точку, где снята панорама «' + (p.room || activeLocalPano) + '»'
+    : 'Расстановка камеры на план отменена');
 });
 on('#l3dRotCCW', 'click', () => l3dNudgeNavRotation(15));
 on('#l3dRotCW', 'click', () => l3dNudgeNavRotation(-15));
