@@ -2,7 +2,7 @@
 <html lang="ru"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>PALACE / Memory Mapper</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<style>
+<style id="baseStyle">
 *{box-sizing:border-box}
 /* VS Code Dark Modern — токены как на vscode.dev */
 :root{
@@ -236,7 +236,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tour-body iframe.has-error{opacity:0;pointer-events:none}
 
 /* STAGE */
-.stage{flex:1;position:relative;overflow:hidden;cursor:crosshair;user-select:none;-webkit-user-select:none;-ms-user-select:none;background:#0d0f12;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:24px 24px}
+.stage{flex:1;position:relative;overflow:hidden;cursor:crosshair;user-select:none;-webkit-user-select:none;-ms-user-select:none;background:#0d0f12;background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);background-size:24px 24px}
 .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;z-index:10}
 .empty strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
 .empty-actions{display:flex;gap:8px;justify-content:center;margin-top:16px}
@@ -344,7 +344,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
    текстура готова (см. setImage() в localViewer). Похоже на fade-переход
    у реального Zillow (см. патент US11217019 — там тоже zoom/rotate/fade,
    а не мгновенная склейка кадров). */
-.local3d canvas.l3d-fading{opacity:.15}
+.local3d canvas.l3d-fading{opacity:1}
+.l3d-dim{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .24s ease-out}
+.l3d-dim.on{opacity:.55;transition:opacity .11s ease-in}
+@media (prefers-reduced-motion:reduce){.l3d-dim,.l3d-dim.on{transition-duration:.05s}}
 .local3d canvas:active{cursor:grabbing}
 .local3d .tour-empty{z-index:1}
 .local3d.has-image .tour-empty{display:none}
@@ -433,7 +436,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   opacity:.55;
   box-shadow:0 2px 8px rgba(0,0,0,.25);
   -webkit-tap-highlight-color:transparent;
-  transition:left .10s linear,top .10s linear,transform .10s linear,opacity .2s ease-in-out;
+  transition:opacity .2s ease-in-out; /* без transition на положении: кнопки идут за камерой без отставания */
+  will-change:transform,opacity;
   z-index:4;
 }
 .l3d-navpt:hover,.l3d-navpt:focus-visible{
@@ -651,6 +655,27 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .review-guess-layer{position:absolute;left:0;top:0;pointer-events:none;z-index:5;overflow:visible}
 .review-link{stroke:#2ea043;stroke-width:2;stroke-dasharray:5 4;opacity:.85}
 .stage.review-guessing{cursor:crosshair}
+.rv-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rv-chips:empty{display:none}
+.rv-chip{min-width:34px;height:28px;padding:0 9px;border-radius:9px;background:#ffffff0f;border:1px solid #ffffff1f;color:var(--vscode-fg);font-weight:650;font-variant-numeric:tabular-nums}
+.rv-chip:hover:not(:disabled){background:#ffffff1c}
+.rv-chip.placed{background:#ffffff26;color:#fff}
+.rv-chip.active{border-color:#fff;box-shadow:0 0 0 2px #ffffff40;color:#fff}
+.rv-chip:disabled{opacity:1;cursor:default}
+.rv-chip.hit{background:#2ea04333;border-color:#2ea043;color:#b8f0c4}
+.rv-chip.miss{background:#f14c4c2e;border-color:#f14c4c;color:#ffc2c2}
+.rv-chip.swap{background:#f0a03030;border-color:#f0a030;color:#ffe0a8}
+.rv-chip.skip{opacity:.45}
+.rv-note{display:block;margin-top:4px;font-size:11.5px;color:var(--vscode-fg-mute)}
+.guess-mark{width:30px;height:30px;margin:-15px 0 0 -15px;display:flex;align-items:center;justify-content:center}
+.guess-mark::after{display:none}
+.guess-mark span{font:700 12px/1 "Segoe UI",sans-serif;color:#fff;text-shadow:0 1px 2px #000}
+.guess-mark.active{border-style:solid;border-color:#fff}
+.guess-mark.swap{border-color:#f0a030;background:rgba(240,160,48,.2)}
+.review-link.miss{stroke:#f14c4c}
+.review-link.swap{stroke:#f0a030}
+.review-zone-layer{position:absolute;left:0;top:0;z-index:3;pointer-events:none;image-rendering:pixelated}
+
 .wall-layer{position:absolute;left:0;top:0;z-index:2;overflow:visible;pointer-events:none}
 .wall-halo{stroke:#0b0d10;stroke-width:6;stroke-linecap:round;opacity:.75}
 .wall-line{stroke:#4d8fe0;stroke-width:2.6;stroke-linecap:round}
@@ -694,38 +719,161 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .ic.lg{width:20px;height:20px}
 .ic.sm{width:13px;height:13px}
 button .ic{pointer-events:none}
-</style></head>
+
+/* полоса вкладок убрана: кнопки «Разделить» и «Поменять местами» живут в левой панели */
+:root{--tabs:0px}
+.tabs{display:none!important}
+.activity #btnSplit.on{color:var(--vscode-activity-fg);background:rgba(255,255,255,.08)}
+.activity #btnSwapPanes[hidden]{display:none}
+
+/* миникарта 3D-вида: стекло — полупрозрачная, с размытием, скруглённая */
+.minimap{background:rgba(16,18,22,.52);border:1px solid rgba(255,255,255,.12);border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
+  -webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25);
+  transition:width .22s ease,height .22s ease}
+.minimap-head{border-bottom:0;padding:7px 8px 4px 12px;color:#e8e8e8;font-size:11.5px;letter-spacing:.2px}
+.minimap-btn{width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#cfd3d8;cursor:pointer}
+.minimap-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+.minimap-btn .ic{width:13px;height:13px}
+.minimap-body{background:transparent;margin:0 8px 8px;border-radius:10px}
+.minimap-body img{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+.minimap-layer .mm-cam{background:rgba(13,15,18,.7);backdrop-filter:blur(2px)}
+</style>
+<style id="themeExtra">
+/* ===== курсоры (свои, не системные) ===== */
+/* системный курсор скрыт — рисуется свой (#vcur), инверсия цвета через mix-blend-mode:difference */
+/* План: системный (аппаратный) курсор с нашим рисунком — без задержки. Тонкая белая линия
+   с тёмной обводкой видна и на светлых, и на тёмных участках плана. */
+.stage,.stage .viewport,.plan,.plan img,.plan canvas,.stage.review-guessing,.stage.review-guessing .plan{cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='33' height='33' viewBox='0 0 33 33'%3E%3Cg fill='none' stroke-linecap='square'%3E%3Cg stroke='%23000' stroke-opacity='.6' stroke-width='3'%3E%3Cpath d='M16.5 5v8M16.5 20v8M5 16.5h8M20 16.5h8'/%3E%3C/g%3E%3Cg stroke='%23fff' stroke-width='1'%3E%3Cpath d='M16.5 5v8M16.5 20v8M5 16.5h8M20 16.5h8'/%3E%3C/g%3E%3C/g%3E%3Crect x='15.5' y='15.5' width='2' height='2' fill='%23000' fill-opacity='.6'/%3E%3Crect x='16' y='16' width='1' height='1' fill='%23fff'/%3E%3C/svg%3E") 16 16, crosshair}
+.stage.mode-view,.stage.mode-view .plan{cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='33' height='33' viewBox='0 0 33 33'%3E%3Cg fill='none' stroke-linecap='square'%3E%3Cg stroke='%23000' stroke-opacity='.6' stroke-width='3'%3E%3Cpath d='M16.5 6v21M6 16.5h21'/%3E%3Cpath d='M14.5 8l2-2 2 2M14.5 25l2 2 2-2M8 14.5l-2 2 2 2M25 14.5l2 2-2 2' stroke-linejoin='round'/%3E%3C/g%3E%3Cg stroke='%23fff' stroke-width='1'%3E%3Cpath d='M16.5 6v21M6 16.5h21'/%3E%3Cpath d='M14.5 8l2-2 2 2M14.5 25l2 2 2-2M8 14.5l-2 2 2 2M25 14.5l2 2-2 2' stroke-linejoin='round'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") 16 16, move}
+/* 3D-вид: системный (аппаратный) курсор с нашим рисунком — без задержки на кадр */
+.local3d canvas{cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='33' height='33' viewBox='0 0 33 33'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg stroke='%23000' stroke-opacity='.55' stroke-width='3'%3E%3Cpath d='M16.50 11.30 L21.00 19.10 L12.00 19.10Z'/%3E%3Cpath d='M24.30 23.53 A10.50 10.50 0 0 1 8.70 23.53 M8.78 26.54 L8.70 23.53 L11.69 23.93 M6.51 19.74 A10.50 10.50 0 0 1 14.32 6.23 M11.66 4.80 L14.32 6.23 L12.47 8.62 M18.68 6.23 A10.50 10.50 0 0 1 26.49 19.74 M29.06 18.16 L26.49 19.74 L25.34 16.95'/%3E%3C/g%3E%3Cg stroke='%23fff' stroke-width='1.2'%3E%3Cpath d='M16.50 11.30 L21.00 19.10 L12.00 19.10Z' fill='none'/%3E%3Cpath d='M24.30 23.53 A10.50 10.50 0 0 1 8.70 23.53 M8.78 26.54 L8.70 23.53 L11.69 23.93 M6.51 19.74 A10.50 10.50 0 0 1 14.32 6.23 M11.66 4.80 L14.32 6.23 L12.47 8.62 M18.68 6.23 A10.50 10.50 0 0 1 26.49 19.74 M29.06 18.16 L26.49 19.74 L25.34 16.95'/%3E%3C/g%3E%3C/g%3E%3Ccircle cx='16.5' cy='16.5' r='.9' fill='%23fff'/%3E%3C/svg%3E") 16 16, grab}
+.local3d canvas:active,.local3d.dragging canvas{cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='33' height='33' viewBox='0 0 33 33'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg stroke='%23000' stroke-opacity='.55' stroke-width='3'%3E%3Cpath d='M16.50 12.10 L20.31 18.70 L12.69 18.70Z'/%3E%3Cpath d='M20.99 27.09 A11.50 11.50 0 0 1 5.50 19.86 M4.31 22.63 L5.50 19.86 L8.04 21.49 M5.09 15.10 A11.50 11.50 0 0 1 19.09 5.29 M17.29 2.87 L19.09 5.29 L16.41 6.68 M23.42 7.32 A11.50 11.50 0 0 1 24.91 24.34 M27.91 23.99 L24.91 24.34 L25.05 21.33'/%3E%3C/g%3E%3Cg stroke='%23fff' stroke-width='1.2'%3E%3Cpath d='M16.50 12.10 L20.31 18.70 L12.69 18.70Z' fill='%23fff'/%3E%3Cpath d='M20.99 27.09 A11.50 11.50 0 0 1 5.50 19.86 M4.31 22.63 L5.50 19.86 L8.04 21.49 M5.09 15.10 A11.50 11.50 0 0 1 19.09 5.29 M17.29 2.87 L19.09 5.29 L16.41 6.68 M23.42 7.32 A11.50 11.50 0 0 1 24.91 24.34 M27.91 23.99 L24.91 24.34 L25.05 21.33'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") 16 16, grabbing}
+.stage .marker{cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='33' height='33' viewBox='0 0 33 33'%3E%3Cg fill='none' stroke-linecap='square'%3E%3Cg stroke='%23000' stroke-opacity='.6' stroke-width='3'%3E%3Cpath d='M16.5 6v21M6 16.5h21'/%3E%3Cpath d='M14.5 8l2-2 2 2M14.5 25l2 2 2-2M8 14.5l-2 2 2 2M25 14.5l2 2-2 2' stroke-linejoin='round'/%3E%3C/g%3E%3Cg stroke='%23fff' stroke-width='1'%3E%3Cpath d='M16.5 6v21M6 16.5h21'/%3E%3Cpath d='M14.5 8l2-2 2 2M14.5 25l2 2 2-2M8 14.5l-2 2 2 2M25 14.5l2 2-2 2' stroke-linejoin='round'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") 16 16, move}
+.stage.review-guessing .marker{cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='33' height='33' viewBox='0 0 33 33'%3E%3Cg fill='none' stroke-linecap='square'%3E%3Cg stroke='%23000' stroke-opacity='.6' stroke-width='3'%3E%3Cpath d='M16.5 5v8M16.5 20v8M5 16.5h8M20 16.5h8'/%3E%3C/g%3E%3Cg stroke='%23fff' stroke-width='1'%3E%3Cpath d='M16.5 5v8M16.5 20v8M5 16.5h8M20 16.5h8'/%3E%3C/g%3E%3C/g%3E%3Crect x='15.5' y='15.5' width='2' height='2' fill='%23000' fill-opacity='.6'/%3E%3Crect x='16' y='16' width='1' height='1' fill='%23fff'/%3E%3C/svg%3E") 16 16, crosshair}
+.stage.panning,.stage.panning *,.stage .marker.dragging{cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='33' height='33' viewBox='0 0 33 33'%3E%3Cg fill='none' stroke-linecap='square'%3E%3Cg stroke='%23000' stroke-opacity='.6' stroke-width='3'%3E%3Cpath d='M16.5 9v15M9 16.5h15'/%3E%3Cpath d='M14.5 11l2-2 2 2M14.5 22l2 2 2-2M11 14.5l-2 2 2 2M22 14.5l2 2-2 2' stroke-linejoin='round'/%3E%3C/g%3E%3Cg stroke='%23fff' stroke-width='1'%3E%3Cpath d='M16.5 9v15M9 16.5h15'/%3E%3Cpath d='M14.5 11l2-2 2 2M14.5 22l2 2 2-2M11 14.5l-2 2 2 2M22 14.5l2 2-2 2' stroke-linejoin='round'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") 16 16, grabbing!important}
+.plan-cam{cursor:pointer}
+#vcur{position:fixed;left:0;top:0;width:32px;height:32px;margin:-16px 0 0 -16px;pointer-events:none;z-index:2147483647;
+  mix-blend-mode:difference;display:none;will-change:transform}
+#vcur.on{display:block}
+#vcur svg{width:32px;height:32px;display:block;overflow:visible}
+#vcur g{display:none}
+#vcur[data-m="cross"] .c-cross,#vcur[data-m="pan"] .c-pan,#vcur[data-m="panning"] .c-panning,
+#vcur[data-m="orbit"] .c-orbit,#vcur[data-m="orbiting"] .c-orbiting{display:inline}
+/* клетки холста под прозрачным фоном плана */
+.plan{box-shadow:none}
+.plan canvas.plan-keyed{position:absolute;left:0;top:0;pointer-events:none}
+/* ===== полировка ===== */
+button,.abtn,.tool,.menu-item{transition:background-color .12s ease,color .12s ease,border-color .12s ease,opacity .12s ease}
+.ic{stroke-width:1.5}
+.ic .fill{fill:currentColor;stroke:none}
+#themeBtn{display:inline-flex;align-items:center;gap:6px}
+#themeBtn .ic{width:14px;height:14px}
+/* ===== ЧБ-тема (по умолчанию) ===== */
+html[data-theme="mono"]{
+  --vscode-status-bg:#181818;--vscode-status-fg:#d6d6d6;
+  --vscode-button-bg:#e8e8e8;--vscode-button-hover:#ffffff;
+  --vscode-focus:#bdbdbd;--vscode-activity-badge:#e8e8e8;
+  --blue:#5a5a5a;--blue2:#6e6e6e;--green:#cfcfcf;
+}
+html[data-theme="mono"] button.primary,
+html[data-theme="mono"] .top-actions button.primary{background:var(--vscode-button-bg);color:#111}
+html[data-theme="mono"] button.primary:hover,
+html[data-theme="mono"] .top-actions button.primary:hover{background:var(--vscode-button-hover);color:#000}
+html[data-theme="mono"] .rv-actions button.primary{background:#e8e8e8;color:#111;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+html[data-theme="mono"] .rv-actions button.primary:hover:not(:disabled){background:#fff}
+html[data-theme="mono"] .status{border-top:1px solid #2b2b2b}
+html[data-theme="mono"] .status .small,html[data-theme="mono"] .status span,html[data-theme="mono"] .badge{color:#cfcfcf}
+html[data-theme="mono"] #compassNeedle path:first-child{fill:#f2f2f2}
+html[data-theme="mono"] #compassNeedle path:nth-child(2){fill:#5a5a5a}
+html[data-theme="mono"] #compassNeedle circle{fill:#fafafa}
+</style>
+<script>
+/* ===== темы: mono (ЧБ, по умолчанию) / color ===== */
+(function(){
+  var base = document.getElementById('baseStyle');
+  function toGray(r,g,b,a){
+    var mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+    if(mx-mn < 18) return null;                         /* уже почти серый */
+    var h; var d=mx-mn;
+    if(mx===r) h=((g-b)/d)%6; else if(mx===g) h=(b-r)/d+2; else h=(r-g)/d+4;
+    h=(h*60+360)%360;
+    /* семантику оставляем цветной: красный, оранжевый, зелёный */
+    if(h<50 || h>=330 || (h>=80 && h<165)) return null;
+    var y=Math.round(0.75*(0.2126*r+0.7152*g+0.0722*b)+0.25*mx);
+    y=Math.max(0,Math.min(255,y));
+    return a==null ? 'rgb('+y+','+y+','+y+')' : 'rgba('+y+','+y+','+y+','+a+')';
+  }
+  function hex2(h){ return parseInt(h,16); }
+  function monoize(css){
+    css = css.replace(/#([0-9a-fA-F]{3,8})\b/g, function(m,h){
+      var r,g,b,a=null;
+      if(h.length===3||h.length===4){ r=hex2(h[0]+h[0]); g=hex2(h[1]+h[1]); b=hex2(h[2]+h[2]); if(h.length===4) a=+(hex2(h[3]+h[3])/255).toFixed(3); }
+      else if(h.length===6||h.length===8){ r=hex2(h.slice(0,2)); g=hex2(h.slice(2,4)); b=hex2(h.slice(4,6)); if(h.length===8) a=+(hex2(h.slice(6,8))/255).toFixed(3); }
+      else return m;
+      return toGray(r,g,b,a) || m;
+    });
+    css = css.replace(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/g, function(m,r,g,b,a){
+      return toGray(+r,+g,+b,a==null?null:a) || m;
+    });
+    return css;
+  }
+  var mono = document.createElement('style');
+  mono.id = 'monoStyle';
+  try{ mono.textContent = monoize(base.textContent); }catch(e){ mono.textContent = base.textContent; }
+  base.parentNode.insertBefore(mono, base.nextSibling);
+  window.PALACE_MONO_FLOOR = ['#4a4a4a','#3a3a3a','#565656','#2f2f2f','#444444','#383838','#505050','#333333','#5c5c5c','#3f3f3f'];
+  window.getTheme = function(){ return document.documentElement.getAttribute('data-theme') || 'mono'; };
+  window.applyTheme = function(t){
+    t = (t === 'color') ? 'color' : 'mono';
+    document.documentElement.setAttribute('data-theme', t);
+    base.disabled = (t === 'mono');
+    mono.disabled = (t !== 'mono');
+    try{ localStorage.setItem('palace.theme', t); }catch(e){}
+    var b = document.getElementById('themeBtn');
+    if(b){ var l=b.querySelector('.lbl'); if(l) l.textContent = (t==='mono' ? 'ЧБ' : 'Цвет');
+      b.title = t==='mono' ? 'Тема: чёрно-белая · нажмите для цветной' : 'Тема: цветная · нажмите для чёрно-белой'; }
+  };
+  var saved = null;
+  try{ saved = localStorage.getItem('palace.theme'); }catch(e){}
+  applyTheme(saved === 'color' ? 'color' : 'mono');
+})();
+</script></head>
 <body>
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><defs>
-<symbol id="i-plan" viewBox="0 0 16 16"><path d="M1.8 4.2 5.9 2.4v9.4L1.8 13.6z"/><path d="M5.9 2.4 10.1 4.2v9.4L5.9 11.8z"/><path d="M10.1 4.2 14.2 2.4v9.4l-4.1 1.8z"/></symbol>
-<symbol id="i-cube" viewBox="0 0 16 16"><path d="M8 1.8 13.8 5v6L8 14.2 2.2 11V5z"/><path d="M2.2 5 8 8l5.8-3M8 8v6.2"/></symbol>
-<symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.2v9.6M3.2 8h9.6"/></symbol>
-<symbol id="i-minus" viewBox="0 0 16 16"><path d="M3.2 8h9.6"/></symbol>
-<symbol id="i-folder" viewBox="0 0 16 16"><path d="M1.8 12.8V3.2h4.3l1.5 2h6.6v7.6z"/></symbol>
-<symbol id="i-save" viewBox="0 0 16 16"><path d="M2.5 2.5h8.1l2.9 2.9v8.1h-11z"/><path d="M5.2 2.5v4h5.1v-4M5.2 13.5V9.7h5.6v3.8"/></symbol>
-<symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.6V2.4M4.9 5.5 8 2.4l3.1 3.1"/><path d="M2.6 10.4v3.2h10.8v-3.2"/></symbol>
-<symbol id="i-split" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M8 3v10"/></symbol>
-<symbol id="i-window" viewBox="0 0 16 16"><rect x="2" y="2.6" width="11" height="11" rx="1.5"/><path d="M2 5.8h11"/><path d="M9.4 9.6 13.8 5.2M11 5.2h2.8V8"/></symbol>
-<symbol id="i-swap" viewBox="0 0 16 16"><path d="M2.8 5.6h9.4M9.8 3.2 12.2 5.6 9.8 8"/><path d="M13.2 10.4H3.8M6.2 8 3.8 10.4 6.2 12.8"/></symbol>
-<symbol id="i-cursor" viewBox="0 0 16 16"><path d="M4 2.6 12.2 8 8.4 8.7 7 12.4z"/></symbol>
-<symbol id="i-pin" viewBox="0 0 16 16"><circle cx="8" cy="6.4" r="2.9"/><path d="M8 9.3v4.1"/></symbol>
-<symbol id="i-fit" viewBox="0 0 16 16"><path d="M2.4 5.6V2.6h3M13.6 5.6V2.6h-3M2.4 10.4v3h3M13.6 10.4v3h-3"/></symbol>
-<symbol id="i-arrow-up" viewBox="0 0 16 16"><path d="M8 13V3.4M4.5 6.9 8 3.4l3.5 3.5"/></symbol>
-<symbol id="i-arrow-down" viewBox="0 0 16 16"><path d="M8 3v9.6M4.5 9.1 8 12.6l3.5-3.5"/></symbol>
-<symbol id="i-crop" viewBox="0 0 16 16"><path d="M4.6 1.6v10h10M1.6 4.6h10v10"/></symbol>
-<symbol id="i-rotate" viewBox="0 0 16 16"><path d="M13.2 8a5.2 5.2 0 1 1-1.7-3.9"/><path d="M13.4 1.9v3.2h-3.2"/></symbol>
-<symbol id="i-flip" viewBox="0 0 16 16"><path d="M8 1.8v12.4"/><path d="M6.2 4.8 3 8l3.2 3.2z"/><path d="M9.8 4.8 13 8l-3.2 3.2z"/></symbol>
-<symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.8 4.4h10.4M6.4 4.4V2.8h3.2v1.6M4.4 4.4l.7 9h5.8l.7-9"/></symbol>
-<symbol id="i-grip" viewBox="0 0 16 16"><path d="M6 3.6h.01M6 8h.01M6 12.4h.01M10 3.6h.01M10 8h.01M10 12.4h.01" stroke-width="2.2"/></symbol>
-<symbol id="i-dot" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.2"/><circle cx="8" cy="8" r="6.6" opacity=".45"/></symbol>
-<symbol id="i-arrow-right" viewBox="0 0 16 16"><path d="M2.8 8h10.4M9.8 4.6 13.2 8l-3.4 3.4"/></symbol>
-<symbol id="i-turn-cw" viewBox="0 0 16 16"><path d="M3.4 8.6a4.6 4.6 0 1 0 1.5-3.5"/><path d="M4.6 1.8v3.5h3.5"/></symbol>
-<symbol id="i-turn-ccw" viewBox="0 0 16 16"><path d="M12.6 8.6a4.6 4.6 0 1 1-1.5-3.5"/><path d="M11.4 1.8v3.5H7.9"/></symbol>
-<symbol id="i-close" viewBox="0 0 16 16"><path d="M3.2 3.2 12.8 12.8M12.8 3.2 3.2 12.8" stroke-width="1.6" stroke-linecap="round"/></symbol>
-<symbol id="i-eye-hidden" viewBox="0 0 16 16"><path d="M1.6 8s2.4-4.3 6.4-4.3S14.4 8 14.4 8 12 12.3 8 12.3 1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/><path d="M2.6 13.4 13.4 2.6" stroke-dasharray="1.6 1.4"/></symbol>
-<symbol id="i-camera" viewBox="0 0 16 16"><path d="M2 5.7h2.3l1-1.7h5.4l1 1.7H14v7.1H2z"/><circle cx="8" cy="9.3" r="2.35"/></symbol>
-<symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.3"/><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3M12.4 12.4l-1.3-1.3M4.9 4.9 3.6 3.6"/></symbol>
-<symbol id="i-transparent" viewBox="0 0 16 16"><rect x="1.6" y="1.6" width="5.2" height="5.2"/><rect x="9.2" y="9.2" width="5.2" height="5.2"/><rect x="9.2" y="1.6" width="5.2" height="5.2" opacity=".4"/><rect x="1.6" y="9.2" width="5.2" height="5.2" opacity=".4"/></symbol>
+<symbol id="i-plan" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.6"/><path d="M2 8.4h4.6M6.6 8.4V14M9.6 2v3.6M9.6 5.6H14M9.6 10.8H14"/></symbol>
+<symbol id="i-cube" viewBox="0 0 16 16"><path d="M1.8 4.4Q8 2.6 14.2 4.4v7.2Q8 9.8 1.8 11.6z"/><path d="M4.4 9.4l2.4-2.3 1.9 1.7 1.5-1.2 1.6 1.4"/><circle class="fill" cx="11" cy="5.6" r=".9"/></symbol>
+<symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+<symbol id="i-minus" viewBox="0 0 16 16"><path d="M3 8h10"/></symbol>
+<symbol id="i-folder" viewBox="0 0 16 16"><path d="M2 4.2A1.2 1.2 0 0 1 3.2 3h3l1.5 1.8h5.1A1.2 1.2 0 0 1 14 6v5.8a1.2 1.2 0 0 1-1.2 1.2H3.2A1.2 1.2 0 0 1 2 11.8z"/></symbol>
+<symbol id="i-save" viewBox="0 0 16 16"><path d="M3.2 2.4h7.4l2.8 2.8v7.2a1.2 1.2 0 0 1-1.2 1.2H3.2A1.2 1.2 0 0 1 2 12.4V3.6a1.2 1.2 0 0 1 1.2-1.2z"/><path d="M5 2.4v3.2h5V2.4M5 13.6V9.6h6v4"/></symbol>
+<symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.2V2.6M5 5.6l3-3 3 3"/><path d="M2.6 10v2.2a1.2 1.2 0 0 0 1.2 1.2h8.4a1.2 1.2 0 0 0 1.2-1.2V10"/></symbol>
+<symbol id="i-split" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.6"/><path d="M8 3v10"/></symbol>
+<symbol id="i-window" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.6"/><path d="M2 6h12"/><path d="M7 11l3.4-3.4M8 7.6h2.4V10"/></symbol>
+<symbol id="i-swap" viewBox="0 0 16 16"><path d="M3 5.4h9.4M10 3l2.4 2.4L10 7.8"/><path d="M13 10.6H3.6M6 8.2l-2.4 2.4L6 13"/></symbol>
+<symbol id="i-cursor" viewBox="0 0 16 16"><path d="M4 2.6l8 5.2-3.6.9-1.5 3.6z"/></symbol>
+<symbol id="i-pin" viewBox="0 0 16 16"><path d="M8 14s-4.2-4.1-4.2-7.4a4.2 4.2 0 0 1 8.4 0C12.2 9.9 8 14 8 14z"/><circle cx="8" cy="6.5" r="1.5"/></symbol>
+<symbol id="i-fit" viewBox="0 0 16 16"><path d="M2.4 5.6V3.6a1.2 1.2 0 0 1 1.2-1.2h2M13.6 5.6V3.6a1.2 1.2 0 0 0-1.2-1.2h-2M2.4 10.4v2a1.2 1.2 0 0 0 1.2 1.2h2M13.6 10.4v2a1.2 1.2 0 0 1-1.2 1.2h-2"/></symbol>
+<symbol id="i-arrow-up" viewBox="0 0 16 16"><path d="M8 13V3.4M4.4 7 8 3.4 11.6 7"/></symbol>
+<symbol id="i-arrow-down" viewBox="0 0 16 16"><path d="M8 3v9.6M4.4 9 8 12.6 11.6 9"/></symbol>
+<symbol id="i-crop" viewBox="0 0 16 16"><path d="M4.6 1.8v8.4a1.2 1.2 0 0 0 1.2 1.2h8.4M1.8 4.6h8.4a1.2 1.2 0 0 1 1.2 1.2v8.4"/></symbol>
+<symbol id="i-rotate" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.6-3.7"/><path d="M13.2 2.4v3h-3"/></symbol>
+<symbol id="i-flip" viewBox="0 0 16 16"><path d="M8 1.8v12.4" stroke-dasharray="1.4 1.6"/><path d="M6 4.6 2.6 11.4H6z"/><path d="M10 4.6l3.4 6.8H10z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.6 4.4h10.8M6.2 4.4V3a.8.8 0 0 1 .8-.8h2a.8.8 0 0 1 .8.8v1.4"/><path d="M4 4.4l.6 8.4a1.2 1.2 0 0 0 1.2 1.1h4.4a1.2 1.2 0 0 0 1.2-1.1l.6-8.4M6.8 7v4.2M9.2 7v4.2"/></symbol>
+<symbol id="i-grip" viewBox="0 0 16 16"><circle class="fill" cx="6" cy="3.8" r="1.05"/><circle class="fill" cx="6" cy="8" r="1.05"/><circle class="fill" cx="6" cy="12.2" r="1.05"/><circle class="fill" cx="10" cy="3.8" r="1.05"/><circle class="fill" cx="10" cy="8" r="1.05"/><circle class="fill" cx="10" cy="12.2" r="1.05"/></symbol>
+<symbol id="i-dot" viewBox="0 0 16 16"><circle class="fill" cx="8" cy="8" r="2.6"/><circle cx="8" cy="8" r="5.8" opacity=".5"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9.6 4.6 13 8l-3.4 3.4"/></symbol>
+<symbol id="i-turn-cw" viewBox="0 0 16 16"><path d="M3.4 8.6a4.6 4.6 0 1 0 1.4-3.4"/><path d="M4.6 2v3.2h3.2"/></symbol>
+<symbol id="i-turn-ccw" viewBox="0 0 16 16"><path d="M12.6 8.6a4.6 4.6 0 1 1-1.4-3.4"/><path d="M11.4 2v3.2H8.2"/></symbol>
+<symbol id="i-close" viewBox="0 0 16 16"><path d="M3.6 3.6l8.8 8.8M12.4 3.6l-8.8 8.8"/></symbol>
+<symbol id="i-eye-hidden" viewBox="0 0 16 16"><path d="M1.8 8S4 4 8 4s6.2 4 6.2 4-2.2 4-6.2 4-6.2-4-6.2-4z"/><circle cx="8" cy="8" r="1.8"/><path d="M2.8 13.2 13.2 2.8"/></symbol>
+<symbol id="i-camera" viewBox="0 0 16 16"><path d="M2 6.2a1.2 1.2 0 0 1 1.2-1.2h1.6l1-1.6h4.4l1 1.6h1.6A1.2 1.2 0 0 1 14 6.2v5.6a1.2 1.2 0 0 1-1.2 1.2H3.2A1.2 1.2 0 0 1 2 11.8z"/><circle cx="8" cy="8.9" r="2.2"/></symbol>
+<symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1.8l1.1 1.6 1.9-.5.4 1.9 1.9.4-.5 1.9L14.2 8l-1.4 1.1.5 1.9-1.9.4-.4 1.9-1.9-.5L8 14.2l-1.1-1.4-1.9.5-.4-1.9-1.9-.4.5-1.9L1.8 8l1.4-1.1-.5-1.9 1.9-.4.4-1.9 1.9.5z"/></symbol>
+<symbol id="i-contrast" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.8"/><path class="fill" d="M8 2.2a5.8 5.8 0 0 1 0 11.6z"/></symbol>
+<symbol id="i-expand" viewBox="0 0 16 16"><path d="M9.6 2.4h4v4M13.6 2.4 9.2 6.8M6.4 13.6h-4v-4M2.4 13.6l4.4-4.4"/></symbol>
+<symbol id="i-collapse" viewBox="0 0 16 16"><path d="M13.6 6.8h-4.4V2.4M9.2 6.8l4.4-4.4M2.4 9.2h4.4v4.4M6.8 9.2l-4.4 4.4"/></symbol>
+<symbol id="i-transparent" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.6"/><path class="fill" d="M2 3.6A1.6 1.6 0 0 1 3.6 2H8v6H2zM8 8h6v4.4a1.6 1.6 0 0 1-1.6 1.6H8z" opacity=".55"/></symbol>
 </defs></svg>
 <div class="app" data-ui="editor" data-layout="plan" id="appRoot">
   <header class="top">
@@ -736,6 +884,7 @@ button .ic{pointer-events:none}
     </div>
     <div class="title"><input aria-label="Название дворца" id="palaceName" value="Новый дворец памяти — PALACE"/></div>
     <div class="top-actions">
+      <button id="themeBtn" type="button" title="Тема"><svg class="ic"><use href="#i-contrast"/></svg><span class="lbl">ЧБ</span></button>
       <button id="reviewBtn" title="Случайно выбрать режим повторения (1–5) и начать">Повторение</button>
       <button class="primary" id="saveBtn">Сохранить</button>
     </div>
@@ -746,6 +895,9 @@ button .ic{pointer-events:none}
       <button type="button" class="abtn active" data-ui="plan" id="abPlan" title="План дворца"><svg class="ic"><use href="#i-plan"/></svg></button>
       <button type="button" class="abtn" data-ui="tour" id="abTour" title="3D-тур"><svg class="ic"><use href="#i-cube"/></svg></button>
       <div class="ab-sep"></div>
+      <button type="button" class="abtn" id="btnSplit" title="Разделить: план и 3D рядом" aria-label="Разделить"><svg class="ic"><use href="#i-split"/></svg></button>
+      <button type="button" class="abtn" id="btnSwapPanes" title="Поменять панели местами" aria-label="Поменять панели местами" hidden><svg class="ic"><use href="#i-swap"/></svg></button>
+      <div class="ab-sep"></div>
       <button type="button" class="abtn" id="newBtn" title="Новый дворец"><svg class="ic"><use href="#i-plus"/></svg></button>
       <button type="button" class="abtn" id="openBtn" title="Открыть .mplace / .mpalace / .3dview"><svg class="ic"><use href="#i-folder"/></svg></button>
       <button type="button" class="abtn primary-act" id="abSave" title="Сохранить"><svg class="ic"><use href="#i-save"/></svg></button>
@@ -753,12 +905,6 @@ button .ic{pointer-events:none}
       <button type="button" class="abtn" id="abUpload" title="Загрузить планы"><svg class="ic"><use href="#i-upload"/></svg></button>
     </nav>
     <div class="main-wrap">
-      <div class="tabs" role="tablist">
-        <div class="tabs-actions">
-          <button type="button" id="btnSplit" title="Разделить: план и 3D рядом" aria-label="Разделить"><svg class="ic"><use href="#i-split"/></svg></button>
-          <button type="button" id="btnSwapPanes" title="Поменять панели местами" aria-label="Поменять панели местами" hidden><svg class="ic"><use href="#i-swap"/></svg></button>
-        </div>
-      </div>
   <main class="main">
     <section class="stage" id="stage">
       <!-- Тулбар плана (выбор/маркер/зум/прозrachный фон) раньше был отдельным
@@ -796,6 +942,7 @@ button .ic{pointer-events:none}
           </div>
         </div>
         <div class="rv-instruction" id="reviewInstruction"></div>
+        <div class="rv-chips" id="reviewChips"></div>
         <div class="rv-foot">
           <div class="rv-actions">
             <button class="primary" id="reviewCheck" title="Проверить расставленные локусы">Проверить</button>
@@ -873,7 +1020,7 @@ button .ic{pointer-events:none}
           <div class="minimap" id="minimap" hidden>
             <div class="minimap-head">
               <span id="minimapTitle">План</span>
-              <button type="button" class="minimap-close" id="minimapExpand" title="Развернуть / свернуть">▣</button>
+              <button type="button" class="minimap-btn" id="minimapExpand" title="Развернуть" aria-label="Развернуть миникарту"><svg class="ic"><use href="#i-expand"/></svg></button>
             </div>
             <div class="minimap-body" id="minimapBody">
               <img id="minimapImg" alt=""/>
@@ -1100,11 +1247,69 @@ function ask(text, onYes, opts){
   }, 0);
 }
 function notify(text, title){ ask(text, null, { notice:true, title:title || 'Сообщение' }); }
+/* ---------- прозрачный фон плана: тёмная заливка, связанная с краем, → alpha 0 ---------- */
+const planKeyCache = new Map();   /* src -> ImageData | null */
+function planKeyedCanvas(src, im){
+  const w = im.naturalWidth, h = im.naturalHeight;
+  if(!w || !h || w * h > 40e6) return null;
+  if(planKeyCanvasCache.has(src)) return planKeyCanvasCache.get(src);
+  let data = planKeyCache.get(src);
+  if(data === true) data = undefined;
+  if(data === undefined){
+    data = null;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently:true });
+    g.drawImage(im, 0, 0);
+    let id; try{ id = g.getImageData(0, 0, w, h); }catch(err){ planKeyCache.set(src, null); return null; }
+    const px = id.data, TH = 40;
+    const dark = i => { const o = i * 4; return px[o+3] > 0 && (px[o] * 0.2126 + px[o+1] * 0.7152 + px[o+2] * 0.0722) < TH; };
+    /* фон считаем тёмным, только если край кадра в основном тёмный */
+    let edge = 0, edgeDark = 0;
+    for(let x = 0; x < w; x += 2){ edge += 2; if(dark(x)) edgeDark++; if(dark((h-1)*w + x)) edgeDark++; }
+    for(let y = 0; y < h; y += 2){ edge += 2; if(dark(y*w)) edgeDark++; if(dark(y*w + w-1)) edgeDark++; }
+    if(edgeDark / edge >= 0.6){
+      const seen = new Uint8Array(w * h), stack = new Int32Array(w * h);
+      let sp = 0;
+      const push = i => { if(!seen[i] && dark(i)){ seen[i] = 1; stack[sp++] = i; } };
+      for(let x = 0; x < w; x++){ push(x); push((h-1)*w + x); }
+      for(let y = 0; y < h; y++){ push(y*w); push(y*w + w-1); }
+      while(sp){
+        const i = stack[--sp]; px[i*4+3] = 0;
+        const x = i % w;
+        if(x > 0) push(i-1); if(x < w-1) push(i+1);
+        if(i >= w) push(i-w); if(i < w*(h-1)) push(i+w);
+      }
+      /* мягкий край: полупрозрачность для тёмных пикселей, граничащих с вырезанным фоном */
+      for(let i = 0; i < w*h; i++){
+        if(seen[i]) continue;
+        const x = i % w;
+        if((x > 0 && seen[i-1]) || (x < w-1 && seen[i+1]) || (i >= w && seen[i-w]) || (i < w*(h-1) && seen[i+w])){
+          const o = i*4, lum = px[o]*0.2126 + px[o+1]*0.7152 + px[o+2]*0.0722;
+          if(lum < 90) px[o+3] = Math.round(px[o+3] * Math.min(1, (lum - TH) / 50 + 0.15));
+        }
+      }
+      data = id;
+    }
+    planKeyCache.set(src, data);
+  }
+  if(!data) return null;
+  let kc = planKeyCanvasCache.get(src);
+  if(!kc){
+    kc = document.createElement('canvas'); kc.width = w; kc.height = h; kc.className = 'plan-keyed';
+    kc.style.width = w + 'px'; kc.style.height = h + 'px';
+    kc.getContext('2d').putImageData(data, 0, 0);
+    planKeyCanvasCache.set(src, kc);
+    planKeyCache.set(src, true);   /* сами пиксели больше не нужны — держим только готовый canvas */
+  }
+  return kc;
+}
+const planKeyCanvasCache = new Map(); /* src -> готовый canvas с прозрачным фоном */
 function floorColor(i){
   /* синяя палитра: разные оттенки синего для различения этажей — затемнённые,
      чтобы белый текст на локусах оставался хорошо читаемым */
   const palette = ['#2f5fbf','#0d5aa8','#1c4b8f','#14406e','#0e6ba0','#24487a','#1a5276','#3a5fa0','#175a8c','#274e77'];
-  return palette[((i % palette.length) + palette.length) % palette.length];
+  const pal = (window.getTheme && getTheme() === 'mono' && window.PALACE_MONO_FLOOR) ? PALACE_MONO_FLOOR : palette;
+  return pal[((i % pal.length) + pal.length) % pal.length];
 }
 
 /* ---------- состояние ---------- */
@@ -1539,6 +1744,11 @@ function detectWallColor(entry){
   const step = 2;
   const QSHIFT = 4; /* квант 16 градаций на канал — грубее, чтобы ловить один и тот же цвет чернил */
   const buckets = new Map(); /* key -> {count, rs, gs, bs} */
+  /* целочисленные ключи кванта (12 бит) вместо строк — в разы быстрее */
+  const QK = new Uint16Array(w * h);
+  for(let i = 0, o = 0; i < w * h; i++, o += 4){
+    QK[i] = data[o + 3] < 200 ? 0xFFFF : (((data[o] >> 4) << 8) | ((data[o + 1] >> 4) << 4) | (data[o + 2] >> 4));
+  }
   for(let y = 0; y < h; y += step){
     for(let x = 0; x < w; x += step){
       const idx = (y * w + x) * 4;
@@ -1546,7 +1756,7 @@ function detectWallColor(entry){
       if(a < 200) continue;
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
       if(lum > 195 || lum < 5) continue; /* стены темнее заливки плана, но не абсолютный чёрный шум/рамка */
-      const key = (r >> QSHIFT) + ',' + (g >> QSHIFT) + ',' + (b >> QSHIFT);
+      const key = QK[y * w + x];
       let bucket = buckets.get(key);
       if(!bucket){ bucket = { count: 0, rs: 0, gs: 0, bs: 0 }; buckets.set(key, bucket); }
       bucket.count++; bucket.rs += r; bucket.gs += g; bucket.bs += b;
@@ -1563,10 +1773,7 @@ function detectWallColor(entry){
   function runLen(x0, y0, dx, dy, key, cap){
     let n = 0, x = x0, y = y0;
     while(n < cap && x >= 0 && y >= 0 && x < w && y < h){
-      const idx = (y * w + x) * 4;
-      if(data[idx + 3] < 200) break;
-      const k = (data[idx] >> QSHIFT) + ',' + (data[idx + 1] >> QSHIFT) + ',' + (data[idx + 2] >> QSHIFT);
-      if(k !== key) break;
+      if(QK[y * w + x] !== key) break;
       n++; x += dx; y += dy;
     }
     return n;
@@ -1589,10 +1796,7 @@ function detectWallColor(entry){
     for(let y = 0; y < h; y += step){
       for(let x = 0; x < w; x += step){
         if(total >= 320) break;
-        const idx = (y * w + x) * 4;
-        if(data[idx + 3] < 200) continue;
-        const k = (data[idx] >> QSHIFT) + ',' + (data[idx + 1] >> QSHIFT) + ',' + (data[idx + 2] >> QSHIFT);
-        if(k !== cand.key) continue;
+        if(QK[y * w + x] !== cand.key) continue;
         matchIdx++;
         if((matchIdx - 1) % strideN !== 0) continue;
         const hRun = runLen(x, y, -1, 0, cand.key, cap) + runLen(x + 1, y, 1, 0, cand.key, cap) - 1;
@@ -1627,6 +1831,22 @@ function detectWallColor(entry){
     if(score > bestScore){ bestScore = score; best = cand; }
   });
   if(!best) return null;
+  /* уточнение: среднее по бакету 16×16×16 смещено сглаживанием краёв —
+     берём самый частый ТОЧНЫЙ цвет рядом с ним (сама заливка стены) */
+  const exact = new Map(), T2 = 40 * 40;
+  for(let y = 0; y < h; y += 2){
+    for(let x = 0; x < w; x += 2){
+      const idx = (y * w + x) * 4;
+      if(data[idx + 3] < 200) continue;
+      const dr = data[idx] - best.r, dg = data[idx + 1] - best.g, db = data[idx + 2] - best.b;
+      if(dr * dr + dg * dg + db * db > T2) continue;
+      const k = (data[idx] << 16) | (data[idx + 1] << 8) | data[idx + 2];
+      exact.set(k, (exact.get(k) || 0) + 1);
+    }
+  }
+  let ek = null, en = 0;
+  exact.forEach((n, k) => { if(n > en){ en = n; ek = k; } });
+  if(ek != null && en >= 20) return { r: (ek >> 16) & 255, g: (ek >> 8) & 255, b: ek & 255 };
   return { r: Math.round(best.r), g: Math.round(best.g), b: Math.round(best.b) };
 }
 /* Автоопределение запускается само при первой отрисовке плана (см. drawPlan) —
@@ -1646,52 +1866,25 @@ function renderAutoWallOverlay(p, w, h, l){
   const key = aw.color.r + ',' + aw.color.g + ',' + aw.color.b + ',' + aw.tol + ',' + entry.w + ',' + entry.h + ',' + entry.src.length;
   let cached = autoWallOverlayCache.get(l);
   if(!cached || cached.key !== key){
-    const { w: ew, h: eh, data: src } = entry;
-    const tol2 = aw.tol * aw.tol;
-    const isWallColor = (x, y) => {
-      if(x < 0 || y < 0 || x >= ew || y >= eh) return false;
-      const idx = (y * ew + x) * 4;
-      if(src[idx + 3] < 200) return false;
-      const dr = src[idx] - aw.color.r, dg = src[idx + 1] - aw.color.g, db = src[idx + 2] - aw.color.b;
-      return dr * dr + dg * dg + db * db <= tol2;
-    };
-    const RUN_CAP = 60, THICK_MAX = 30;
-    function runLen(x0, y0, dx, dy){
-      let n = 0, x = x0, y = y0;
-      while(n < RUN_CAP && isWallColor(x, y)){ n++; x += dx; y += dy; }
-      return n;
-    }
+    /* O(N): маска стен по длинам серий (см. wallPixelMask), а не runLen для каждого пикселя */
+    const ew = entry.w, eh = entry.h;
+    const mask = wallPixelMask(entry, aw.color, aw.tol).mask;
     const c = document.createElement('canvas');
     c.width = ew; c.height = eh;
     const ctx = c.getContext('2d');
     const out = ctx.createImageData(ew, eh);
-    const dst = out.data;
-    for(let y = 0; y < eh; y++){
-      for(let x = 0; x < ew; x++){
-        const idx = (y * ew + x) * 4;
-        if(!isWallColor(x, y)){ dst[idx + 3] = 0; continue; }
-        /* красим только тонкие протяжённые структуры (сами стены), а не любые
-           сплошные заливки похожего цвета — бассейн, воду, небо на фото и т.п.,
-           которые могут случайно попасть в допуск по цвету стены */
-        const hRun = runLen(x, y, -1, 0) + runLen(x + 1, y, 1, 0) - 1;
-        const vRun = runLen(x, y, 0, -1) + runLen(x, y + 1, 0, 1) - 1;
-        const thickness = Math.min(hRun, vRun);
-        if(thickness > THICK_MAX){ dst[idx + 3] = 0; continue; }
-        dst[idx] = 61; dst[idx + 1] = 132; dst[idx + 2] = 245; dst[idx + 3] = 205;
-      }
-    }
+    const dst = new Uint32Array(out.data.buffer);
+    const px = (205 << 24) | (245 << 16) | (132 << 8) | 61;   /* RGBA(61,132,245,205), little-endian */
+    for(let i = 0; i < mask.length; i++) if(mask[i]) dst[i] = px;
     ctx.putImageData(out, 0, 0);
-    cached = { key: key, dataUrl: c.toDataURL('image/png') };
+    c.className = 'wall-auto-layer';
+    cached = { key: key, el: c };
     autoWallOverlayCache.set(l, cached);
   }
-  const img = document.createElement('img');
-  img.src = cached.dataUrl;
-  img.className = 'wall-auto-layer';
-  img.style.width = w + 'px';
-  img.style.height = h + 'px';
-  img.draggable = false;
-  img.alt = '';
-  p.appendChild(img);
+  const el = cached.el;
+  el.style.width = w + 'px';
+  el.style.height = h + 'px';
+  p.appendChild(el);
 }
 
 function drawPlan(){
@@ -1699,8 +1892,13 @@ function drawPlan(){
   if(!p) return;
   if(!l || !l.src){ clearPlan(); return; }
   const token = ++planRenderToken;
-  const im = new Image();
-  im.onload = () => {
+  /* Оптимизация: декодированное изображение этажа кэшируется по src — повторные
+     перерисовки (каждый клик, маркер, раунд повторения) больше не декодируют
+     base64-PNG заново и выполняются синхронно, без мигания. */
+  let im = planImageCache.get(l.src);
+  const imReady = !!(im && im.complete && im.naturalWidth);
+  if(!im){ im = new Image(); planImageCache.set(l.src, im); prunePlanImageCache(); }
+  const onReady = () => {
     if(token !== planRenderToken || l !== level()) return;
     l.w = im.naturalWidth; l.h = im.naturalHeight;
     p.innerHTML = '';
@@ -1713,6 +1911,7 @@ function drawPlan(){
     im.setAttribute('draggable', 'false');
     im.ondragstart = e => e.preventDefault();
     p.appendChild(im);
+    try{ const kc = planKeyedCanvas(l.src, im); if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; } }catch(err){}
     if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
       const entry = cacheFloorPixelsFromImage(l, im);
       if(entry) autoDetectWallsIfNeeded(l, entry);
@@ -1769,8 +1968,18 @@ function drawPlan(){
     renderPlanCameras(p, l);
     reviewDrawGuessOverlay(p, im.naturalWidth, im.naturalHeight);
   };
-  im.onerror = () => { if(token === planRenderToken){ clearPlan(); status('Не удалось отобразить изображение этажа'); } };
-  im.src = l.src;
+  if(imReady){ onReady(); return; }
+  im.onload = onReady;
+  im.onerror = () => { planImageCache.delete(l.src); if(token === planRenderToken){ clearPlan(); status('Не удалось отобразить изображение этажа'); } };
+  if(im.getAttribute('src') !== l.src) im.src = l.src;
+}
+const planImageCache = new Map();   /* src -> HTMLImageElement (декодирован) */
+function prunePlanImageCache(){
+  if(planImageCache.size <= (state.levels || []).length + 4) return;
+  const live = new Set((state.levels || []).map(x => x && x.src));
+  planImageCache.forEach((v, k) => { if(!live.has(k)) planImageCache.delete(k); });
+  planKeyCanvasCache.forEach((v, k) => { if(!live.has(k)) planKeyCanvasCache.delete(k); });
+  planKeyCache.forEach((v, k) => { if(!live.has(k)) planKeyCache.delete(k); });
 }
 /* Значки камеры на плане — интеграция плана с локальным 3D (п.2 запроса):
    каждая импортированная из .3dview панорама с известным plan_px рисуется на
@@ -4042,18 +4251,88 @@ function l3dTime(){
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' +
          String(d.getSeconds()).padStart(2, '0') + '.' + String(d.getMilliseconds()).padStart(3, '0');
 }
+/* ---------- кэш декодированных панорам (LRU) + предзагрузка соседей ---------- */
+function l3dDimEl(canvas){
+  if(!canvas || !canvas.parentNode) return null;
+  let d = canvas.parentNode.querySelector(':scope > .l3d-dim');
+  if(!d){ d = document.createElement('div'); d.className = 'l3d-dim'; }
+  if(d.previousElementSibling !== canvas) canvas.insertAdjacentElement('afterend', d);
+  return d;
+}
+let l3dDimTimer = null;
+function l3dDimIn(canvas){
+  const d = l3dDimEl(canvas);
+  if(!d) return Promise.resolve();
+  if(l3dDimTimer){ clearTimeout(l3dDimTimer); l3dDimTimer = null; }
+  const already = d.classList.contains('on');
+  d.classList.add('on');
+  const ms = (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ? 40 : 110;
+  return new Promise(res => { l3dDimTimer = setTimeout(() => { l3dDimTimer = null; res(); }, already ? 0 : ms); });
+}
+function l3dDimOut(canvas){
+  const d = canvas && canvas.parentNode && canvas.parentNode.querySelector(':scope > .l3d-dim');
+  if(d) d.classList.remove('on');
+}
+const PANO_CACHE_MAX = 4;
+const panoCanvasCache = new Map();   /* dataURL -> canvas */
+const panoDecoding = new Set();
+function panoCanvasCachePut(key, canvas){
+  panoCanvasCache.delete(key); panoCanvasCache.set(key, canvas);
+  while(panoCanvasCache.size > PANO_CACHE_MAX){
+    const k = panoCanvasCache.keys().next().value;
+    const c = panoCanvasCache.get(k); panoCanvasCache.delete(k);
+    if(c){ c.width = 0; c.height = 0; }   /* сразу отдаём память */
+  }
+}
+function panoDecodeToCache(dataURL){
+  if(!dataURL || panoCanvasCache.has(dataURL) || panoDecoding.has(dataURL)) return;
+  panoDecoding.add(dataURL);
+  const img = new Image(); img.decoding = 'async';
+  img.onload = () => {
+    panoDecoding.delete(dataURL);
+    if(!img.naturalWidth) return;
+    const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    panoCanvasCachePut(dataURL, c);
+  };
+  img.onerror = () => panoDecoding.delete(dataURL);
+  img.src = dataURL;
+}
+function panoPrefetchNeighbours(panoId){
+  const rec = panoId && state.panoramas && state.panoramas[panoId];
+  if(!rec || !Array.isArray(rec.destinations)) return;
+  const ids = rec.destinations.map(d => d && (d.id || d.panoId || d.to || d)).filter(id => typeof id === 'string' && state.panoramas[id]);
+  const run = () => ids.slice(0, PANO_CACHE_MAX - 1).forEach(id => {
+    const r = state.panoramas[id]; if(r && r.mode === 'equirect' && r.data) panoDecodeToCache(r.data);
+  });
+  if(window.requestIdleCallback) requestIdleCallback(run, { timeout: 2000 }); else setTimeout(run, 400);
+}
+let l3dLogPending = [], l3dLogFlushQueued = false;
+function l3dLogFlush(){
+  l3dLogFlushQueued = false;
+  const box = $('#l3dDebugLog');
+  const items = l3dLogPending; l3dLogPending = [];
+  if(!box || !items.length) return;
+  const frag = document.createDocumentFragment();
+  items.forEach(([level, line]) => {
+    const row = document.createElement('div');
+    if(level === 'err') row.className = 'err'; else if(level === 'warn') row.className = 'warn';
+    row.textContent = line; frag.appendChild(row);
+  });
+  box.appendChild(frag);
+  while(box.childElementCount > 400) box.removeChild(box.firstElementChild);
+  if(box.offsetParent !== null) box.scrollTop = box.scrollHeight;
+}
 function l3dLog(level, msg){
   const line = '[' + l3dTime() + '] ' + (level === 'err' ? 'ОШИБКА · ' : level === 'warn' ? '! ' : '') + msg;
   l3dLogLines.push(line);
   if(l3dLogLines.length > 500) l3dLogLines.shift();
-  const box = $('#l3dDebugLog');
-  if(box){
-    const row = document.createElement('div');
-    if(level === 'err') row.className = 'err';
-    else if(level === 'warn') row.className = 'warn';
-    row.textContent = line;
-    box.appendChild(row);
-    box.scrollTop = box.scrollHeight;
+  /* DOM панели обновляется пачкой раз в кадр (раньше — appendChild + scrollTop
+     на каждую строку, то есть принудительный layout на каждый лог) */
+  l3dLogPending.push([level, line]);
+  if(!l3dLogFlushQueued){
+    l3dLogFlushQueued = true;
+    requestAnimationFrame(l3dLogFlush);
   }
   /* Всегда через console.log (даже для err/warn) — иначе после хука console.warn/
      console.error ниже (перехват «нативных» предупреждений браузера/three.js в
@@ -4156,6 +4435,7 @@ function l3dInspectNow(){
   if(!canvas){ l3dLog('err', 'ручная проверка: #local3dCanvas не найден в DOM'); return; }
   try{
     const gl = localViewer.renderer && localViewer.renderer.getContext();
+    try{ if(localViewer.renderer && localViewer.scene && localViewer.camera) localViewer.renderer.render(localViewer.scene, localViewer.camera); }catch(e){}
     if(gl){
       if(gl.isContextLost && gl.isContextLost()) l3dLog('err', 'ручная проверка: gl.isContextLost() = true ПРЯМО СЕЙЧАС');
       const cw = canvas.width, ch = canvas.height;
@@ -4275,12 +4555,12 @@ const localViewer = {
        неинициализированным, без единого признака ошибки на экране. */
     try{
       this.canvas = canvas;
-      this.renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias:true, alpha:false, preserveDrawingBuffer:true });
+      this.renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias:false, alpha:false, preserveDrawingBuffer:false, powerPreference:'high-performance' });
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       this.scene = new THREE.Scene();
       this.camera = new THREE.PerspectiveCamera(this.fov, 1, 0.1, 1100);
       this.camera.rotation.order = 'YXZ';
-      const geo = new THREE.SphereGeometry(500, 60, 40);
+      const geo = new THREE.SphereGeometry(500, 96, 64);
       geo.scale(-1, 1, 1);
       this.mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x14161a }));
       this.scene.add(this.mesh);
@@ -4351,9 +4631,7 @@ const localViewer = {
         self.reportError('3D остановлен из-за ошибки рендера — обновите страницу.');
         return;
       }
-      if(!self.dragging && (Math.abs(self.velYaw) > 0.002 || Math.abs(self.velPitch) > 0.002)){
-        self.requestRender();
-      }
+      if(self.isAnimating()) self.requestRender();
     });
   },
   bindEvents(canvas){
@@ -4361,51 +4639,94 @@ const localViewer = {
     canvas._l3dBound = true;
     const self = this;
     let downX = 0, downY = 0, moved = 0;
+    let samples = [];   /* [t, yaw, pitch] за последние ~100 мс — для скорости инерции */
+    const box = canvas.parentNode;
+    /* Градусов на пиксель = вертикальный угол обзора / высота холста: картинка
+       «прилипает» к курсору 1:1 при любом зуме (раньше — фиксированные 0.15°/px,
+       из‑за чего при приближении вид улетал, а при отдалении полз). */
+    const degPerPx = () => (self.fov || 75) / Math.max(1, self.viewH || canvas.clientHeight || 1);
     canvas.addEventListener('pointerdown', e => {
+      if(e.button !== 0 && e.pointerType === 'mouse') return;
       self.dragging = true; self.lastX = e.clientX; self.lastY = e.clientY;
       downX = e.clientX; downY = e.clientY; moved = 0;
       self.velYaw = 0; self.velPitch = 0; /* новый жест — гасим доездку от предыдущего */
+      samples = [[performance.now(), self.yaw, self.pitch]];
+      if(box) box.classList.add('dragging');
       try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
     });
     canvas.addEventListener('pointermove', e => {
-      /* Наведение на кнопки перехода теперь обычный CSS :hover на самих
-         DOM-кнопках (см. большой комментарий у clearLocalNavMeshes выше) —
-         никакой дополнительной работы тут при простом движении мыши без
-         перетаскивания больше не требуется. */
       if(!self.dragging) return;
-      const dx = e.clientX - self.lastX, dy = e.clientY - self.lastY;
-      self.lastX = e.clientX; self.lastY = e.clientY;
-      moved += Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY);
-      /* Полная инверсия по уточнённому (третьему) ТЗ пользователя — на этот
-         раз сформулировано через направление ВЗГЛЯДА (а не «куда уезжает
-         картинка», как раньше): «зажатая мышка вверх — вид вниз, вправо —
-         вид влево» — классическая игровая настройка invert Y. Горизонталь
-         (вправо-тянешь — вид влево) уже давала это же поведение при
-         предыдущей формуле, поэтому yaw не трогаем; pitch — меняем знак на
-         противоположный тому, что было до этого сообщения. */
-      const dYaw = dx * 0.15, dPitch = dy * 0.15;
-      self.yaw += dYaw;
-      self.pitch = Math.max(-85, Math.min(85, self.pitch + dPitch));
-      /* Инерция — после отпускания палец/курсор «докручивает» ракурс ещё
-         немного и плавно тормозит, вместо жёсткой мгновенной остановки
-         (запрошенное «сделать перемещение лучше»). */
-      self.velYaw = dYaw; self.velPitch = dPitch;
+      /* все промежуточные события мыши за кадр (высокочастотные мыши/трекпады) */
+      const evs = (e.getCoalescedEvents && e.getCoalescedEvents().length) ? e.getCoalescedEvents() : [e];
+      const k = degPerPx();
+      for(const ev of evs){
+        const dx = ev.clientX - self.lastX, dy = ev.clientY - self.lastY;
+        self.lastX = ev.clientX; self.lastY = ev.clientY;
+        /* знаки прежние: тянешь вправо — вид влево; вверх — вид вниз */
+        self.yaw += dx * k;
+        self.pitch = Math.max(-85, Math.min(85, self.pitch + dy * k));
+      }
+      moved = Math.max(moved, Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY));
+      const now = performance.now();
+      samples.push([now, self.yaw, self.pitch]);
+      while(samples.length > 2 && now - samples[0][0] > 100) samples.shift();
       self.requestRender();
     });
     const stop = e => {
-      const wasClick = self.dragging && moved < 6;
+      if(!self.dragging) return;
       self.dragging = false;
-      if(wasClick){ self.velYaw = 0; self.velPitch = 0; }
+      if(box) box.classList.remove('dragging');
+      const now = performance.now();
+      const last = samples[samples.length - 1], first = samples[0];
+      /* инерция только если в момент отпускания рука ещё двигалась */
+      if(moved >= 6 && last && first && now - last[0] < 50 && last[0] - first[0] > 8){
+        const dt = last[0] - first[0];
+        self.velYaw = (last[1] - first[1]) / dt;     /* град/мс */
+        self.velPitch = (last[2] - first[2]) / dt;
+        const cap = 0.6; /* не больше 600°/с */
+        self.velYaw = Math.max(-cap, Math.min(cap, self.velYaw));
+        self.velPitch = Math.max(-cap, Math.min(cap, self.velPitch));
+        self.lastTick = 0;
+        self.requestRender();
+      }else{ self.velYaw = 0; self.velPitch = 0; }
     };
     canvas.addEventListener('pointerup', stop);
-    canvas.addEventListener('pointercancel', () => { self.dragging = false; });
-    canvas.addEventListener('pointerleave', () => { self.dragging = false; });
+    canvas.addEventListener('pointercancel', stop);
+    canvas.addEventListener('lostpointercapture', stop);
+    canvas.addEventListener('pointerenter', () => { self.hover = true; });
+    canvas.addEventListener('pointerleave', () => { self.hover = false; });
+    /* Плавный зум: цель по экспоненте от deltaY (трекпад даёт много мелких
+       событий, колесо — крупные), сам угол догоняет цель в tick(). */
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
-      self.fov = Math.max(30, Math.min(150, self.fov + (e.deltaY > 0 ? 4 : -4))); /* максимум отдаления поднят со 100° до 150° (+50%, по просьбе пользователя) */
-      if(self.camera){ self.camera.fov = self.fov; self.camera.updateProjectionMatrix(); }
+      let d = e.deltaY;
+      if(e.deltaMode === 1) d *= 16; else if(e.deltaMode === 2) d *= 400;
+      d = Math.max(-240, Math.min(240, d));
+      const base = self.fovTarget || self.fov;
+      self.fovTarget = Math.max(30, Math.min(150, base * Math.exp(d * 0.0016)));
+      self.lastTick = 0;
       self.requestRender();
     }, { passive:false });
+    canvas.addEventListener('dblclick', e => {
+      /* двойной клик — вернуть обычный угол обзора */
+      self.fovTarget = 75; self.lastTick = 0; self.requestRender();
+    });
+    if(!window.__l3dKeysBound){
+      window.__l3dKeysBound = true;
+      /* стрелки / +/- работают, когда курсор над 3D-видом */
+      const held = new Set();
+      window.addEventListener('keydown', e => {
+        const v = localViewer;
+        if(!v || !v.hover || !v.renderer) return;
+        const t = e.target;
+        if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){ held.add(e.key); v.keys = held; v.lastTick = 0; v.requestRender(); e.preventDefault(); }
+        else if(e.key === '+' || e.key === '='){ v.fovTarget = Math.max(30, (v.fovTarget || v.fov) / 1.15); v.lastTick = 0; v.requestRender(); }
+        else if(e.key === '-' || e.key === '_'){ v.fovTarget = Math.min(150, (v.fovTarget || v.fov) * 1.15); v.lastTick = 0; v.requestRender(); }
+      });
+      window.addEventListener('keyup', e => { held.delete(e.key); });
+      window.addEventListener('blur', () => held.clear());
+    }
   },
   setImage(dataURL, resetView, arrivalYawDeg){
     const preview = dataURL ? (dataURL.slice(0, 40) + '… длина=' + dataURL.length) : 'null/пусто';
@@ -4435,14 +4756,29 @@ const localViewer = {
          сейчас сознательно не применяется. */
       this.velYaw = 0; this.velPitch = 0;
     }
-    this.canvas && this.canvas.classList.add('l3d-fading'); /* короткое затемнение на смену кадра — см. CSS .l3d-fading */
     const self = this;
     const targetId = this.currentId;
+    /* Небольшое затемнение между панорамами: экран темнеет ~110 мс, под затемнением
+       меняется фото, затем плавно светлеет. Фото не показывается раньше, чем
+       экран успел потемнеть, — даже если оно уже раскодировано в кэше. */
+    const dimReady = l3dDimIn(this.canvas);
+    const applyAfterDim = (fn) => dimReady.then(() => {
+      if(self.currentId !== targetId) return;
+      fn();
+      requestAnimationFrame(() => l3dDimOut(self.canvas));
+    });
     /* Важно: текстуру создаём из <canvas>, а НЕ напрямую из <img>/TextureLoader —
        в части браузеров/GPU-драйверов texImage2D из AVIF-декодированного <img>
        заливает грань чёрным (сам <img> декодируется нормально, проверено), а
        рисование на canvas 2D и текстура из него работают надёжно всегда. */
+    const cachedCanvas = panoCanvasCache.get(dataURL);
+    if(cachedCanvas){
+      panoCanvasCache.delete(dataURL); panoCanvasCache.set(dataURL, cachedCanvas); /* LRU: свежий — в конец */
+      applyAfterDim(() => self.applyCanvasTexture(cachedCanvas));
+      return;
+    }
     const img = new Image();
+    img.decoding = 'async';
     img.onload = () => {
       l3dLog('info', 'img.onload сработал: naturalWidth=' + img.naturalWidth + ', naturalHeight=' + img.naturalHeight +
         (self.currentId !== targetId ? ' (точка уже сменилась, currentId=' + self.currentId + ' — текстура НЕ применяется)' : ''));
@@ -4468,29 +4804,51 @@ const localViewer = {
          делает то же самое — но только когда её действительно просят, а не
          на каждый переход, поэтому автоматические проверки убраны отсюда, а
          диагностика осталась доступна по требованию. */
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.minFilter = THREE.LinearFilter;
-      if(self.texture) self.texture.dispose();
-      self.texture = tex;
-      self.mesh.material.map = tex;
-      self.mesh.material.color.set(0xffffff);
-      self.mesh.material.needsUpdate = true;
-      self.clearError();
-      l3dLog('info', 'текстура применена к материалу сферы, mesh.material.needsUpdate=true');
-      self.requestRender();
-      requestAnimationFrame(() => { if(self.canvas) self.canvas.classList.remove('l3d-fading'); });
+      panoCanvasCachePut(dataURL, canvas);
+      applyAfterDim(() => self.applyCanvasTexture(canvas));
     };
     img.onerror = (ev) => {
       l3dLog('err', 'img.onerror сработал для панорамы ' + targetId + ' — браузер не смог декодировать формат (событие: ' + (ev && ev.type) + ')');
-      if(self.canvas) self.canvas.classList.remove('l3d-fading');
+      l3dDimOut(self.canvas);
       if(self.currentId !== targetId) return;
       self.reportError('Не удалось декодировать фото этой панорамы — браузер не поддерживает её формат (обычно AVIF) или файл повреждён.');
     };
     img.src = dataURL;
   },
+  applyCanvasTexture(canvas){
+    const self = this;
+    const tex = new THREE.CanvasTexture(canvas);
+    const caps = self.renderer && self.renderer.capabilities;
+    if(caps && caps.isWebGL2){
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+    }else{
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+    }
+    tex.magFilter = THREE.LinearFilter;
+    try{ tex.anisotropy = Math.min(8, caps ? caps.getMaxAnisotropy() : 1); }catch(e){}
+    if(self.texture) self.texture.dispose();
+    self.texture = tex;
+    self.applyPendingYaw();
+    self.mesh.material.map = tex;
+    self.mesh.material.color.set(0xffffff);
+    self.mesh.material.needsUpdate = true;
+    self.clearError();
+    l3dLog('info', 'текстура применена к материалу сферы, mesh.material.needsUpdate=true');
+    self.requestRender();
+    /* соседние панорамы декодируем заранее, в простое — переход по кнопке мгновенный */
+    try{ panoPrefetchNeighbours(self.currentId); }catch(err){}
+  },
   /* Убирает текстуру, когда у точки вообще нет фото (скачивание не удалось) —
      вместо панорамы просто нейтральный фон, переходы «→ Комната» работают. */
+  applyPendingYaw(){
+    const py = this.pendingYaw;
+    if(py && py.id === this.currentId){ this.yaw = py.yaw; this.velYaw = 0; this.velPitch = 0; }
+    this.pendingYaw = null;
+  },
   clearImage(){
+    this.applyPendingYaw();
     if(this.texture){ this.texture.dispose(); this.texture = null; }
     if(this.mesh){ this.mesh.material.map = null; this.mesh.material.color.set(0x14161a); this.mesh.material.needsUpdate = true; }
   },
@@ -4533,21 +4891,42 @@ const localViewer = {
   resize(){
     if(!this.renderer || !this.canvas){ l3dLog('warn', 'resize() вызван без активного renderer/canvas — пропускаем'); return; }
     const w = this.canvas.clientWidth || 1, h = this.canvas.clientHeight || 1;
+    this.viewW = w; this.viewH = h;
     this.renderer.setSize(w, h, false);
     if(this.camera){ this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
     l3dLog('info', 'resize(): установлен размер рендера ' + w + 'x' + h + (w === 1 || h === 1 ? ' (подозрительно мало — возможно, реальный размер контейнера ещё 0)' : ''));
   },
+  isAnimating(){
+    return (!this.dragging && (this.velYaw !== 0 || this.velPitch !== 0)) ||
+      (this.fovTarget != null && Math.abs(this.fovTarget - this.fov) > 0.05) ||
+      !!(this.keys && this.keys.size);
+  },
   tick(){
     if(!this.renderer || !this.camera) return;
-    /* Инерция взгляда: пока не идёт активное перетаскивание, «докручиваем»
-       yaw/pitch остаточной скоростью жеста и плавно её гасим — без этого
-       перетаскивание останавливалось мгновенно и ощущалось резко/дёргано. */
-    if(!this.dragging && (Math.abs(this.velYaw) > 0.002 || Math.abs(this.velPitch) > 0.002)){
-      this.yaw += this.velYaw;
-      this.pitch = Math.max(-85, Math.min(85, this.pitch + this.velPitch));
-      this.velYaw *= 0.9; this.velPitch *= 0.9;
-      if(Math.abs(this.velYaw) < 0.002) this.velYaw = 0;
-      if(Math.abs(this.velPitch) < 0.002) this.velPitch = 0;
+    const now = performance.now();
+    const dt = this.lastTick ? Math.min(50, now - this.lastTick) : 16.7;
+    this.lastTick = this.isAnimating() ? now : 0;
+    /* Инерция по времени (а не «за кадр»): одинаковая на 60/120/144 Гц.
+       Скорость в град/мс, затухание экспонентой с τ≈260 мс. */
+    if(!this.dragging && (this.velYaw !== 0 || this.velPitch !== 0)){
+      this.yaw += this.velYaw * dt;
+      this.pitch = Math.max(-85, Math.min(85, this.pitch + this.velPitch * dt));
+      const f = Math.exp(-dt / 260);
+      this.velYaw *= f; this.velPitch *= f;
+      if(Math.abs(this.velYaw) < 0.003) this.velYaw = 0;
+      if(Math.abs(this.velPitch) < 0.003) this.velPitch = 0;
+    }
+    if(this.keys && this.keys.size){
+      const sp = 0.09 * dt * (this.fov / 75);   /* ~90°/с при обычном зуме */
+      if(this.keys.has('ArrowLeft')) this.yaw -= sp;
+      if(this.keys.has('ArrowRight')) this.yaw += sp;
+      if(this.keys.has('ArrowUp')) this.pitch = Math.max(-85, this.pitch - sp);
+      if(this.keys.has('ArrowDown')) this.pitch = Math.min(85, this.pitch + sp);
+    }
+    if(this.fovTarget != null && Math.abs(this.fovTarget - this.fov) > 0.05){
+      this.fov += (this.fovTarget - this.fov) * (1 - Math.exp(-dt / 70));
+      if(Math.abs(this.fovTarget - this.fov) <= 0.05) this.fov = this.fovTarget;
+      this.camera.fov = this.fov; this.camera.updateProjectionMatrix();
     }
     this.camera.rotation.y = THREE.MathUtils.degToRad(this.yaw);
     this.camera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
@@ -4563,7 +4942,9 @@ const localViewer = {
      который вообще не зависел от ракурса). */
   updateNavLabels(retriesLeft){
     if(!this.navMeshes || !this.navMeshes.length || !this.canvas) return;
-    const rect = this.canvas.getBoundingClientRect();
+    /* размер берём из кэша resize() — чтение getBoundingClientRect каждый кадр
+       форсировало пересчёт раскладки во время вращения */
+    const rect = (this.viewW > 1 && this.viewH > 1) ? { width: this.viewW, height: this.viewH } : this.canvas.getBoundingClientRect();
     if(!rect.width || !rect.height){
       /* Баг: у первой панорамы, показанной сразу после загрузки .3dview/
          .mpalace, контейнер иногда ещё имеет нулевой размер в момент этого
@@ -4668,9 +5049,8 @@ const localViewer = {
       x = Math.max(padSide, Math.min(rect.width - padSide, x));
       y = Math.max(padTop * 0.5, Math.min(rect.height, y));
 
-      el.style.display = 'flex';
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
+      if(el.style.display !== 'flex') el.style.display = 'flex';
+      if(el.style.left !== '0px'){ el.style.left = '0px'; el.style.top = '0px'; }
 
       /* Поворот шеврона внутри кнопки (см. большой комментарий у .l3d-navpt
          в CSS). Приём с двумя границами (border-top+border-right) даёт «носик»
@@ -4701,8 +5081,9 @@ const localViewer = {
          кнопка в следующем кадре уже скрывается веткой display:none выше. */
       const fadeStart = arcDeg - fadeDeg;
       const fade = absRel <= fadeStart ? 0 : Math.min(1, (absRel - fadeStart) / fadeDeg);
-      el.style.opacity = String((1 - edge * 0.18) * (1 - fade));
-      el.style.transform = 'translate(-50%,-50%) translateZ(' + (-depth).toFixed(1) + 'px)';
+      el.style.opacity = ((1 - edge * 0.18) * (1 - fade)).toFixed(3);
+      /* только transform (композитинг на GPU), без left/top — без перерасчёта раскладки */
+      el.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0) translate(-50%,-50%) translateZ(' + (-depth).toFixed(1) + 'px)';
     });
   },
   dispose(){
@@ -4750,8 +5131,41 @@ function clearLocalNavMeshes(){
    панорамы, чтобы после перехода человек продолжал смотреть примерно туда
    же, куда шёл, а не в случайную сторону конкретного фото (см. setImage()). */
 let l3dPendingArrivalYaw = null;
+/* Калибровка «своего нуля» фото: для каждого перехода с известным углом
+   (angleDeg — направление двери в кадре ЭТОЙ панорамы) и известной точкой на
+   плане разница «угол в кадре − азимут по плану» — это поворот фото
+   относительно плана. Среднее по всем переходам панорамы (круговое). Проверено
+   на данных: разброс между переходами одной панорамы обычно ±5°. */
+function l3dPanoCalibDeg(panoId){
+  const p = state.panoramas && state.panoramas[panoId];
+  if(!p || !p.planPx || !isFinite(p.planPx.x) || !Array.isArray(p.destinations)) return 0;
+  let sx = 0, sy = 0, n = 0;
+  p.destinations.forEach(d => {
+    if(!d || d.angleDeg == null || !isFinite(d.angleDeg)) return;
+    const t = state.panoramas[d.panoId];
+    if(!t || !t.planPx || !isFinite(t.planPx.x)) return;
+    if(p.floorId != null && t.floorId != null && p.floorId !== t.floorId) return;
+    const dx = t.planPx.x - p.planPx.x, dy = t.planPx.y - p.planPx.y;
+    if(!dx && !dy) return;
+    const c = (l3dExplicitAngleToYaw(d.angleDeg) - l3dBearingYawDeg(dx, dy)) * Math.PI / 180;
+    sx += Math.cos(c); sy += Math.sin(c); n++;
+  });
+  return n ? Math.atan2(sy, sx) * 180 / Math.PI : 0;
+}
+/* Куда смотрел — туда и смотришь после перехода: направление взгляда
+   сохраняется в координатах ПЛАНА (реального дома), а не в «сыром» yaw кадра —
+   у каждого фото свой ноль, поэтому старый yaw после перехода смотрел в
+   случайную сторону. */
+function l3dCarryYaw(fromId, toId, yaw){
+  const off = id => { const q = state.panoramas[id]; return (q && isFinite(q.navYawOffsetDeg)) ? q.navYawOffsetDeg : 90; };
+  const world = yaw - off(fromId) - l3dPanoCalibDeg(fromId);
+  let y = world + off(toId) + l3dPanoCalibDeg(toId);
+  y = ((y + 180) % 360 + 360) % 360 - 180;
+  return y;
+}
 function l3dGoLocalPano(panoId, arrivalYawDeg){
   if(!panoId || !state.panoramas[panoId]) return;
+
   l3dPendingArrivalYaw = (arrivalYawDeg != null && isFinite(arrivalYawDeg)) ? arrivalYawDeg : null;
   syncMarkerFromLocalPano(panoId);
   setActiveLocalPano(panoId, false);
@@ -5093,6 +5507,12 @@ function unbindMarkerFromLocalPano(){
    панель принудительно (как при клике по локусу), иначе просто обновить контент,
    если панель и так уже открыта (например, клик по «далее» внутри просмотрщика). */
 function setActiveLocalPano(panoId, focusPanel){
+  try{
+    const fromId = activeLocalPano;
+    if(fromId && fromId !== panoId && state.panoramas[fromId] && state.panoramas[panoId] && localViewer){
+      localViewer.pendingYaw = { id: panoId, yaw: l3dCarryYaw(fromId, panoId, localViewer.yaw) };
+    }
+  }catch(err){}
   if(!panoId || !state.panoramas || !state.panoramas[panoId]) return;
   activeLocalPano = panoId;
   if(focusPanel) openTour(true, true);
@@ -5374,12 +5794,51 @@ function renderMinimap(){
     layer.innerHTML = '';
     return;
   }
-  if(img.getAttribute('src') !== l.src){
+  const want = minimapKeyedUrl(l) || l.src;
+  if(img.getAttribute('src') !== want){
     img.onload = () => layoutMinimapMarkers(l, img, layer);
-    img.src = l.src;
+    /* если прозрачная версия почему-то не открылась — показываем исходный план */
+    img.onerror = () => { if(want !== l.src){ minimapKeyedUrls.set(l.src, null); img.onerror = null; img.src = l.src; } };
+    img.src = want;
   }else{
     layoutMinimapMarkers(l, img, layer);
   }
+}
+/* версия плана с прозрачным фоном для миникарты (тот же вырез, что и на холсте) */
+const minimapKeyedUrls = new Map();   /* src -> objectURL | null (нет тёмного фона) | 'pending' */
+function minimapKeyedUrl(l){
+  const src = l && l.src; if(!src) return null;
+  const v = minimapKeyedUrls.get(src);
+  if(v === 'pending') return null;
+  if(v !== undefined) return v;
+  minimapKeyedUrls.set(src, 'pending');
+  const go = im => {
+    let kc = null;
+    try{ kc = planKeyedCanvas(src, im); }catch(err){}
+    if(!kc){ minimapKeyedUrls.set(src, null); return; }
+    /* data:URL, а не blob: — Safari не показывает blob-картинки на страницах,
+       открытых как локальный файл (file://). Уменьшенная копия — миникарте
+       полный размер не нужен, и кодируется в разы быстрее. */
+    setTimeout(() => {
+      let url = null;
+      try{
+        const k = Math.min(1, 900 / Math.max(kc.width, kc.height));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(kc.width * k)); c.height = Math.max(1, Math.round(kc.height * k));
+        c.getContext('2d').drawImage(kc, 0, 0, c.width, c.height);
+        url = c.toDataURL('image/png');
+      }catch(err){ url = null; }
+      minimapKeyedUrls.set(src, url);
+      if(url) try{ renderMinimap(); }catch(err){}
+    }, 0);
+  };
+  let im = planImageCache.get(src);
+  if(im && im.complete && im.naturalWidth){ go(im); return null; }
+  const im2 = new Image();
+  im2.onload = () => go(im2);
+  im2.onerror = () => minimapKeyedUrls.set(src, null);
+  im2.src = src;
+  return null;
 }
 function layoutMinimapMarkers(l, img, layer){
   const body = $('#minimapBody');
@@ -5460,9 +5919,15 @@ function setUiMode(mode, silent){
   if(mode !== 'plan' && mode !== 'tour') mode = 'plan';
   state.uiMode = 'editor';
   if(state.layout === 'split' || state.layout === 'split-rev'){
-    /* в split клик по вкладке только подсвечивает «фокус», layout не сбрасываем */
-    applyLayout();
-    if(!silent) status(mode === 'plan' ? 'Фокус: план' : 'Фокус: 3D');
+    /* в разделённом экране кнопка выбирает, что будет слева (главной панелью):
+       «План» — план слева, «3D» — 3D слева; панели меняются местами */
+    const want = mode === 'tour' ? 'split-rev' : 'split';
+    if(state.layout !== want){
+      state.layout = want;
+      applyLayout();
+      if(!silent){ touch(); status(want === 'split' ? 'Слева план · справа 3D' : 'Слева 3D · справа план'); }
+      if(localViewer && localViewer.renderer) requestAnimationFrame(() => { try{ localViewer.resize(); localViewer.requestRender(); }catch(e){} });
+    }else applyLayout();
     return;
   }
   state.layout = mode;
@@ -6097,8 +6562,16 @@ document.addEventListener('pointerdown', e => {
 });
 on('#minimapExpand', 'click', () => {
   const m = $('#minimap'); if(!m) return;
-  m.classList.toggle('expanded');
+  const on = m.classList.toggle('expanded');
+  const b = $('#minimapExpand');
+  if(b){
+    b.title = on ? 'Свернуть' : 'Развернуть';
+    b.setAttribute('aria-label', on ? 'Свернуть миникарту' : 'Развернуть миникарту');
+    const u = b.querySelector('use'); if(u) u.setAttribute('href', on ? '#i-collapse' : '#i-expand');
+  }
+  /* маркеры пересчитываем после анимации размера */
   renderMinimap();
+  setTimeout(renderMinimap, 240);
 });
 (function initL3dDebugPanel(){
   /* Панель диагностики убрана из UI — инициализация больше не нужна. */
@@ -6280,114 +6753,383 @@ function formatNumList(nums){
   return run ? (sorted[0] + '–' + sorted[sorted.length - 1]) : sorted.join(', ');
 }
 
-/* ---------- «зона верного ответа»: расстояние с учётом стен ----------
-   База: 5 диаметров локуса, но всё, что за стеной — не считается.
-   Если несколько локусов раунда лежат в одной комнате (стена их не
-   разделяет), вся комната становится верной зоной и делится между ними
-   по геометрической середине — линии, равноудалённой от обеих точек. */
-function buildWallGrid(li){
+/* ---------- «зона верного ответа» v2: комнаты, масштаб в метрах, геодезический Вороной ----------
+   1) Маска стен считается по пикселям плана (цвет стен + «тонкая линия» по длинам
+      серий, O(N)), плюс вручную нарисованные стены.
+   2) Фон вокруг плана (чёрный / любой цвет края, отличный от заливки комнат)
+      считается препятствием — через окна в него больше не «протекает».
+   3) Дверные проёмы и окна закрываются морфологически: комнаты — это связные
+      области, удалённые от стен больше чем на полширины двери; затем метки
+      комнат растекаются обратно до самих стен.
+   4) Масштаб: px/м по парам панорам (planPx + world), иначе по толщине стен,
+      иначе по размеру плана. Радиус зоны — в метрах, а не от ползунка маркера.
+   5) Зона локуса = клетки его комнаты, для которых он ближайший (по пути в обход
+      стен, 8 направлений, без срезания углов) среди ВСЕХ локусов этажа, и путь
+      до него не длиннее радиуса. */
+const REVIEW_RADIUS_M = 1.8;     /* макс. расстояние от отметки до локуса по пути */
+const REVIEW_DOOR_HALF_M = 0.65;  /* полширины проёма, который считается «дверью» */
+const floorGeoCache = new Map(); /* level -> {key, geo} */
+
+function levelPxPerMeter(l){
+  let ids = [];
+  try{ ids = panoramasForLevel(l, true); }catch(err){ ids = []; }
+  const pts = ids.map(id => state.panoramas[id]).filter(p => p && p.planPx && p.world &&
+    isFinite(p.planPx.x) && isFinite(p.planPx.y) && isFinite(p.world.x) && isFinite(p.world.y));
+  const ratios = [];
+  for(let i = 0; i < pts.length; i++){
+    for(let j = i + 1; j < pts.length; j++){
+      const dw = Math.hypot(pts[i].world.x - pts[j].world.x, pts[i].world.y - pts[j].world.y);
+      const dp = Math.hypot(pts[i].planPx.x - pts[j].planPx.x, pts[i].planPx.y - pts[j].planPx.y);
+      if(dw > 0.8 && dp > 4) ratios.push(dp / dw);
+    }
+  }
+  if(ratios.length < 1) return null;
+  ratios.sort((a, b) => a - b);
+  return ratios[Math.floor(ratios.length / 2)];
+}
+
+/* Маска стен в пикселях уменьшенной копии + медианная толщина стены (px копии). */
+function wallPixelMask(entry, color, tol){
+  const { w, h, data } = entry, N = w * h;
+  const m = new Uint8Array(N);
+  const tol2 = tol * tol;
+  for(let i = 0, o = 0; i < N; i++, o += 4){
+    if(data[o + 3] < 200) continue;
+    const dr = data[o] - color.r, dg = data[o + 1] - color.g, db = data[o + 2] - color.b;
+    if(dr * dr + dg * dg + db * db <= tol2) m[i] = 1;
+  }
+  const hr = new Uint16Array(N), vr = new Uint16Array(N);
+  for(let y = 0; y < h; y++){
+    let x = 0; const row = y * w;
+    while(x < w){
+      if(!m[row + x]){ x++; continue; }
+      const s = x; while(x < w && m[row + x]) x++;
+      const len = Math.min(65535, x - s); for(let k = s; k < x; k++) hr[row + k] = len;
+    }
+  }
+  for(let x = 0; x < w; x++){
+    let y = 0;
+    while(y < h){
+      if(!m[y * w + x]){ y++; continue; }
+      const s = y; while(y < h && m[y * w + x]) y++;
+      const len = Math.min(65535, y - s); for(let k = s; k < y; k++) vr[k * w + x] = len;
+    }
+  }
+  const THICK_MAX = Math.max(30, Math.round(Math.max(w, h) / 45));
+  const thick = [];
+  for(let i = 0; i < N; i++){
+    if(!m[i]) continue;
+    const t = Math.min(hr[i], vr[i]), L = Math.max(hr[i], vr[i]);
+    if(t > THICK_MAX){ m[i] = 0; continue; }          /* сплошная заливка похожего цвета — не стена */
+    if((i & 7) === 0 && L >= t * 3) thick.push(t);
+  }
+  thick.sort((a, b) => a - b);
+  return { mask: m, thickness: thick.length ? thick[Math.floor(thick.length / 2)] : 0 };
+}
+
+function borderColorInfo(entry){
+  const { w, h, data } = entry;
+  const counts = new Map();
+  const add = (x, y) => {
+    const o = (y * w + x) * 4;
+    const key = data[o + 3] < 128 ? 'T' : ((data[o] >> 4) + ',' + (data[o + 1] >> 4) + ',' + (data[o + 2] >> 4));
+    const c = counts.get(key) || { n: 0, r: 0, g: 0, b: 0, a: 0 };
+    c.n++; c.r += data[o]; c.g += data[o + 1]; c.b += data[o + 2]; c.a += data[o + 3];
+    counts.set(key, c);
+  };
+  for(let x = 0; x < w; x += 2){ add(x, 0); add(x, h - 1); }
+  for(let y = 0; y < h; y += 2){ add(0, y); add(w - 1, y); }
+  let best = null, bestN = 0, total = 0;
+  counts.forEach((c, k) => { total += c.n; if(c.n > bestN){ bestN = c.n; best = { key: k, r: c.r / c.n, g: c.g / c.n, b: c.b / c.n, a: c.a / c.n }; } });
+  if(!best) return null;
+  best.share = bestN / Math.max(1, total);
+  return best;
+}
+function dominantFillColor(entry){
+  const { w, h, data } = entry;
+  const counts = new Map();
+  for(let y = 0; y < h; y += 3){
+    for(let x = 0; x < w; x += 3){
+      const o = (y * w + x) * 4;
+      if(data[o + 3] < 200) continue;
+      const lum = 0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2];
+      if(lum < 150) continue;
+      const key = (data[o] >> 4) + ',' + (data[o + 1] >> 4) + ',' + (data[o + 2] >> 4);
+      const c = counts.get(key) || { n: 0, r: 0, g: 0, b: 0 };
+      c.n++; c.r += data[o]; c.g += data[o + 1]; c.b += data[o + 2];
+      counts.set(key, c);
+    }
+  }
+  let best = null, bestN = 0;
+  counts.forEach(c => { if(c.n > bestN){ bestN = c.n; best = { r: c.r / c.n, g: c.g / c.n, b: c.b / c.n }; } });
+  return best;
+}
+
+function floorGeoKey(l, entry){
+  const ws = (l.walls || []).map(wl => [wl.x1, wl.y1, wl.x2, wl.y2].map(v => Math.round(v)).join(',')).join(';');
+  const aw = l.autoWalls ? (l.autoWalls.color.r + ',' + l.autoWalls.color.g + ',' + l.autoWalls.color.b + ',' + l.autoWalls.tol) : '-';
+  return (entry ? entry.w + 'x' + entry.h + ':' + entry.src.length : 'noimg') + '|' + l.w + 'x' + l.h + '|' + aw + '|' + ws;
+}
+
+function buildFloorGeometry(li){
   const l = state.levels[li];
   const w = (l && l.w) || 0, h = (l && l.h) || 0;
   if(!w || !h) return null;
-  const cell = Math.max(6, Math.round(Math.max(w, h) / 220));
-  const cols = Math.max(1, Math.ceil(w / cell)), rows = Math.max(1, Math.ceil(h / cell));
-  const blocked = new Uint8Array(cols * rows);
-  const mark = (x, y) => {
-    const cx = Math.min(cols - 1, Math.max(0, Math.floor(x / cell)));
-    const cy = Math.min(rows - 1, Math.max(0, Math.floor(y / cell)));
-    blocked[cy * cols + cx] = 1;
-  };
-  (l.walls || []).forEach(wl => {
-    const dx = wl.x2 - wl.x1, dy = wl.y2 - wl.y1;
-    const len = Math.hypot(dx, dy);
-    const steps = Math.max(1, Math.ceil(len / (cell * 0.5)));
-    for(let s = 0; s <= steps; s++){
-      const t = s / steps;
-      mark(wl.x1 + dx * t, wl.y1 + dy * t);
-    }
-  });
-  /* Автоматически найденные стены — сэмплируем сами пиксели плана по цвету,
-     а не векторные линии: несколько точек на клетку, чтобы не пропустить
-     тонкую линию, которая не попала точно в центр клетки грида. */
-  if(l.autoWalls){
-    const entry = floorPixelCache.get(l);
-    if(entry && entry.src === l.src){
-      const { color, tol } = l.autoWalls;
-      const tol2 = tol * tol;
-      const sx = entry.w / w, sy = entry.h / h;
-      const data = entry.data;
-      const ew = entry.w, eh = entry.h;
-      const isWallColor = (x, y) => {
-        if(x < 0 || y < 0 || x >= ew || y >= eh) return false;
-        const idx = (y * ew + x) * 4;
-        if(data[idx + 3] < 200) return false;
-        const dr = data[idx] - color.r, dg = data[idx + 1] - color.g, db = data[idx + 2] - color.b;
-        return dr * dr + dg * dg + db * db <= tol2;
-      };
-      const RUN_CAP = 60, THICK_MAX = 30;
-      function runLen(x0, y0, dx, dy){
-        let n = 0, x = x0, y = y0;
-        while(n < RUN_CAP && isWallColor(x, y)){ n++; x += dx; y += dy; }
-        return n;
+  const entry0 = floorPixelCache.get(l);
+  const entry = (entry0 && entry0.src === l.src) ? entry0 : null;
+  if(entry){
+    /* цвет стен перепроверяем по уточнённому детектору (старые файлы хранят грубый цвет бакета) */
+    try{
+      if(!entry.wallColorChecked){ entry.wallColorChecked = true; entry.wallColor = detectWallColor(entry); }
+      const c = entry.wallColor;
+      if(c && (!l.autoWalls || l.autoWalls.color.r !== c.r || l.autoWalls.color.g !== c.g || l.autoWalls.color.b !== c.b)){
+        l.autoWalls = { color: { r: c.r, g: c.g, b: c.b }, tol: (l.autoWalls && l.autoWalls.tol) || 44 };
       }
-      /* та же проверка «тонкой линии», что и в подсветке стен — иначе большая
-         заливка похожего цвета (бассейн, вода на фото) блокирует зону насквозь */
-      const isThinWall = (px, py) => {
-        if(!isWallColor(px, py)) return false;
-        const hRun = runLen(px, py, -1, 0) + runLen(px + 1, py, 1, 0) - 1;
-        const vRun = runLen(px, py, 0, -1) + runLen(px, py + 1, 0, 1) - 1;
-        return Math.min(hRun, vRun) <= THICK_MAX;
-      };
-      for(let cy = 0; cy < rows; cy++){
-        for(let cx = 0; cx < cols; cx++){
-          const ci = cy * cols + cx;
-          if(blocked[ci]) continue;
-          let hit = false;
-          for(let oy = 0.25; oy <= 0.75 && !hit; oy += 0.5){
-            for(let ox = 0.25; ox <= 0.75 && !hit; ox += 0.5){
-              const px = Math.min(entry.w - 1, Math.max(0, Math.round((cx + ox) * cell * sx)));
-              const py = Math.min(entry.h - 1, Math.max(0, Math.round((cy + oy) * cell * sy)));
-              if(isThinWall(px, py)) hit = true;
-            }
+    }catch(err){}
+  }
+  const key = floorGeoKey(l, entry);
+  const cached = floorGeoCache.get(l);
+  if(cached && cached.key === key) return cached.geo;
+
+  const cell = Math.max(2, Math.round(Math.max(w, h) / 320));
+  const cols = Math.max(1, Math.ceil(w / cell)), rows = Math.max(1, Math.ceil(h / cell));
+  const NC = cols * rows;
+  const wall = new Uint8Array(NC);      /* 1 — стена */
+  const obstacle = new Uint8Array(NC);  /* стена или внешний фон */
+  let wallThickPx = 0, wallCells = 0, bgBlocked = 0;
+
+  if(entry){
+    const sx = entry.w / w, sy = entry.h / h;
+    const wpc = new Uint16Array(NC), bpc = new Uint16Array(NC), tpc = new Uint16Array(NC);
+    let wm = null;
+    if(l.autoWalls && l.autoWalls.color){
+      const r = wallPixelMask(entry, l.autoWalls.color, l.autoWalls.tol || 44);
+      wm = r.mask; wallThickPx = r.thickness / sx;
+    }
+    const bg = borderColorInfo(entry), fill = dominantFillColor(entry);
+    let useBg = false;
+    if(bg && bg.share >= 0.5){
+      if(bg.key === 'T') useBg = true;
+      else if(fill){
+        const d = Math.hypot(bg.r - fill.r, bg.g - fill.g, bg.b - fill.b);
+        useBg = d > 60;
+      }
+    }
+    const { data } = entry, ew = entry.w, eh = entry.h;
+    const bgTol2 = 34 * 34;
+    const cxOf = new Int32Array(ew);
+    for(let ex = 0; ex < ew; ex++) cxOf[ex] = Math.min(cols - 1, Math.floor(ex / sx / cell));
+    for(let ey = 0; ey < eh; ey++){
+      const rowBase = Math.min(rows - 1, Math.floor(ey / sy / cell)) * cols, iBase = ey * ew;
+      for(let ex = 0; ex < ew; ex++){
+        const ci = rowBase + cxOf[ex], i = iBase + ex;
+        tpc[ci]++;
+        if(wm && wm[i]) wpc[ci]++;
+        if(useBg){
+          const o = i * 4;
+          if(bg.key === 'T'){ if(data[o + 3] < 128) bpc[ci]++; }
+          else if(data[o + 3] >= 128){
+            const dr = data[o] - bg.r, dg = data[o + 1] - bg.g, db = data[o + 2] - bg.b;
+            if(dr * dr + dg * dg + db * db <= bgTol2) bpc[ci]++;
           }
-          if(hit) blocked[ci] = 1;
         }
       }
     }
-  }
-  return { cell: cell, cols: cols, rows: rows, blocked: blocked };
-}
-function cellOf(grid, x, y){
-  const cx = Math.min(grid.cols - 1, Math.max(0, Math.floor(x / grid.cell)));
-  const cy = Math.min(grid.rows - 1, Math.max(0, Math.floor(y / grid.cell)));
-  return cy * grid.cols + cx;
-}
-/* Заливка от клетки локуса по доступным (не заблокированным стеной) клеткам.
-   Только 4 направления — иначе заливка может «просочиться» по диагонали
-   через угол стены. maxSteps ограничивает радиус в клетках. */
-function floodFillFrom(grid, x, y, maxSteps){
-  const start = cellOf(grid, x, y);
-  const seen = new Set([start]);
-  if(grid.blocked[start]) return seen;
-  let frontier = [start], steps = 0;
-  const cols = grid.cols, rows = grid.rows;
-  while(frontier.length && steps < maxSteps && seen.size < 60000){
-    const next = [];
-    for(let k = 0; k < frontier.length; k++){
-      const c = frontier[k], cx = c % cols, cy = (c - cx) / cols;
-      const neigh = [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]];
-      for(let n = 0; n < 4; n++){
-        const nx = neigh[n][0], ny = neigh[n][1];
-        if(nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
-        const nc = ny * cols + nx;
-        if(seen.has(nc) || grid.blocked[nc]) continue;
-        seen.add(nc); next.push(nc);
-      }
+    for(let ci = 0; ci < NC; ci++){
+      if(!tpc[ci]) continue;
+      if(wpc[ci] >= Math.max(1, Math.round(tpc[ci] * 0.08))){ wall[ci] = 1; wallCells++; }
     }
-    frontier = next;
-    steps++;
+    if(useBg){
+      /* фон — только то, что связано с краем кадра (чёрные буквы внутри комнат не трогаем) */
+      const isBg = new Uint8Array(NC);
+      for(let ci = 0; ci < NC; ci++) if(tpc[ci] && bpc[ci] >= tpc[ci] * 0.6 && !wall[ci]) isBg[ci] = 1;
+      const stack = [];
+      const push = ci => { if(isBg[ci] === 1){ isBg[ci] = 2; stack.push(ci); } };
+      for(let x = 0; x < cols; x++){ push(x); push((rows - 1) * cols + x); }
+      for(let y = 0; y < rows; y++){ push(y * cols); push(y * cols + cols - 1); }
+      while(stack.length){
+        const ci = stack.pop(), x = ci % cols;
+        if(x > 0) push(ci - 1); if(x < cols - 1) push(ci + 1);
+        if(ci >= cols) push(ci - cols); if(ci < NC - cols) push(ci + cols);
+      }
+      for(let ci = 0; ci < NC; ci++) if(isBg[ci] === 2){ obstacle[ci] = 1; bgBlocked++; }
+    }
   }
-  return seen;
+  /* ручные стены */
+  (l.walls || []).forEach(wl => {
+    const dx = wl.x2 - wl.x1, dy = wl.y2 - wl.y1, len = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.ceil(len / (cell * 0.5)));
+    for(let s = 0; s <= steps; s++){
+      const t = s / steps;
+      const cx = Math.min(cols - 1, Math.max(0, Math.floor((wl.x1 + dx * t) / cell)));
+      const cy = Math.min(rows - 1, Math.max(0, Math.floor((wl.y1 + dy * t) / cell)));
+      const ci = cy * cols + cx;
+      if(!wall[ci]){ wall[ci] = 1; wallCells++; }
+    }
+  });
+  for(let ci = 0; ci < NC; ci++) if(wall[ci]) obstacle[ci] = 1;
+
+  /* масштаб */
+  let pxPerM = levelPxPerMeter(l), scaleSrc = 'панорамы';
+  if(!pxPerM && wallThickPx >= 2){ pxPerM = wallThickPx / 0.12; scaleSrc = 'толщина стен'; }
+  const dimGuess = Math.max(w, h) / 16;
+  if(!pxPerM){ pxPerM = dimGuess; scaleSrc = 'размер плана'; }
+  else if(scaleSrc !== 'панорамы'){ pxPerM = Math.min(dimGuess * 3, Math.max(dimGuess / 3, pxPerM)); }
+
+  /* расстояние до препятствия (чамфер 3-4, в клетках) */
+  const INF = 1e9;
+  const dist = new Float32Array(NC);
+  for(let ci = 0; ci < NC; ci++) dist[ci] = obstacle[ci] ? 0 : INF;
+  for(let y = 0; y < rows; y++) for(let x = 0; x < cols; x++){
+    const ci = y * cols + x; let d = dist[ci];
+    if(x > 0) d = Math.min(d, dist[ci - 1] + 1);
+    if(y > 0){ d = Math.min(d, dist[ci - cols] + 1);
+      if(x > 0) d = Math.min(d, dist[ci - cols - 1] + 1.4142);
+      if(x < cols - 1) d = Math.min(d, dist[ci - cols + 1] + 1.4142); }
+    dist[ci] = d;
+  }
+  for(let y = rows - 1; y >= 0; y--) for(let x = cols - 1; x >= 0; x--){
+    const ci = y * cols + x; let d = dist[ci];
+    if(x < cols - 1) d = Math.min(d, dist[ci + 1] + 1);
+    if(y < rows - 1){ d = Math.min(d, dist[ci + cols] + 1);
+      if(x < cols - 1) d = Math.min(d, dist[ci + cols + 1] + 1.4142);
+      if(x > 0) d = Math.min(d, dist[ci + cols - 1] + 1.4142); }
+    dist[ci] = d;
+  }
+  const hasObstacles = wallCells > 0 || bgBlocked > 0;
+  const room = new Int32Array(NC).fill(-1);
+  let roomCount = 0, doorCells = 0;
+  if(!hasObstacles){
+    room.fill(0); roomCount = 1;
+  }else{
+    doorCells = Math.min(60, Math.max(1.5, REVIEW_DOOR_HALF_M * pxPerM / cell));
+    const label = (thr) => {
+      room.fill(-1); let n = 0;
+      const minArea = Math.max(4, Math.round(thr));
+      for(let s = 0; s < NC; s++){
+        if(room[s] !== -1 || obstacle[s] || dist[s] <= thr) continue;
+        const comp = [s]; room[s] = n;
+        for(let k = 0; k < comp.length; k++){
+          const ci = comp[k], x = ci % cols;
+          const nb = [x > 0 ? ci - 1 : -1, x < cols - 1 ? ci + 1 : -1, ci >= cols ? ci - cols : -1, ci < NC - cols ? ci + cols : -1];
+          for(const q of nb){ if(q >= 0 && room[q] === -1 && !obstacle[q] && dist[q] > thr){ room[q] = n; comp.push(q); } }
+        }
+        if(comp.length < minArea){ comp.forEach(ci => { room[ci] = -3; }); continue; } /* крошечный островок (буквы и т.п.) */
+        n++;
+      }
+      for(let ci = 0; ci < NC; ci++) if(room[ci] === -3) room[ci] = -1;
+      return n;
+    };
+    roomCount = label(doorCells);
+    if(!roomCount){ doorCells = Math.max(1, doorCells / 2); roomCount = label(doorCells); }
+    /* метки растекаются обратно к стенам и в проёмы (BFS — ближайшая комната) */
+    let frontier = [];
+    for(let ci = 0; ci < NC; ci++) if(room[ci] >= 0) frontier.push(ci);
+    while(frontier.length){
+      const next = [];
+      for(const ci of frontier){
+        const x = ci % cols, r = room[ci];
+        const nb = [x > 0 ? ci - 1 : -1, x < cols - 1 ? ci + 1 : -1, ci >= cols ? ci - cols : -1, ci < NC - cols ? ci + cols : -1];
+        for(const q of nb){ if(q >= 0 && room[q] === -1 && !obstacle[q]){ room[q] = r; next.push(q); } }
+      }
+      frontier = next;
+    }
+    /* узкие замкнутые помещения (лестница, кладовка уже двери) не дали «ядра» —
+       каждая оставшаяся связная область становится своей комнатой */
+    for(let s0 = 0; s0 < NC; s0++){
+      if(room[s0] !== -1 || obstacle[s0]) continue;
+      const comp = [s0]; room[s0] = roomCount;
+      for(let k = 0; k < comp.length; k++){
+        const ci = comp[k], x = ci % cols;
+        const nb = [x > 0 ? ci - 1 : -1, x < cols - 1 ? ci + 1 : -1, ci >= cols ? ci - cols : -1, ci < NC - cols ? ci + cols : -1];
+        for(const q of nb){ if(q >= 0 && room[q] === -1 && !obstacle[q]){ room[q] = roomCount; comp.push(q); } }
+      }
+      if(comp.length < Math.max(4, doorCells * doorCells * 0.5)) comp.forEach(ci => { room[ci] = -2; }); else roomCount++;
+    }
+    for(let ci = 0; ci < NC; ci++) if(room[ci] === -2) room[ci] = -1;
+  }
+  const geo = { cell, cols, rows, wall, obstacle, room, roomCount, pxPerM, scaleSrc, wallThickPx, doorCells, hasObstacles, w, h };
+  floorGeoCache.set(l, { key, geo });
+  return geo;
+}
+function geoCellOf(geo, x, y){
+  const cx = Math.min(geo.cols - 1, Math.max(0, Math.floor(x / geo.cell)));
+  const cy = Math.min(geo.rows - 1, Math.max(0, Math.floor(y / geo.cell)));
+  return cy * geo.cols + cx;
+}
+/* ближайшая свободная клетка (если точка попала в стену/фон) */
+function geoSnapFree(geo, ci, maxR, needRoom){
+  const ok = q => !geo.obstacle[q] && (!needRoom || geo.room[q] >= 0);
+  if(ok(ci)) return ci;
+  const cx = ci % geo.cols, cy = (ci - cx) / geo.cols;
+  for(let r = 1; r <= maxR; r++){
+    let best = -1, bd = Infinity;
+    for(let dy = -r; dy <= r; dy++) for(let dx = -r; dx <= r; dx++){
+      if(Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const x = cx + dx, y = cy + dy;
+      if(x < 0 || y < 0 || x >= geo.cols || y >= geo.rows) continue;
+      const q = y * geo.cols + x;
+      if(ok(q)){ const d = dx * dx + dy * dy; if(d < bd){ bd = d; best = q; } }
+    }
+    if(best >= 0) return best;
+  }
+  return -1;
+}
+/* Геодезический Вороной: один проход Дейкстры от всех локусов этажа сразу.
+   Локус растёт только внутри своей комнаты; углы стен не срезаются. */
+function computeLociZones(geo, loci){
+  const NC = geo.cols * geo.rows, cols = geo.cols, rows = geo.rows;
+  const owner = new Int32Array(NC).fill(-1);
+  const dist = new Float64Array(NC).fill(Infinity); /* Float64: иначе округление float32 зацикливает релаксацию */
+  const srcRoom = [];
+  const heapC = [], heapD = [];
+  const hpush = (c, d) => {
+    let i = heapC.length; heapC.push(c); heapD.push(d);
+    while(i > 0){ const p = (i - 1) >> 1; if(heapD[p] <= d) break;
+      heapC[i] = heapC[p]; heapD[i] = heapD[p]; i = p; }
+    heapC[i] = c; heapD[i] = d;
+  };
+  const hpop = () => {
+    const c = heapC[0], d = heapD[0];
+    const lc = heapC.pop(), ld = heapD.pop();
+    if(heapC.length){
+      let i = 0; const n = heapC.length;
+      while(true){
+        let m = i * 2 + 1; if(m >= n) break;
+        if(m + 1 < n && heapD[m + 1] < heapD[m]) m++;
+        if(heapD[m] >= ld) break;
+        heapC[i] = heapC[m]; heapD[i] = heapD[m]; i = m;
+      }
+      heapC[i] = lc; heapD[i] = ld;
+    }
+    return [c, d];
+  };
+  loci.forEach((lc, k) => {
+    let ci = geoCellOf(geo, lc.x, lc.y);
+    ci = geoSnapFree(geo, ci, 12, true);
+    if(ci < 0) ci = geoSnapFree(geo, geoCellOf(geo, lc.x, lc.y), 12, false);
+    srcRoom[k] = ci >= 0 ? geo.room[ci] : -1;
+    if(ci < 0) return;
+    if(dist[ci] > 0){ dist[ci] = 0; owner[ci] = k; hpush(ci, 0); }
+  });
+  const D = [[-1,0,1],[1,0,1],[0,-1,1],[0,1,1],[-1,-1,1.4142],[1,-1,1.4142],[-1,1,1.4142],[1,1,1.4142]];
+  while(heapC.length){
+    const [ci, d] = hpop();
+    if(d > dist[ci]) continue;
+    const k = owner[ci], rm = srcRoom[k];
+    const x = ci % cols, y = (ci - x) / cols;
+    for(const [dx, dy, w] of D){
+      const nx = x + dx, ny = y + dy;
+      if(nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+      const q = ny * cols + nx;
+      if(geo.obstacle[q]) continue;
+      if(rm >= 0 && geo.room[q] !== rm) continue;
+      if(dx && dy && (geo.obstacle[y * cols + nx] || geo.obstacle[ny * cols + x])) continue; /* без срезания углов */
+      const nd = d + w;
+      if(nd < dist[q]){ dist[q] = nd; owner[q] = k; hpush(q, nd); }
+    }
+  }
+  return { owner, dist, srcRoom };
 }
 
 /* ---------- видимость и раскраска маркеров на плане во время повторения ---------- */
@@ -6402,49 +7144,94 @@ function reviewMarkerResultClass(i){
   if(!s || s.phase !== 'checked' || s.floorLi !== state.active || !s.checkResult) return '';
   return s.checkResult.hitIdx.has(i) ? ' review-hit' : ' review-miss';
 }
+function reviewZoneCanvas(s, w, h){
+  const r = s.checkResult; if(!r || !r.zone) return null;
+  const z = r.zone, geo = z.geo;
+  const c = document.createElement('canvas');
+  c.width = geo.cols; c.height = geo.rows;
+  c.className = 'review-zone-layer';
+  c.style.width = w + 'px'; c.style.height = h + 'px';
+  const g = c.getContext('2d'), img = g.createImageData(geo.cols, geo.rows), px = img.data;
+  const colorOf = {};
+  s.roundLoci.forEach(it => { colorOf[z.kOf[it.idx]] = r.hitIdx.has(it.idx) ? [46, 160, 67] : [241, 76, 76]; });
+  const Rc = z.radiusPx / geo.cell;
+  for(let ci = 0; ci < geo.cols * geo.rows; ci++){
+    const k = z.owner[ci];
+    if(k < 0 || !colorOf[k] || z.dist[ci] > Rc) continue;
+    const col = colorOf[k], o = ci * 4;
+    /* контур зоны ярче, внутренность — полупрозрачная */
+    const x = ci % geo.cols;
+    const edge = [x > 0 ? ci - 1 : -1, x < geo.cols - 1 ? ci + 1 : -1, ci - geo.cols, ci + geo.cols]
+      .some(q => q < 0 || q >= z.owner.length || z.owner[q] !== k || z.dist[q] > Rc);
+    px[o] = col[0]; px[o + 1] = col[1]; px[o + 2] = col[2]; px[o + 3] = edge ? 200 : 60;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
 function reviewDrawGuessOverlay(p, w, h){
   const s = reviewSession;
   if(!s || s.floorLi !== state.active) return;
+  const mk = (g, cls, title) => {
+    const d = document.createElement('div');
+    d.className = 'guess-mark' + cls;
+    d.style.left = g.x + 'px'; d.style.top = g.y + 'px';
+    d.title = title;
+    const n = document.createElement('span'); n.textContent = g.num; d.appendChild(n);
+    p.appendChild(d);
+  };
   if(s.phase === 'placing'){
-    s.guesses.forEach(g => {
-      const d = document.createElement('div');
-      d.className = 'guess-mark';
-      d.style.left = g.x + 'px'; d.style.top = g.y + 'px';
-      d.title = 'Ваша отметка — клик убирает её';
-      p.appendChild(d);
-    });
+    s.guesses.forEach(g => mk(g, g.num === s.activeNum ? ' active' : '', 'Локус №' + g.num + ' — клик по отметке убирает её'));
     return;
   }
   if(s.phase === 'checked' && s.checkResult){
+    const zc = reviewZoneCanvas(s, w, h); if(zc) p.appendChild(zc);
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'review-guess-layer');
     svg.setAttribute('width', String(w));
     svg.setAttribute('height', String(h));
     const l = level();
     s.checkResult.guessResults.forEach(g => {
-      if(g.hit && g.matchIdx != null){
-        const m = l && l.markers ? l.markers[g.matchIdx] : null;
-        if(m){
-          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          line.setAttribute('class', 'review-link');
-          line.setAttribute('x1', g.x); line.setAttribute('y1', g.y);
-          line.setAttribute('x2', m.x); line.setAttribute('y2', m.y);
-          svg.appendChild(line);
-        }
-      }
+      const m = l && l.markers ? l.markers[g.targetIdx] : null;
+      if(!m) return;
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('class', 'review-link ' + g.res);
+      line.setAttribute('x1', g.x); line.setAttribute('y1', g.y);
+      line.setAttribute('x2', m.x); line.setAttribute('y2', m.y);
+      svg.appendChild(line);
     });
     p.appendChild(svg);
     s.checkResult.guessResults.forEach(g => {
-      const d = document.createElement('div');
-      d.className = 'guess-mark' + (g.hit ? ' hit' : ' miss');
-      d.style.left = g.x + 'px'; d.style.top = g.y + 'px';
-      d.title = g.hit ? 'Верно' : 'Мимо';
-      p.appendChild(d);
+      const t = g.res === 'hit' ? 'Верно' : g.res === 'swap' ? 'Место локуса №' + g.swapNum + ', а не №' + g.num : 'Мимо';
+      mk(g, ' ' + g.res, '№' + g.num + ': ' + t + (isFinite(g.distM) ? ' · до локуса ' + g.distM.toFixed(1) + ' м' : ''));
     });
   }
 }
 
 /* ---------- панель сессии ---------- */
+function reviewRenderChips(){
+  const s = reviewSession, box = $('#reviewChips'); if(!s || !box) return;
+  const nums = s.roundLoci.map(it => it.num).sort((a, b) => a - b);
+  const placed = new Set(s.guesses.map(g => g.num));
+  box.innerHTML = '';
+  nums.forEach(n => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    let cls = 'rv-chip';
+    if(s.phase === 'placing'){
+      if(placed.has(n)) cls += ' placed';
+      if(n === s.activeNum) cls += ' active';
+      b.title = placed.has(n) ? 'Локус №' + n + ' отмечен — выберите, чтобы переставить' : 'Следующий клик по плану отметит локус №' + n;
+      b.onclick = () => { s.activeNum = n; reviewRenderChips(); drawPlan(); reviewUpdateBar(); };
+    }else if(s.checkResult){
+      const g = s.checkResult.guessResults.find(x => x.num === n);
+      cls += g ? ' ' + g.res : ' skip';
+      b.title = !g ? 'Не отмечен' : g.res === 'hit' ? 'Верно' : g.res === 'swap' ? 'Поставлен на место №' + g.swapNum : 'Мимо';
+      b.disabled = true;
+    }
+    b.className = cls; b.textContent = n;
+    box.appendChild(b);
+  });
+}
 function reviewUpdateBar(){
   const s = reviewSession; if(!s) return;
   const checkBtn = $('#reviewCheck'), nextBtn = $('#reviewNext');
@@ -6453,24 +7240,34 @@ function reviewUpdateBar(){
   let stepLabel = '', instruction = '';
   if(s.phase === 'placing'){
     stepLabel = s.guesses.length + ' / ' + s.maxCount + ' отмечено';
-    instruction = 'Отметьте на плане, где расположены локусы №' + formatNumList(s.roundLoci.map(it => it.num)) +
-      ' (' + s.roundLoci.length + (s.roundLoci.length === 1 ? ' локус' : ' локуса(ов)') + '). ' +
-      'Клик по своей отметке убирает её, максимум — ' + s.maxCount + '.';
+    instruction = s.activeNum != null
+      ? 'Кликните на плане, где стоит локус <b>№' + s.activeNum + '</b>. Номер выбирается кнопками ниже; клик по своей отметке убирает её.'
+      : 'Все локусы отмечены — нажмите «Проверить» или выберите номер, чтобы переставить отметку.';
   }else{
     const r = s.checkResult;
-    stepLabel = 'Верно: ' + r.correct + ' из ' + r.required + (r.extra ? ' · лишних отметок: ' + r.extra : '');
-    instruction = 'Зелёным на плане — угаданные локусы, красным — те, что не отметили. Нажмите «Дальше» для нового раунда.';
+    stepLabel = 'Верно: ' + r.correct + ' из ' + r.required + (r.swapped ? ' · перепутаны: ' + r.swapped : '');
+    instruction = 'Зелёная зона — где засчитывается локус (его комната, ближе к нему, чем к соседям, до ' +
+      REVIEW_RADIUS_M + ' м по пути). Оранжевый — место другого локуса из раунда. ' +
+      '<span class="rv-note">Масштаб: ' + (r.zone ? Math.round(r.zone.geo.pxPerM) + ' px/м (' + r.zone.geo.scaleSrc + ') · комнат: ' + r.zone.geo.roomCount : '—') + '</span>';
   }
   setText('#reviewModeLabel', REVIEW_MODE_LABEL[s.modeNum]);
   setText('#reviewStepLabel', stepLabel);
-  setText('#reviewInstruction', instruction);
-  const dot = $('#reviewModeDot'); if(dot) dot.style.background = REVIEW_MODE_COLOR[s.modeNum] || 'var(--blue)';
+  const ins = $('#reviewInstruction'); if(ins) ins.innerHTML = instruction;
+  const dot = $('#reviewModeDot'); if(dot) dot.style.background = ((window.getTheme && getTheme() === 'mono' && s.modeNum !== 5) ? '#e6e6e6' : REVIEW_MODE_COLOR[s.modeNum]) || 'var(--blue)';
   const acc = s.totalRequired ? Math.round(100 * s.totalCorrect / s.totalRequired) : 0;
   setText('#reviewStatsText', 'Раундов: ' + s.rounds + ' · точность: ' + acc + '%');
   const fill = $('#reviewAccFill'); if(fill) fill.style.width = acc + '%';
+  reviewRenderChips();
 }
 
 /* ---------- размещение и снятие отметок пользователем ---------- */
+function reviewNextUnplaced(s){
+  const placed = new Set(s.guesses.map(g => g.num));
+  const nums = s.roundLoci.map(it => it.num).sort((a, b) => a - b);
+  const after = nums.filter(n => !placed.has(n) && (s.activeNum == null || n > s.activeNum));
+  const any = nums.filter(n => !placed.has(n));
+  return after.length ? after[0] : (any.length ? any[0] : null);
+}
 function reviewTogglePlacement(pt){
   const s = reviewSession; if(!s || s.phase !== 'placing') return;
   const REMOVE_R = 16;
@@ -6478,19 +7275,23 @@ function reviewTogglePlacement(pt){
     const g = s.guesses[i];
     if(Math.hypot(g.x - pt.x, g.y - pt.y) <= REMOVE_R){
       s.guesses.splice(i, 1);
+      s.activeNum = g.num;
       drawPlan(); reviewUpdateBar();
       return;
     }
   }
-  if(s.guesses.length >= s.maxCount){
-    status('Уже расставлено максимум локусов для этого раунда: ' + s.maxCount);
+  if(s.activeNum == null){
+    status('Все локусы раунда уже отмечены — выберите номер, чтобы переставить отметку');
     return;
   }
-  s.guesses.push({ x: pt.x, y: pt.y });
+  const ex = s.guesses.find(g => g.num === s.activeNum);
+  if(ex){ ex.x = pt.x; ex.y = pt.y; }
+  else s.guesses.push({ x: pt.x, y: pt.y, num: s.activeNum });
+  s.activeNum = reviewNextUnplaced(s);
   drawPlan(); reviewUpdateBar();
 }
 
-/* ---------- раунд: подбор набора → проверка (жадное ближайшее совпадение) ---------- */
+/* ---------- раунд ---------- */
 function startRound(){
   const s = reviewSession; if(!s) return;
   const li = pickFloorWithMarkers();
@@ -6501,8 +7302,13 @@ function startRound(){
   s.roundLoci = pickRoundLoci(s.modeNum, li);
   s.maxCount = s.roundLoci.length;
   s.guesses = [];
+  s.activeNum = Math.min.apply(null, s.roundLoci.map(it => it.num));
   s.checkResult = null;
   s.phase = 'placing';
+  const stage = $('#stage'); if(stage) stage.classList.add('review-guessing');
+  /* пока человек вспоминает — заранее строим комнаты этажа, чтобы «Проверить» было мгновенным */
+  const warm = () => { try{ if(reviewSession && reviewSession.floorLi === li) buildFloorGeometry(li); }catch(err){} };
+  if(window.requestIdleCallback) requestIdleCallback(warm, { timeout: 1500 }); else setTimeout(warm, 300);
   const l = state.levels[li]; if(l) l.selected = null;
   if(state.active !== li){
     selectLevel(li);
@@ -6516,65 +7322,52 @@ function startRound(){
 }
 function reviewCheck(){
   const s = reviewSession; if(!s || s.phase !== 'placing' || !s.guesses.length) return;
-  const li = s.floorLi;
-  const grid = buildWallGrid(li);
-  const capRadiusPx = 5 * markerSize();
-  const capSteps = grid ? Math.max(1, Math.ceil(capRadiusPx / grid.cell)) : 0;
-  const hasWalls = !!(state.levels[li] && ((state.levels[li].walls && state.levels[li].walls.length) || state.levels[li].autoWalls));
-
-  /* На каждый локус раунда — своя заливка: «всегда» (в пределах 5 диаметров,
-     не через стену) и, если на этаже есть стены, «вся комната» без ограничения
-     по расстоянию — она нужна только чтобы понять, кто делит комнату вместе. */
-  const real = s.roundLoci.map(it => {
-    const cappedSet = grid ? floodFillFrom(grid, it.x, it.y, capSteps) : null;
-    const roomSet = (grid && hasWalls) ? floodFillFrom(grid, it.x, it.y, Infinity) : null;
-    return { it: it, used: false, cappedSet: cappedSet, roomSet: roomSet, roommates: [] };
-  });
-  if(hasWalls && grid){
-    real.forEach((r, ri) => {
-      real.forEach((o, oi) => {
-        if(oi === ri) return;
-        const oCell = cellOf(grid, o.it.x, o.it.y);
-        if(r.roomSet.has(oCell)) r.roommates.push(o);
-      });
-    });
+  const li = s.floorLi, l = state.levels[li];
+  let geo = null;
+  try{ geo = buildFloorGeometry(li); }catch(err){ console.error('review geometry', err); geo = null; }
+  const loci = (l.markers || []).map((m, idx) => ({ idx: idx, x: m.x, y: m.y }));
+  const kOf = {}; loci.forEach((lc, k) => { kOf[lc.idx] = k; });
+  let zone = null;
+  if(geo){
+    const z = computeLociZones(geo, loci);
+    zone = { geo: geo, owner: z.owner, dist: z.dist, kOf: kOf, radiusPx: REVIEW_RADIUS_M * geo.pxPerM };
   }
-
-  const guessResults = s.guesses.map(g => ({ x: g.x, y: g.y, hit: false, matchIdx: null }));
-  const pairs = [];
-  guessResults.forEach((g, gi) => {
-    const gCell = grid ? cellOf(grid, g.x, g.y) : null;
-    real.forEach((r, ri) => {
-      const d = Math.hypot(g.x - r.it.x, g.y - r.it.y);
-      let qualifies;
-      if(!grid){
-        qualifies = d <= capRadiusPx;
-      }else if(r.roommates.length){
-        /* Общая комната: вся комната — верная зона, поделённая по линии,
-           равноудалённой от локусов-соседей (геометрическая середина). */
-        qualifies = r.roomSet.has(gCell) && r.roommates.every(m => d <= Math.hypot(g.x - m.it.x, g.y - m.it.y));
-      }else{
-        qualifies = r.cappedSet.has(gCell);
-      }
-      if(qualifies) pairs.push({ gi: gi, ri: ri, d: d });
-    });
-  });
-  pairs.sort((a, b) => a.d - b.d);
+  const radiusPx = zone ? zone.radiusPx : 5 * markerSize();
+  const roundByNum = {}; s.roundLoci.forEach(it => { roundByNum[it.num] = it; });
+  const roundByIdx = {}; s.roundLoci.forEach(it => { roundByIdx[it.idx] = it; });
   const hitIdx = new Set();
-  pairs.forEach(p => {
-    if(guessResults[p.gi].hit || real[p.ri].used) return;
-    guessResults[p.gi].hit = true;
-    guessResults[p.gi].matchIdx = s.roundLoci[p.ri].idx;
-    real[p.ri].used = true;
-    hitIdx.add(s.roundLoci[p.ri].idx);
+  const guessResults = s.guesses.map(g => {
+    const target = roundByNum[g.num];
+    const out = { x: g.x, y: g.y, num: g.num, targetIdx: target ? target.idx : null, res: 'miss', swapNum: null, distM: NaN };
+    if(!target) return out;
+    let ownerIdx = null, dPx = Infinity;
+    if(zone){
+      let ci = geoSnapFree(geo, geoCellOf(geo, g.x, g.y), 3, false);
+      if(ci >= 0 && zone.owner[ci] >= 0){ ownerIdx = loci[zone.owner[ci]].idx; dPx = zone.dist[ci] * geo.cell; }
+    }else{
+      let bd = Infinity;
+      loci.forEach(lc => { const d = Math.hypot(g.x - lc.x, g.y - lc.y); if(d < bd){ bd = d; ownerIdx = lc.idx; } });
+      dPx = bd;
+    }
+    if(ownerIdx != null && dPx <= radiusPx){
+      if(ownerIdx === target.idx){ out.res = 'hit'; hitIdx.add(target.idx); }
+      else if(roundByIdx[ownerIdx]){ out.res = 'swap'; out.swapNum = roundByIdx[ownerIdx].num; }
+    }
+    if(zone){
+      /* расстояние до СВОЕГО локуса — для подсказки (по прямой, в метрах) */
+      out.distM = Math.hypot(g.x - target.x, g.y - target.y) / geo.pxPerM;
+    }
+    return out;
   });
-  const correct = real.filter(r => r.used).length;
-  const extra = guessResults.filter(g => !g.hit).length;
-  s.checkResult = { guessResults: guessResults, hitIdx: hitIdx, correct: correct, extra: extra, required: s.roundLoci.length };
+  const correct = hitIdx.size;
+  const swapped = guessResults.filter(g => g.res === 'swap').length;
+  const extra = guessResults.filter(g => g.res === 'miss').length;
+  s.checkResult = { guessResults, hitIdx, correct, swapped, extra, required: s.roundLoci.length, zone };
   s.totalRequired += s.roundLoci.length;
   s.totalCorrect += correct;
   s.totalExtra += extra;
   s.phase = 'checked';
+  const stage = $('#stage'); if(stage) stage.classList.remove('review-guessing');
   drawPlan();
   renderRoute();
   reviewUpdateBar();
@@ -6590,7 +7383,7 @@ async function startReview(){
   /* Заранее прогреваем пиксельный кэш этажей с автостенами — на случай если
      этаж ещё не открывался в этой сессии и его картинка нигде не отрисована. */
   const warmLis = [];
-  state.levels.forEach((l, li) => { if(l && l.markers && l.markers.length && l.autoWalls) warmLis.push(li); });
+  state.levels.forEach((l, li) => { if(l && l.markers && l.markers.length) warmLis.push(li); });
   if(warmLis.length) await Promise.all(warmLis.map(li => ensureFloorPixels(li)));
   if(reviewSession) return; /* защита от повторного старта, пока шёл прогрев */
   reviewSession = {
@@ -6655,6 +7448,64 @@ try{
 window.addEventListener('error', e => {
   status('Ошибка сценария: ' + (e && e.message ? e.message : 'неизвестная'));
 });
+</script>
+<script>
+(function(){
+  function wire(){
+    var b=document.getElementById('themeBtn'); if(!b) return;
+    applyTheme(getTheme());
+    b.addEventListener('click', function(){
+      applyTheme(getTheme()==='mono' ? 'color' : 'mono');
+      try{ if(typeof render==='function') render(); }catch(e){}
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+})();
+</script>
+<div id="vcur" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="1" shape-rendering="crispEdges">
+<g class="c-cross"><path d="M16.5 5v8M16.5 20v8M5 16.5h8M20 16.5h8"/><rect x="16" y="16" width="1" height="1" fill="#fff" stroke="none"/></g>
+<g class="c-pan"><path d="M16.5 6v21M6 16.5h21"/><path d="M14.5 8.5l2-2 2 2M14.5 24.5l2 2 2-2M8.5 14.5l-2 2 2 2M24.5 14.5l2 2-2 2" shape-rendering="auto"/></g>
+<g class="c-panning"><path d="M16.5 9v15M9 16.5h15"/><path d="M14.5 11.5l2-2 2 2M14.5 21.5l2 2 2-2M11.5 14.5l-2 2 2 2M21.5 14.5l2 2-2 2" shape-rendering="auto"/></g>
+<g class="c-orbit" shape-rendering="auto"><path d="M16.50 11.30 L21.00 19.10 L12.00 19.10Z"/><path d="M24.30 23.53 A10.50 10.50 0 0 1 8.70 23.53 M8.78 26.54 L8.70 23.53 L11.69 23.93 M6.51 19.74 A10.50 10.50 0 0 1 14.32 6.23 M11.66 4.80 L14.32 6.23 L12.47 8.62 M18.68 6.23 A10.50 10.50 0 0 1 26.49 19.74 M29.06 18.16 L26.49 19.74 L25.34 16.95"/><circle cx="16.5" cy="16.5" r=".7" fill="#fff" stroke="none"/></g>
+<g class="c-orbiting" shape-rendering="auto"><path d="M16.50 12.10 L20.31 18.70 L12.69 18.70Z" fill="#fff"/><path d="M20.99 27.09 A11.50 11.50 0 0 1 5.50 19.86 M4.31 22.63 L5.50 19.86 L8.04 21.49 M5.09 15.10 A11.50 11.50 0 0 1 19.09 5.29 M17.29 2.87 L19.09 5.29 L16.41 6.68 M23.42 7.32 A11.50 11.50 0 0 1 24.91 24.34 M27.91 23.99 L24.91 24.34 L25.05 21.33"/></g>
+</svg></div>
+<script>
+(function(){
+  var vc = document.getElementById('vcur'); if(vc) vc.remove(); return; /* курсоры теперь нативные (CSS) — оверлей не нужен */
+  var down = false, lx = -99, ly = -99, raf = 0, lastT = null;
+  function modeFor(t){
+    if(!t || !t.closest) return null;
+    var cs; try{ cs = getComputedStyle(t).cursor; }catch(e){ return null; }
+    if(cs !== 'none') return null;
+    if(t.closest('.local3d')) return null;   /* в 3D — нативный курсор (см. CSS) */
+    var st = t.closest('.stage'); if(!st) return null;
+    if(st.classList.contains('panning') || t.closest('.marker.dragging')) return 'panning';
+    if(st.classList.contains('review-guessing') && !down) return 'cross';
+    if(t.closest('.marker')) return down ? 'panning' : 'pan';
+    if(st.classList.contains('mode-view')) return down ? 'panning' : 'pan';
+    return 'cross';
+  }
+  function upd(){
+    raf = 0;
+    var m = modeFor(lastT);
+    if(!m){ vc.classList.remove('on'); return; }
+    if(vc.getAttribute('data-m') !== m) vc.setAttribute('data-m', m);
+    vc.style.transform = 'translate(' + Math.round(lx) + 'px,' + Math.round(ly) + 'px)';
+    vc.classList.add('on');
+  }
+  function sched(){ if(!raf) raf = requestAnimationFrame(upd); }
+  document.addEventListener('pointermove', function(e){
+    lx = e.clientX; ly = e.clientY; lastT = e.target;
+    if(vc.classList.contains('on')) vc.style.transform = 'translate(' + lx + 'px,' + ly + 'px)';
+    sched();
+  }, { capture:true, passive:true });
+  document.addEventListener('pointerdown', function(e){ down = true; lastT = e.target; sched(); }, true);
+  document.addEventListener('pointerup', function(){ down = false; sched(); }, true);
+  document.addEventListener('pointercancel', function(){ down = false; sched(); }, true);
+  document.addEventListener('wheel', function(){ sched(); }, { capture:true, passive:true });
+  document.documentElement.addEventListener('mouseleave', function(){ lastT = null; sched(); });
+  window.addEventListener('blur', function(){ down = false; lastT = null; sched(); });
+})();
 </script>
 </body></html>
 
