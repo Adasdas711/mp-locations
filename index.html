@@ -266,6 +266,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
    внутри — в процентах от размера кружка (а не фиксированные px), чтобы
    росла вместе с ним. */
 .plan-cam .ic{width:58%;height:58%;stroke-width:1.6}
+/* Скрытые камеры (hidden_on_plan из .3dview: Zillow их не рисует — лестницы
+   без позиции, патио/улица). Видны только при включённой кнопке
+   «Показать скрытые камеры» в боковой панели; оранжевый пунктир + полупрозрачность. */
+.plan-cam.hidden-cam{border:2px dashed #f0a030;color:#f0a030;background:#0d0f12b3;opacity:.85}
+.plan-cam.hidden-cam:hover{border-color:#ffc060;opacity:1}
+.plan-cam.hidden-cam.active{background:#f0a030;border-style:solid;color:#fff;opacity:1}
+.minimap-layer .mm-cam.hidden-cam{border:1.5px dashed #f0a030;background:#0d0f12a0}
+#planShowHiddenCams .badge{position:absolute;right:2px;bottom:2px;min-width:13px;height:13px;padding:0 3px;border-radius:7px;
+  background:#f0a030;color:#111;font-size:9px;font-weight:700;line-height:13px;text-align:center;pointer-events:none}
+#planShowHiddenCams{position:relative}
+#planShowHiddenCams[aria-pressed="true"]{background:rgba(240,160,48,.28);color:#fff}
 .plan-cam:hover{background:#171b20;border-color:var(--blue)}
 .plan-cam.active{background:var(--blue);border-color:#fff;color:#fff;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.2);z-index:4}
 
@@ -711,6 +722,7 @@ button .ic{pointer-events:none}
 <symbol id="i-turn-cw" viewBox="0 0 16 16"><path d="M3.4 8.6a4.6 4.6 0 1 0 1.5-3.5"/><path d="M4.6 1.8v3.5h3.5"/></symbol>
 <symbol id="i-turn-ccw" viewBox="0 0 16 16"><path d="M12.6 8.6a4.6 4.6 0 1 1-1.5-3.5"/><path d="M11.4 1.8v3.5H7.9"/></symbol>
 <symbol id="i-close" viewBox="0 0 16 16"><path d="M3.2 3.2 12.8 12.8M12.8 3.2 3.2 12.8" stroke-width="1.6" stroke-linecap="round"/></symbol>
+<symbol id="i-eye-hidden" viewBox="0 0 16 16"><path d="M1.6 8s2.4-4.3 6.4-4.3S14.4 8 14.4 8 12 12.3 8 12.3 1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/><path d="M2.6 13.4 13.4 2.6" stroke-dasharray="1.6 1.4"/></symbol>
 <symbol id="i-camera" viewBox="0 0 16 16"><path d="M2 5.7h2.3l1-1.7h5.4l1 1.7H14v7.1H2z"/><circle cx="8" cy="9.3" r="2.35"/></symbol>
 <symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.3"/><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3M12.4 12.4l-1.3-1.3M4.9 4.9 3.6 3.6"/></symbol>
 <symbol id="i-transparent" viewBox="0 0 16 16"><rect x="1.6" y="1.6" width="5.2" height="5.2"/><rect x="9.2" y="9.2" width="5.2" height="5.2"/><rect x="9.2" y="1.6" width="5.2" height="5.2" opacity=".4"/><rect x="1.6" y="9.2" width="5.2" height="5.2" opacity=".4"/></symbol>
@@ -770,6 +782,7 @@ button .ic{pointer-events:none}
         <button class="tool" id="zoomIn" title="Увеличить" aria-label="Увеличить"><svg class="ic"><use href="#i-plus"/></svg></button>
         <button class="tool" id="resetView" title="Сбросить вид" aria-label="Сбросить вид"><svg class="ic"><use href="#i-fit"/></svg></button>
         <span class="tool-sep"></span>
+        <button class="tool" id="planShowHiddenCams" title="Показать скрытые камеры" aria-label="Показать скрытые камеры" aria-pressed="false"><svg class="ic"><use href="#i-eye-hidden"/></svg></button>
         <button class="tool" id="planTransparentBg" title="Убрать белый фон плана и сделать его прозрачным" aria-label="Прозрачный фон плана"><svg class="ic"><use href="#i-transparent"/></svg></button>
       </aside>
       <div class="floor-overlay" id="floorOverlay"></div>
@@ -1367,6 +1380,9 @@ function safeFileName(name){
 
 /* ---------- отрисовка ---------- */
 function render(){
+  /* счётчик скрытых камер на кнопке — всегда по текущему состоянию (в т.ч.
+     после «Новый дворец», когда этажей нет и drawPlan() камеры не рисует) */
+  try{ syncHiddenCamsButton(); }catch(err){}
   setVal('#palaceName', state.name);
   setVal('#purpose', state.purpose);
   setVal('#source', state.source);
@@ -1762,13 +1778,39 @@ function drawPlan(){
    эту самую точку. Отдельно от локусов (.marker) — локус ставит человек
    вручную для техники памяти, а это то, что реально существует в .3dview,
    независимо от того, привязан ли к нему локус. */
-function panoramasForLevel(l){
+/* Показ скрытых камер (hidden_on_plan) — настройка просмотра, не данных:
+   хранится только в браузере этого пользователя. Активная панорама видна
+   всегда, даже скрытая, — чтобы на плане было видно, где ты сейчас. */
+let showHiddenCams = false;
+try{ showHiddenCams = localStorage.getItem('palace.showHiddenCams') === '1'; }catch(err){}
+function camVisibleOnPlan(id, p){
+  return !(p && p.hidden) || showHiddenCams || activeLocalPano === id;
+}
+function hiddenCamsCountForLevel(l){
+  if(!l || !state.panoramas) return 0;
+  return panoramasForLevel(l, true).filter(id => state.panoramas[id] && state.panoramas[id].hidden).length;
+}
+function syncHiddenCamsButton(){
+  const b = document.getElementById('planShowHiddenCams');
+  if(!b) return;
+  const n = hiddenCamsCountForLevel(state.levels && state.levels[state.active]);
+  b.setAttribute('aria-pressed', showHiddenCams ? 'true' : 'false');
+  b.classList.toggle('active', showHiddenCams);
+  const t = (showHiddenCams ? 'Спрятать скрытые камеры' : 'Показать скрытые камеры') +
+    (n ? ' (на этом этаже: ' + n + ')' : ' (на этом этаже их нет)');
+  b.title = t; b.setAttribute('aria-label', t);
+  let badge = b.querySelector('.badge');
+  if(n){ if(!badge){ badge = document.createElement('span'); badge.className = 'badge'; b.appendChild(badge); } badge.textContent = n; }
+  else if(badge) badge.remove();
+}
+function panoramasForLevel(l, includeHidden){
   if(!l || !state.panoramas) return [];
   const ids = Object.keys(state.panoramas);
   const anyLevelHasFloorId = (state.levels || []).some(lv => lv && lv.floorId != null);
   return ids.filter(id => {
     const p = state.panoramas[id];
     if(!p || !p.planPx || !isFinite(p.planPx.x) || !isFinite(p.planPx.y)) return false;
+    if(!includeHidden && !camVisibleOnPlan(id, p)) return false;
     if(l.floorId != null) return p.floorId === l.floorId;
     /* Дворцы, сохранённые до появления floorId на этаже (или импорт без
        floorId вовсе) — если НИ у одного этажа floorId не проставлен,
@@ -1780,6 +1822,7 @@ function panoramasForLevel(l){
 function renderPlanCameras(p, l){
   const show3d = state.layout === 'tour' || state.layout === 'split' || state.layout === 'split-rev';
   if(!show3d) return;
+  syncHiddenCamsButton();
   const ids = panoramasForLevel(l);
   /* Размер значка камеры — привязан к тому же ползунку «Размер маркера»
      (markerSize()), которым пользователь уже управляет размером локусов
@@ -1793,11 +1836,11 @@ function renderPlanCameras(p, l){
   ids.forEach(id => {
     const pano = state.panoramas[id];
     const d = document.createElement('div');
-    d.className = 'plan-cam' + (activeLocalPano === id ? ' active' : '');
+    d.className = 'plan-cam' + (activeLocalPano === id ? ' active' : '') + (pano.hidden ? ' hidden-cam' : '');
     d.style.left = pano.planPx.x + 'px';
     d.style.top = pano.planPx.y + 'px';
     d.style.width = d.style.height = camSize + 'px';
-    d.title = 'Перейти в 3D: ' + (pano.room || id);
+    d.title = 'Перейти в 3D: ' + (pano.room || id) + (pano.hidden ? ' — скрыта на плане Zillow' : '');
     d.setAttribute('role', 'button');
     d.tabIndex = 0;
     d.innerHTML = '<svg class="ic"><use href="#i-camera"/></svg>';
@@ -2439,7 +2482,8 @@ async function saveMpalace(){
       floorId: p.floorId != null ? p.floorId : null, world: p.world || null, planPx: p.planPx || null,
       headingDeg: p.headingDeg != null ? p.headingDeg : null, order: p.order != null ? p.order : null,
       navYawOffsetDeg: isFinite(p.navYawOffsetDeg) ? p.navYawOffsetDeg : 90,
-      destinations: Array.isArray(p.destinations) ? p.destinations : []
+      destinations: Array.isArray(p.destinations) ? p.destinations : [],
+      hidden: !!p.hidden
     };
     if(p.data){
       const ext = extOfMime(p.mime), fname = base + '.' + ext;
@@ -2541,7 +2585,8 @@ async function loadMplaceBuffer(buffer){
         planPx: meta.planPx || null, headingDeg: meta.headingDeg != null ? meta.headingDeg : null,
         order: meta.order != null ? meta.order : null,
         navYawOffsetDeg: isFinite(meta.navYawOffsetDeg) ? meta.navYawOffsetDeg : 90,
-        destinations: Array.isArray(meta.destinations) ? meta.destinations : []
+        destinations: Array.isArray(meta.destinations) ? meta.destinations : [],
+        hidden: !!meta.hidden
       };
       /* mode:'cubemap' встречается только в .mpalace, сохранённых во время
          короткого периода поддержки Matterport (см. историю) — Matterport
@@ -2726,7 +2771,8 @@ function normalizeThreeDViewLink(link){
     neighbors: neighbors,
     headingDeg: headingDeg,
     roomId: extra.roomId != null ? extra.roomId : (link.roomId != null ? link.roomId : null),
-    order: extra.order != null ? extra.order : (link.order != null ? link.order : null)
+    order: extra.order != null ? extra.order : (link.order != null ? link.order : null),
+    hidden: !!(link.hidden_on_plan || link.hiddenOnPlan)
   };
 }
 /* Одно фото на точку (Zillow avif) — просто читаем файл. Если файла нет
@@ -2825,7 +2871,8 @@ async function importThreeDViewZip(zip){
         headingDeg: p.headingDeg != null ? p.headingDeg : null,
         order: p.order != null ? p.order : null,
         navYawOffsetDeg: 90, /* дефолтный поворот колец-переходов по запросу пользователя (было 0) */
-        destinations: p.neighbors
+        destinations: p.neighbors,
+        hidden: !!p.hidden
       }, rec);
       if(rec.mode !== 'none') addedPanoramas++; else skippedNoPhoto++;
     }
@@ -4455,7 +4502,17 @@ const localViewer = {
     this.clearError();
     if(!window.THREE){
       ensureThreeLoaded().then(() => {
-        if(this.canvas === canvas || !this.renderer) this.show(canvas, panoId, record, arrivalYawDeg);
+        if(this.canvas === canvas || !this.renderer){
+          this.show(canvas, panoId, record, arrivalYawDeg);
+          /* Баг «нет кнопок переходов при первом открытии .3dview»: при самом
+             первом показе three.js ещё не загружен, renderLocalViewer() успевает
+             построить кнопки переходов СРАЗУ, а этот отложенный show() затем
+             вызывает ensure() → dispose(), который очищает #l3dJumps и
+             navMeshes. Кнопки возвращались только после любого нового render()
+             (клик по плану / панели инструментов). Пересобираем их здесь,
+             уже после создания renderer. */
+          if(activeLocalPano === panoId) renderLocalJumps(record);
+        }
       }).catch(err => this.reportError(err.message || 'Не удалось загрузить three.js'));
       return;
     }
@@ -4571,7 +4628,9 @@ const localViewer = {
        кнопок, но заметно более низкий, компактный свод над центром низа
        экрана. */
     const radiusX = Math.max(70, Math.min(rect.width * 0.22, 170));
-    const radiusY = Math.min(radiusX * 0.675, rect.height - padTop);
+    /* Правка: свод ещё ниже — коэффициент 0.675 → 0.45 (более вытянутый
+       по горизонтали эллипс, блок переходов ужат по высоте в 1.5 раза). */
+    const radiusY = Math.min(radiusX * 0.45, rect.height - padTop);
     const centerX = rect.width * 0.5;
     const centerY = rect.height;
     const cameraYaw = this.yaw;
@@ -5346,10 +5405,11 @@ function layoutMinimapMarkers(l, img, layer){
     const p = state.panoramas[id];
     if(!p) return;
     if(floorId != null && p.floorId != null && p.floorId !== floorId) return;
+    if(!camVisibleOnPlan(id, p)) return;
     const px = p.planPx;
     if(!px || !isFinite(px.x) || !isFinite(px.y)) return;
     const active = activeLocalPano === id;
-    html += '<div class="mm-cam' + (active ? ' active' : '') + '" data-pano="' + esc(String(id)) +
+    html += '<div class="mm-cam' + (active ? ' active' : '') + (p.hidden ? ' hidden-cam' : '') + '" data-pano="' + esc(String(id)) +
       '" style="left:' + toX(px.x) + 'px;top:' + toY(px.y) + 'px" title="' + esc(p.room || id) + '"></div>';
   });
   layer.innerHTML = html;
@@ -5461,8 +5521,10 @@ function startNewPalaceWizard(){
   state.layout = 'plan';
   setVal('#palaceName', state.name);
   render();
-  status('Загрузите планы и 3D · имя файла задаётся при сохранении');
-  openPlansModal(true);
+  /* Окно «Новый дворец» больше не всплывает автоматически (запрос
+     пользователя): планы добавляются кнопкой «+ Планы» на панели этажей,
+     вставкой Ctrl+V или перетаскиванием файла / .3dview в окно. */
+  status('Новый дворец создан · добавьте планы: «+ Планы», Ctrl+V или перетащите файлы');
 }
 function newPalace(){
   if(state.dirty){
@@ -5819,6 +5881,16 @@ function applyZoom(z, cx, cy){
 on('#zoomIn', 'click', () => applyZoom(state.zoom*1.2));
 on('#zoomOut', 'click', () => applyZoom(state.zoom/1.2));
 on('#planTransparentBg', 'click', () => { stripPlanWhiteBackground(); });
+on('#planShowHiddenCams', 'click', () => {
+  showHiddenCams = !showHiddenCams;
+  try{ localStorage.setItem('palace.showHiddenCams', showHiddenCams ? '1' : '0'); }catch(err){}
+  syncHiddenCamsButton();
+  render();
+  if(typeof renderMinimap === 'function') renderMinimap();
+  const n = hiddenCamsCountForLevel(state.levels && state.levels[state.active]);
+  status(showHiddenCams ? ('Скрытые камеры показаны' + (n ? ' (' + n + ' на этаже, оранжевый пунктир)' : ' — на этом этаже их нет'))
+                        : 'Скрытые камеры спрятаны');
+});
 on('#resetView', 'click', () => {
   state.zoom = 1; state.rotation = 0;
   const v = $('#viewport'); if(v) v.style.transform = '';
