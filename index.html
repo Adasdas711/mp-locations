@@ -184,6 +184,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   width:min(380px,calc(100% - 20px));padding:10px 12px;background:var(--vscode-sidebar-bg);border:1px solid var(--vscode-widget-border);
   border-radius:var(--r-md);box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .tour-toolbar.open{display:flex}
+/* инлайновый display:flex у строки локальных панорам перебивал атрибут hidden */
+.tour-toolbar-local[hidden]{display:none!important}
+/* renderTour() сбрасывает style.display у строки живого тура — flex задаём здесь, чтобы он не терялся */
+.tour-toolbar-live{display:flex;flex:1;gap:8px;align-items:center;min-width:0}
+.tour-host:empty{display:none}
 .tour-toolbar input{flex:1;min-width:0;background:var(--vscode-input-bg);color:var(--text);border:1px solid var(--vscode-input-border);border-radius:var(--r-sm);padding:6px 10px;font-size:13px}
 .tour-toolbar input:focus{border-color:var(--vscode-focus);outline:none}
 .tour-toolbar .primary{padding:6px 14px}
@@ -911,7 +916,7 @@ button.primary{border-color:rgba(255,255,255,.08)}
 .floor-overlay button.active{background:var(--dc-sel);border-color:var(--vscode-focus);color:#fff}
 .compass{border-radius:50%!important}
 .compass-val input:focus{background:var(--dc-editor)}
-.tour-toolbar{border-radius:6px!important}
+.tour-toolbar{border-radius:6px!important;width:min(480px,calc(100% - 20px))}
 #tourSettingsBtn{border-radius:var(--r-sm)}
 
 /* поля ввода */
