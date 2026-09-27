@@ -1125,10 +1125,11 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
         statusItem:'#262626', statusItemFg:'#b8b8b8', activityFg:'#d0d0d0', activityInactive:'#555555', hover:'rgba(255,255,255,.05)',
         syntax:{ str:'#9db1c5', kw:'#f97583', num:'#f8f8f8', fn:'#b392f0', comment:'#6b737c', green:'#85e89d', red:'#f97583', orange:'#ffab70', yellow:'#ffea7f' } },
       canvas:{ bg:'#1f1f1f', walls:'#6b6b6b', grid:'none' },
-      marker:{ shape:'circle', style:'ring', palette:['#b392f0','#79b8ff','#f97583','#ffab70','#85e89d','#9db1c5','#ffea7f','#e1e4e8','#ff9800','#c9d1d9'],
-        fill:'#1f1f1f', width:1.5, shadow:'none', weight:500, mono:true },
-      camera:{ icon:'dot', shape:'circle', bg:'#1f1f1f', border:'#555555', fg:'#b8b8b8', activeBg:'#e0e0e0', activeFg:'#1f1f1f',
-        fov:'rgba(255,255,255,.07)', fovStroke:'rgba(255,255,255,.35)' } },
+      /* светлая заливка + тёмная обводка: читается и на белом плане, и на «тёмном поле» */
+      marker:{ shape:'circle', style:'solid', palette:['#b392f0','#79b8ff','#f97583','#ffab70','#85e89d','#9db1c5','#ffea7f','#e1e4e8','#ff9800','#c9d1d9'],
+        text:'#1a1a1a', stroke:'#1a1a1a', width:2, ring:'rgba(255,255,255,.9)', shadow:'0 2px 8px rgba(0,0,0,.45)', weight:600, mono:true },
+      camera:{ icon:'dot', shape:'circle', bg:'#f0f0f0', border:'#1a1a1a', borderWidth:2, fg:'#1a1a1a', activeBg:'#b392f0', activeFg:'#1a1a1a',
+        shadow:'0 0 0 1.5px rgba(255,255,255,.9),0 3px 10px rgba(0,0,0,.5)', fov:'rgba(179,146,240,.2)', fovStroke:'rgba(179,146,240,.9)' } },
 
     { id:'macos-modern-dark-ventura-xcode', name:'MacOS Modern Dark - Ventura Xcode', source:'davidbwaters/macos-modern-vscode-theme', font:MAC_FONT,
       ui:{ chrome:'#403e3e', activity:'#353333', editor:'#232222', widget:'#2c2c2b', dialog:'#2c2c2b', border:'#101010', widgetBorder:'#515151',
@@ -1824,17 +1825,22 @@ function hexRgb(h){
 const planDarkCache = new Map();   /* src + цвета темы -> canvas */
 function planDarkCanvas(src, im){
   const w = im.naturalWidth, h = im.naturalHeight;
-  if(!w || !h || w * h > 40e6) return null;
+  if(!w || !h) return null;
+  /* большие планы из .3dview (десятки мегапикселей) обрабатываем в уменьшенной
+     копии и растягиваем обратно — иначе перекраска не помещается в память */
+  const S = Math.min(1, Math.sqrt(12e6 / (w * h)));
+  const cw = Math.max(1, Math.round(w * S)), ch = Math.max(1, Math.round(h * S));
   const t = window.getThemeDef ? getThemeDef() : null;
   const bg = hexRgb(t ? t.canvas.bg : '#242424') || [36, 36, 36];
   const ink = hexRgb(t ? t.ui.fgStrong : '#e6e6e6') || [230, 230, 230];
   const key = src.length + ':' + src.slice(-64) + '|' + bg.join(',') + '|' + ink.join(',');
   if(planDarkCache.has(key)) return planDarkCache.get(key);
-  const c = document.createElement('canvas'); c.width = w; c.height = h; c.className = 'plan-dark';
+  const c = document.createElement('canvas'); c.width = cw; c.height = ch; c.className = 'plan-dark';
   c.style.width = w + 'px'; c.style.height = h + 'px';
   const g = c.getContext('2d', { willReadFrequently:true });
-  g.drawImage(im, 0, 0);
-  let id; try{ id = g.getImageData(0, 0, w, h); }catch(err){ return null; }
+  if(!g) return null;
+  g.drawImage(im, 0, 0, cw, ch);
+  let id; try{ id = g.getImageData(0, 0, cw, ch); }catch(err){ console.warn('planDarkCanvas', err); return null; }
   const px = id.data;
   for(let o = 0; o < px.length; o += 4){
     const r = px[o], gg = px[o+1], b = px[o+2];
@@ -2471,8 +2477,12 @@ function drawPlan(){
     try{
       const kc = planKeyedCanvas(l.src, im);
       if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
-      else if(planDarkOn()){ const dc = planDarkCanvas(l.src, im); if(dc){ p.insertBefore(dc, im); im.style.opacity = '0'; } }
-    }catch(err){}
+      else if(planDarkOn()){
+        const dc = planDarkCanvas(l.src, im);
+        if(dc){ p.insertBefore(dc, im); im.style.opacity = '0'; }
+        else status('Тёмный пол: не удалось перекрасить этот план');
+      }
+    }catch(err){ console.warn('plan overlay', err); }
     if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
       const entry = cacheFloorPixelsFromImage(l, im);
       if(entry) autoDetectWallsIfNeeded(l, entry);
@@ -2633,7 +2643,9 @@ function renderPlanCameras(p, l){
                  suppressMarkerClick = false;
                  if(!moved) return;
                  suppressCamClick = true;
+                 const old = pano.planPx;
                  pano.planPx = { x:Math.round(pos.x), y:Math.round(pos.y) };
+                 cleanupMovedCamera(pano, old, l);
                  renderMinimap();
                  status('Камера «' + (pano.room || id) + '» перемещена');
                } };
@@ -3044,6 +3056,82 @@ async function pageEdit(i, kind, value){
     x.src = c.toDataURL('image/png');
   }catch(err){ /* оставляем предыдущее изображение */ }
   renderPending();
+}
+/* ---------- след камеры на плане ----------
+   В планах из .3dview под каждой камерой в саму картинку «запечена» метка —
+   красный кружок с номером панорамы. Пока значок камеры стоит на месте, он её
+   закрывает; после переноса камеры метка остаётся на старом месте. Здесь она
+   находится (связная красная область рядом с прежней точкой) и закрашивается
+   цветом пола вокруг неё. Правится само изображение этажа, один раз на камеру. */
+function isBadgeRed(px, o){ const r = px[o], g = px[o+1], b = px[o+2]; return px[o+3] > 128 && r > 140 && r - g > 60 && r - b > 60; }
+async function eraseBakedCamMark(l, pos){
+  if(!l || !l.src || !pos || !isFinite(pos.x) || !isFinite(pos.y)) return false;
+  let im; try{ im = await loadImage(l.src); }catch(e){ return false; }
+  const w = im.naturalWidth, h = im.naturalHeight;
+  if(!w || !h) return false;
+  const R = 90;                                   /* где искать метку вокруг прежней точки */
+  const x0 = Math.max(0, Math.round(pos.x) - R), y0 = Math.max(0, Math.round(pos.y) - R);
+  const x1 = Math.min(w, Math.round(pos.x) + R), y1 = Math.min(h, Math.round(pos.y) + R);
+  const ww = x1 - x0, hh = y1 - y0;
+  if(ww < 4 || hh < 4) return false;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently:true });
+  g.drawImage(im, 0, 0);
+  let id; try{ id = g.getImageData(x0, y0, ww, hh); }catch(e){ return false; }
+  const px = id.data;
+  /* ближайший к прежней точке красный пиксель — затравка */
+  let seed = -1, best = Infinity;
+  for(let y = 0; y < hh; y++) for(let x = 0; x < ww; x++){
+    if(!isBadgeRed(px, (y * ww + x) * 4)) continue;
+    const d = (x + x0 - pos.x) ** 2 + (y + y0 - pos.y) ** 2;
+    if(d < best){ best = d; seed = y * ww + x; }
+  }
+  if(seed < 0) return false;
+  /* связная красная область (цифры внутри — «дырки», их закроет заливка круга) */
+  const seen = new Uint8Array(ww * hh), stack = [seed];
+  let minX = ww, minY = hh, maxX = -1, maxY = -1, n = 0;
+  seen[seed] = 1;
+  while(stack.length){
+    const i = stack.pop(), x = i % ww, y = (i / ww) | 0;
+    n++;
+    if(x < minX) minX = x; if(x > maxX) maxX = x; if(y < minY) minY = y; if(y > maxY) maxY = y;
+    const nb = [x > 0 ? i - 1 : -1, x < ww - 1 ? i + 1 : -1, y > 0 ? i - ww : -1, y < hh - 1 ? i + ww : -1];
+    for(const j of nb){ if(j >= 0 && !seen[j] && isBadgeRed(px, j * 4)){ seen[j] = 1; stack.push(j); } }
+  }
+  const bw = maxX - minX + 1, bh = maxY - minY + 1;
+  if(n < 25 || bw > 2 * R - 4 || bh > 2 * R - 4) return false;   /* не метка: слишком мелко или упёрлось в край окна */
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, rad = Math.max(bw, bh) / 2 + 2;
+  /* цвет пола — медиана по кольцу сразу за меткой */
+  const ring = [[], [], []];
+  for(let y = 0; y < hh; y++) for(let x = 0; x < ww; x++){
+    const d = Math.hypot(x - cx, y - cy);
+    if(d < rad + 2 || d > rad + 7) continue;
+    const o = (y * ww + x) * 4;
+    ring[0].push(px[o]); ring[1].push(px[o+1]); ring[2].push(px[o+2]);
+  }
+  if(!ring[0].length) return false;
+  const med = a => { a.sort((u, v) => u - v); return a[a.length >> 1]; };
+  const fill = [med(ring[0]), med(ring[1]), med(ring[2])];
+  for(let y = 0; y < hh; y++) for(let x = 0; x < ww; x++){
+    const d = Math.hypot(x - cx, y - cy);
+    if(d > rad) continue;
+    const o = (y * ww + x) * 4;
+    const a = d > rad - 1.5 ? (rad - d) / 1.5 : 1;          /* мягкий край */
+    px[o]   = Math.round(px[o]   * (1 - a) + fill[0] * a);
+    px[o+1] = Math.round(px[o+1] * (1 - a) + fill[1] * a);
+    px[o+2] = Math.round(px[o+2] * (1 - a) + fill[2] * a);
+    px[o+3] = 255;
+  }
+  g.putImageData(id, x0, y0);
+  l.src = c.toDataURL('image/png');
+  return true;
+}
+/* камеру перенесли: убрать её запечённую метку со старого места (один раз) */
+function cleanupMovedCamera(pano, oldPos, l){
+  if(!pano || pano.bakedMarkErased || !oldPos) return;
+  pano.bakedMarkErased = true;
+  eraseBakedCamMark(l || level(), oldPos).then(ok => { if(ok){ touch(); drawPlan(); renderMinimap(); } })
+    .catch(err => console.warn('eraseBakedCamMark', err));
 }
 function loadImage(src){
   return new Promise((resolve, reject) => {
@@ -6577,7 +6665,9 @@ function layoutMinimapMarkers(l, img, layer){
     const px = (bx - ox) * planW / dw, py = (by - oy) * planH / dh;
     const p = activeLocalPano && state.panoramas[activeLocalPano];
     if(!p){ setPlacingCam(false); return; }
+    const old = p.planPx;
     p.planPx = { x: Math.round(px), y: Math.round(py) };
+    cleanupMovedCamera(p, old);
     setPlacingCam(false);
     touch(); renderMinimap();
     status('Камера «' + (p.room || activeLocalPano) + '» поставлена на план — значок появился на миникарте');
@@ -6818,7 +6908,9 @@ on('#stage', 'click', e => {
     if(!insidePlan(pc)) return;
     const p = activeLocalPano && state.panoramas[activeLocalPano];
     if(!p){ setPlacingCam(false); return; }
+    const old = p.planPx;
     p.planPx = { x: Math.round(pc.x), y: Math.round(pc.y) };
+    cleanupMovedCamera(p, old);
     setPlacingCam(false);
     touch(); render(); renderMinimap();
     status('Камера «' + (p.room || activeLocalPano) + '» поставлена на план — значок появился на этаже');
