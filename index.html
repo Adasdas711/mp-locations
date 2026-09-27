@@ -2931,9 +2931,10 @@ async function openAnyArchiveBuffer(buffer){
    только Zillow (1 фото-файл на точку, официальный план с сайта) — как в новой
    схеме links.json (platform/id/floor{id,label}/files[]/neighbors/extra), так
    и в старой (panoId/floorId/file/destinations, прежняя Zillow-only версия
-   grabber'а) через фолбэки по именам полей. Matterport-туры в PALACE больше не
-   импортируются напрямую — только как встраиваемая живая ссылка (см. поле
-   «3D-тур» и importThreeDViewZip ниже, который сразу отклоняет такой архив). */
+   grabber'а) через фолбэки по именам полей. Matterport (grabber 15.50+) тоже
+   импортируется: круговая панорама pano_file (склеена из граней куба), план
+   plan.png из 3D-модели с plan_px камер, повороты кадров из pano.rotation —
+   кольца переходов сразу смотрят в нужную сторону. */
 /* Ищет первое числовое значение среди перечисленных ключей объекта — так
    опциональные поля с углом/азимутом можно подхватить под разными именами,
    если grabber (или будущая версия 3d_tour_grabber.py) когда-нибудь начнёт
@@ -2954,7 +2955,15 @@ function normalizeThreeDViewLink(link){
     ? { x:Number(w.x), y:Number(w.y), z:Number(w.z) } : null;
   const px = link.plan_px || link.planPx || null;
   const planPx = (px && isFinite(px.x) && isFinite(px.y)) ? { x:Number(px.x), y:Number(px.y) } : null;
-  const files = Array.isArray(link.files) ? link.files.filter(Boolean) : (link.file ? [link.file] : []);
+  let files = Array.isArray(link.files) ? link.files.filter(Boolean) : (link.file ? [link.file] : []);
+  /* Matterport (grabber 15.50+): в files лежат 6 граней куба + склеенная круговая
+     панорама; показываем только её (pano_file или *_equirect.*). Если её нет
+     (старый архив) — грани в просмотрщике не показываются, точка остаётся без фото. */
+  if(link.pano_file) files = [link.pano_file];
+  else if(link.platform === 'matterport'){
+    const eq = files.find(f => /_equirect\.(avif|jpe?g|webp|png)$/i.test(f) && !/hypothesis/i.test(f));
+    files = eq ? [eq] : [];
+  }
   const neighbors = (Array.isArray(link.neighbors) ? link.neighbors : (Array.isArray(link.destinations) ? link.destinations : []))
     .map(d => {
       const angleDeg = firstFiniteField(d, ['angleDeg', 'angle', 'degrees', 'heading', 'bearing', 'departureAngle', 'yaw']);
@@ -2981,8 +2990,28 @@ function normalizeThreeDViewLink(link){
     headingDeg: headingDeg,
     roomId: extra.roomId != null ? extra.roomId : (link.roomId != null ? link.roomId : null),
     order: extra.order != null ? extra.order : (link.order != null ? link.order : null),
-    hidden: !!(link.hidden_on_plan || link.hiddenOnPlan)
+    hidden: !!(link.hidden_on_plan || link.hiddenOnPlan),
+    n: link.n != null ? link.n : null,
+    label: extra.label != null ? String(extra.label) : null,
+    panoYawDeg: firstFiniteField(extra, ['panoYawDeg']),
+    unplaced: !!extra.unplaced
   };
+}
+/* Matterport: поворот камеры вокруг вертикали из кватерниона pano.rotation
+   (мировые оси Matterport: Z вверх). Проверено на реальном туре сравнением фото
+   с глубиной 3D-модели: направление с мировым азимутом α (от +X против часовой)
+   видно на круговой панораме на долготе lon = yaw − α (lon 0 — центр кадра). */
+function mpYawFromQuat(q){
+  if(!q || !isFinite(q.z) || !isFinite(q.w)) return null;
+  return 2 * Math.atan2(Number(q.z), Number(q.w)) * 180 / Math.PI;
+}
+/* В этом просмотрщике yaw = 90° − lon, а азимут на плане (см. l3dBearingYawDeg)
+   = α − 90°, поэтому поправка колец для точки Matterport точная и постоянная:
+   navYawOffsetDeg = 180° − yaw. Ручная крутилка больше не нужна. */
+function mpNavOffsetDeg(yaw){
+  let o = 180 - yaw;
+  o = ((o + 180) % 360 + 360) % 360 - 180;
+  return Math.round(o * 10) / 10;
 }
 /* Одно фото на точку (Zillow avif) — просто читаем файл. Если файла нет
    (скачивание не удалось) — «фото недоступно», но сама точка/переходы к ней
@@ -3001,11 +3030,36 @@ async function importThreeDViewZip(zip){
   if(!linksEntry) throw new Error('в архиве нет links.json — это не .3dview от 3D Tour Grabber');
   const rawLinks = JSON.parse(await linksEntry.async('string'));
   if(!Array.isArray(rawLinks) || !rawLinks.length) throw new Error('links.json пуст — нечего импортировать');
-  if(rawLinks[0] && rawLinks[0].platform === 'matterport'){
-    throw new Error('это архив с Matterport-тура — локальный импорт Matterport в PALACE не поддерживается. ' +
-      'Вставьте живую ссылку на тур в поле «3D-тур» (m.matterport.com/show/…) — он встраивается как обычный iframe.');
-  }
+  const isMatterport = rawLinks.some(l => l && l.platform === 'matterport');
   const points = rawLinks.map(normalizeThreeDViewLink);
+  let mpNoPhoto = 0, mpUnplaced = 0;
+  if(isMatterport){
+    /* Поворот каждой панорамы: из links.json (grabber 15.52+: extra.panoYawDeg),
+       иначе из raw_data.json (queries.GetModelPrefetch.data.model.locations[].pano.rotation). */
+    let yawBySweep = {};
+    try{
+      const rawEntry = zip.file('raw_data.json');
+      if(rawEntry){
+        const raw = JSON.parse(await rawEntry.async('string'));
+        const locs = (((((raw || {}).queries || {}).GetModelPrefetch || {}).data || {}).model || {}).locations || [];
+        locs.forEach(loc => {
+          const p = loc && loc.pano;
+          const y = p ? mpYawFromQuat(p.rotation) : null;
+          if(p && p.sweepUuid && y != null) yawBySweep[p.sweepUuid] = y;
+        });
+      }
+    }catch(err){ /* raw_data необязателен */ }
+    const nameById = {};
+    points.forEach(p => {
+      if(p.panoYawDeg == null && yawBySweep[p.id] != null) p.panoYawDeg = yawBySweep[p.id];
+      /* у Matterport комнаты часто без названия («other») — подписываем номером точки */
+      if(!p.room || /^other$/i.test(p.room)) p.room = 'Точка ' + (p.n != null ? p.n : (p.label || ''));
+      nameById[p.id] = p.room;
+      if(p.unplaced){ p.planPx = null; mpUnplaced++; }
+      if(!p.files.length) mpNoPhoto++;
+    });
+    points.forEach(p => p.neighbors.forEach(d => { if(nameById[d.panoId]) d.room = nameById[d.panoId]; }));
+  }
 
   let floorNames = {};
   try{
@@ -3079,7 +3133,9 @@ async function importThreeDViewZip(zip){
         floorId: p.floorId != null ? p.floorId : null, world: p.world, planPx: p.planPx || null,
         headingDeg: p.headingDeg != null ? p.headingDeg : null,
         order: p.order != null ? p.order : null,
-        navYawOffsetDeg: 90, /* дефолтный поворот колец-переходов по запросу пользователя (было 0) */
+        /* Zillow: дефолт 90° (подбирается вручную крутилкой); Matterport: точная поправка из поворота камеры */
+        navYawOffsetDeg: (p.platform === 'matterport' && p.panoYawDeg != null) ? mpNavOffsetDeg(p.panoYawDeg) : 90,
+        platform: p.platform,
         destinations: p.neighbors,
         hidden: !!p.hidden
       }, rec);
@@ -3101,6 +3157,11 @@ async function importThreeDViewZip(zip){
   if(skippedNoPhoto) msg += ' · без фото (не скачалось): ' + skippedNoPhoto;
   if(skippedNoPlan) msg += ' · без плана этажа: ' + skippedNoPlan;
   if(addedSymmetric) msg += ' · добавлено обратных переходов: ' + addedSymmetric + ' (чтобы можно было вернуться напрямую, без лишней точки)';
+  if(isMatterport){
+    msg = 'Matterport · ' + msg;
+    if(mpUnplaced) msg += ' · отдельных 360°-фото без места на плане: ' + mpUnplaced;
+    if(mpNoPhoto) msg += ' · без склеенной панорамы (архив старше grabber 15.50 — пересоберите тур): ' + mpNoPhoto;
+  }
   status(msg);
 }
 /* Источник данных (Zillow richMedia.panos[].destinations) иногда отдаёт связь
