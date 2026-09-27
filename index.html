@@ -2692,7 +2692,8 @@ async function saveMpalace(){
       headingDeg: p.headingDeg != null ? p.headingDeg : null, order: p.order != null ? p.order : null,
       navYawOffsetDeg: isFinite(p.navYawOffsetDeg) ? p.navYawOffsetDeg : 90,
       destinations: Array.isArray(p.destinations) ? p.destinations : [],
-      hidden: !!p.hidden
+      hidden: !!p.hidden,
+      platform: p.platform || null
     };
     if(p.data){
       const ext = extOfMime(p.mime), fname = base + '.' + ext;
@@ -2795,7 +2796,8 @@ async function loadMplaceBuffer(buffer){
         order: meta.order != null ? meta.order : null,
         navYawOffsetDeg: isFinite(meta.navYawOffsetDeg) ? meta.navYawOffsetDeg : 90,
         destinations: Array.isArray(meta.destinations) ? meta.destinations : [],
-        hidden: !!meta.hidden
+        hidden: !!meta.hidden,
+        platform: meta.platform || null
       };
       /* mode:'cubemap' встречается только в .mpalace, сохранённых во время
          короткого периода поддержки Matterport (см. историю) — Matterport
@@ -5401,15 +5403,44 @@ function l3dNavYawDeg(fromPano, toPanoId, explicitAngleDeg, fallbackIndex, fallb
   }
   return (360 / fallbackCount) * fallbackIndex + offset;
 }
+function isMatterportPano(p){
+  if(!p) return false;
+  if(p.platform === 'matterport') return true;
+  /* дворцы, сохранённые до поля platform: точки Matterport подписаны «Точка N» */
+  return /^Точка\s+\S+$/.test(p.room || '');
+}
+function l3dDedupeDirections(p, dests){
+  const dist = d => {
+    const t = state.panoramas[d.panoId];
+    const a = p.world, b = t && t.world;
+    if(a && b && isFinite(a.x) && isFinite(b.x)) return Math.hypot(b.x - a.x, b.y - a.y);
+    const pa = p.planPx, pb = t && t.planPx;
+    if(pa && pb) return Math.hypot(pb.x - pa.x, pb.y - pa.y);
+    return Infinity;
+  };
+  const withYaw = dests.map((d, i) => ({ d, yaw: l3dNavYawDeg(p, d.panoId, d.angleDeg, i, dests.length), r: dist(d) }))
+    .sort((a, b) => a.r - b.r);
+  const kept = [];
+  withYaw.forEach(it => {
+    const close = kept.some(k => Math.abs(((it.yaw - k.yaw + 540) % 360) - 180) < 12);
+    if(!close) kept.push(it);
+  });
+  return dests.filter(d => kept.some(k => k.d === d));
+}
 function renderLocalJumps(p){
   const box = $('#l3dJumps'); if(!box) return;
   box.innerHTML = '';
   clearLocalNavMeshes();
 
-  const dests = (p && Array.isArray(p.destinations))
+  let dests = (p && Array.isArray(p.destinations))
     ? p.destinations.filter(d => d && d.panoId != null && state.panoramas[d.panoId])
     : [];
   if(!dests.length) return;
+  /* Matterport: у точек нет названий комнат — над стрелками подписи не выводим
+     (только стрелки), а переходы почти в одну сторону (точки на одной линии)
+     сводим к ближайшей точке: дальняя достижима уже оттуда. */
+  const mpPano = isMatterportPano(p);
+  if(mpPano) dests = l3dDedupeDirections(p, dests);
 
   dests.forEach((d, i) => {
     const yawDeg = l3dNavYawDeg(p, d.panoId, d.angleDeg, i, dests.length);
@@ -5418,7 +5449,8 @@ function renderLocalJumps(p){
     label.className = 'l3d-navpt';
     label.setAttribute('aria-label', 'Перейти: ' + (d.room || 'далее'));
     label.title = 'Перейти: ' + (d.room || 'далее');
-    label.innerHTML = '<span class="l3d-navpt-arrow"></span><span class="l3d-navpt-label">' + esc(d.room || 'далее') + '</span>';
+    label.innerHTML = '<span class="l3d-navpt-arrow"></span>' +
+      (mpPano ? '' : '<span class="l3d-navpt-label">' + esc(d.room || 'далее') + '</span>');
 
     const go = e => {
       e.preventDefault();
@@ -6876,12 +6908,34 @@ function wallPixelMask(entry, color, tol){
       const len = Math.min(65535, y - s); for(let k = s; k < y; k++) vr[k * w + x] = len;
     }
   }
+  /* диагональные пробеги: в углу/на стыке стен горизонтальный И вертикальный пробег длинные
+     (иначе угол ошибочно считался «сплошной заливкой» и оставался тёмным квадратом),
+     а хотя бы один диагональный — короткий; у настоящей заливки длинные все четыре */
+  const d1 = new Uint16Array(N), d2 = new Uint16Array(N);
+  const diagRuns = (arr, dx) => {
+    const starts = [];
+    for(let x = 0; x < w; x++) starts.push([x, 0]);
+    for(let y = 1; y < h; y++) starts.push([dx > 0 ? 0 : w - 1, y]);
+    starts.forEach(([sx0, sy0]) => {
+      let x = sx0, y = sy0;
+      while(x >= 0 && x < w && y < h){
+        if(!m[y * w + x]){ x += dx; y++; continue; }
+        const px = x, py = y; let len = 0;
+        while(x >= 0 && x < w && y < h && m[y * w + x]){ len++; x += dx; y++; }
+        len = Math.min(65535, len);
+        for(let k = 0, xx = px, yy = py; k < len; k++, xx += dx, yy++) arr[yy * w + xx] = len;
+      }
+    });
+  };
+  diagRuns(d1, 1); diagRuns(d2, -1);
   const THICK_MAX = Math.max(30, Math.round(Math.max(w, h) / 45));
   const thick = [];
   for(let i = 0; i < N; i++){
     if(!m[i]) continue;
     const t = Math.min(hr[i], vr[i]), L = Math.max(hr[i], vr[i]);
-    if(t > THICK_MAX){ m[i] = 0; continue; }          /* сплошная заливка похожего цвета — не стена */
+    const td = Math.min(d1[i], d2[i]) * 0.7071;
+    if(t > THICK_MAX && td > THICK_MAX){ m[i] = 0; continue; }   /* сплошная заливка похожего цвета — не стена */
+    if(t > THICK_MAX) continue;                                    /* угол/стык стен — стена, но не в статистику толщины */
     if((i & 7) === 0 && L >= t * 3) thick.push(t);
   }
   thick.sort((a, b) => a - b);
