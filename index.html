@@ -995,7 +995,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 .app.tool-camera .plan-cam.dragging{cursor:grabbing!important;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.12);z-index:20}
 #planDarkFloor[aria-pressed="true"]{background:var(--t-sel);color:var(--t-sel-fg);box-shadow:inset 0 0 0 1px var(--vscode-focus)}
 .plan.dark-floor{background:var(--t-canvas-bg)}
-.plan.dark-floor > img{filter:invert(1) hue-rotate(180deg) saturate(1.15);mix-blend-mode:lighten}
+.plan.dark-floor > img,.plan.dark-floor > canvas.plan-keyed{filter:invert(1) hue-rotate(180deg) saturate(1.15);mix-blend-mode:lighten}
 
 /* миникарта 3D — тот же стиль виджета */
 .minimap{background:color-mix(in srgb,var(--t-widget) 86%,transparent);border-color:var(--t-widget-border);border-radius:8px}
@@ -2441,8 +2441,9 @@ function drawPlan(){
     try{
       const kc = planKeyedCanvas(l.src, im);
       if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
-      /* у плана с тёмным фоном (вырезанным в прозрачность) тёмный пол не нужен */
-      p.classList.toggle('dark-floor', planDarkOn() && !kc);
+      /* у планов из .3dview фон вокруг дома чёрный и вырезается в прозрачность
+         (canvas.plan-keyed), но пол внутри всё равно светлый — тёмный пол нужен и им */
+      p.classList.toggle('dark-floor', planDarkOn());
     }catch(err){ console.warn('plan overlay', err); }
     if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
       const entry = cacheFloorPixelsFromImage(l, im);
