@@ -789,6 +789,176 @@ html[data-theme="mono"] #compassNeedle path:first-child{fill:#f2f2f2}
 html[data-theme="mono"] #compassNeedle path:nth-child(2){fill:#5a5a5a}
 html[data-theme="mono"] #compassNeedle circle{fill:#fafafa}
 </style>
+<style id="darculaStyle">
+/* ===== Darcula (rokoroku/vscode-theme-darcula) + раскладка современного VS Code =====
+   Отдельный слой поверх baseStyle/monoStyle: нейтральные серые Darcula действуют в
+   обеих темах, а акценты — только в цветной (в ЧБ их перекрывает html[data-theme=mono]). */
+:root{
+  --dc-editor:#242424;          /* editor.background */
+  --dc-chrome:#2e2e2e;          /* titleBar/activityBar/statusBar: #ffffff1a поверх фона */
+  --dc-tab:#292929;             /* tab.inactiveBackground: #ffffff0b */
+  --dc-widget:#303030;          /* editorSuggestWidget.background */
+  --dc-border:#3b3b3b;          /* sideBar.border: #ffffff1a */
+  --dc-widget-border:#474747;
+  --dc-hover:rgba(255,255,255,.07);
+  --dc-sel:rgba(32,65,130,.8);  /* editor.selectionBackground #204182cc */
+  --dc-orange:#cc7832;--dc-yellow:#ffc66d;--dc-green:#6a8759;--dc-num:#6897bb;--dc-purple:#9876aa;--dc-comment:#808080;
+  --vscode-fg:#cccccc;--vscode-fg-dim:#a0a0a0;--vscode-fg-mute:#7a7a7a;
+  --vscode-titlebar-bg:var(--dc-chrome);--vscode-activity-bg:var(--dc-chrome);--vscode-sidebar-bg:var(--dc-widget);
+  --vscode-editor-bg:var(--dc-editor);--vscode-tab-bg:var(--dc-tab);--vscode-tab-active-bg:var(--dc-editor);
+  --vscode-tab-border:var(--dc-border);--vscode-widget-border:var(--dc-widget-border);
+  --vscode-input-bg:#3a3a3a;--vscode-input-border:#4b4b4b;--vscode-list-hover:#383838;
+  --vscode-activity-fg:#e0e0e0;--vscode-activity-inactive:#8c8c8c;
+  --vscode-status-bg:var(--dc-chrome);--vscode-status-fg:#b8b8b8;
+  --elev:#353535;--line:var(--dc-border);--panel:var(--dc-widget);
+  --gap-pane:6px;--r-pane:8px;--r-lg:8px;--r-md:5px;--r-sm:4px;
+  --top:35px;--status:24px;--activity:48px
+}
+html[data-theme="color"]{
+  --vscode-focus:#3592c4;--vscode-button-bg:#365880;--vscode-button-hover:#4470a3;
+  --vscode-activity-badge:#007acc;--dc-accent:#0c7d9d;
+  --blue:#3592c4;--blue2:#5aa9d6;--green:#8fb573;--red:#e0605a
+}
+html[data-theme="mono"]{
+  --vscode-status-bg:var(--dc-chrome);--vscode-status-fg:#b8b8b8;--dc-accent:#d6d6d6;--dc-sel:rgba(255,255,255,.14);
+  --dc-num:#d6d6d6;--dc-purple:#bdbdbd
+}
+html,body,.app{background:var(--dc-chrome)}
+html,body{font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe WPC","Segoe UI","Ubuntu","Droid Sans",system-ui,sans-serif}
+code,kbd,pre,.l3d-debug-log,.tour-diag{font-family:"JetBrains Mono","Cascadia Code",Consolas,"SF Mono",Menlo,monospace}
+::selection{background:var(--dc-sel)}
+
+/* скроллбары как в VS Code: тонкие, без стрелок */
+*{scrollbar-width:thin;scrollbar-color:rgba(121,121,121,.4) transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(121,121,121,.4);border:0}
+::-webkit-scrollbar-thumb:hover{background:rgba(100,100,100,.7)}
+::-webkit-scrollbar-thumb:active{background:rgba(191,191,191,.4)}
+
+/* кнопки: плоские, радиус VS Code */
+button{background:#3c3c3c;border:1px solid rgba(255,255,255,.06);border-radius:var(--r-sm);color:var(--vscode-fg)}
+button:hover{background:#464646}
+button.primary{border-color:rgba(255,255,255,.08)}
+
+/* TITLE BAR + командный центр */
+.top{height:var(--top);background:var(--dc-chrome);border-bottom:0;padding:0 6px 0 4px;gap:4px}
+.menubar .menu-item{height:24px;line-height:24px;padding:0 8px;border-radius:var(--r-sm);color:#cccccc}
+.menubar .menu-item:hover{background:var(--dc-hover)}
+.title{position:relative;align-items:center}
+.title .cc{position:relative;display:flex;align-items:center;width:min(38vw,560px);min-width:180px}
+.title .cc .ic{position:absolute;left:9px;width:14px;height:14px;color:var(--vscode-fg-mute);pointer-events:none}
+.title input{max-width:none;height:24px;padding:0 30px;border-radius:6px;font-size:12.5px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--vscode-fg-dim)}
+.title input:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:var(--vscode-fg)}
+.title input:focus{background:var(--dc-widget);border-color:var(--vscode-focus);color:var(--vscode-fg)}
+.top-actions{gap:4px}
+.top-actions button{height:24px;border-color:transparent;color:#c5c5c5}
+.top-actions button:hover{background:var(--dc-hover)}
+.top-actions button.primary{border-color:transparent}
+
+/* ACTIVITY BAR — без рамки, крупные иконки, индикатор активного */
+.activity{border-right:0;padding-top:2px}
+.abtn{height:46px}
+.abtn .ic{width:22px;height:22px;stroke-width:1.35}
+.abtn.active::before{width:2px;background:var(--dc-accent,#fff);left:0;top:6px;bottom:6px;border-radius:0 2px 2px 0}
+.abtn:hover{background:transparent}
+.activity .ab-sep{background:#4a4a4a;opacity:1;margin:5px 0}
+.activity #btnSplit.on{background:transparent;color:var(--vscode-activity-fg)}
+.activity #btnSplit.on::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:2px;border-radius:0 2px 2px 0;background:var(--dc-accent,#fff)}
+
+/* ОБЛАСТЬ РЕДАКТОРА — «плавающие» скруглённые панели, как на новом VS Code */
+.workbench,.main-wrap,.main{background:var(--dc-chrome)}
+.main{padding:0 var(--gap-pane) var(--gap-pane) 0}
+.app[data-layout=split] .main,.app[data-layout=split-rev] .main{padding:0 var(--gap-pane) var(--gap-pane) 0}
+.app[data-layout=plan] #stage,.app[data-layout=tour] #tourPanel,
+.app[data-layout=split] #stage,.app[data-layout=split-rev] #stage,
+.app[data-layout=split] #tourPanel,.app[data-layout=split-rev] #tourPanel{
+  border:1px solid var(--dc-border)!important;border-radius:var(--r-pane)!important;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.splitter{flex-basis:var(--gap-pane)}
+.splitter span{width:2px;height:28px;background:#4a4a4a}
+.splitter:hover span,.splitter.dragging span{background:var(--vscode-focus)}
+
+/* холст плана: фон редактора Darcula и едва заметная сетка */
+.stage{background-color:var(--dc-editor);
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:24px 24px}
+.empty strong{font-weight:500;font-size:16px;color:#d4d4d4}
+.empty{color:var(--vscode-fg-mute)}
+.empty-actions button{border-radius:var(--r-sm);padding:7px 14px}
+.tour,.tour-body,.tour-body iframe,.tour-status{background:var(--dc-editor)}
+.tour-empty strong{font-weight:400;color:#d4d4d4}
+.guide-steps b,.guide-table td:first-child{color:#d4d4d4}
+.guide code{background:rgba(255,255,255,.06);color:var(--dc-green);border-radius:3px}
+.guide-table td.ok{color:var(--dc-green)}
+.guide-table td.no{color:var(--dc-orange)}
+.guide kbd{background:#3a3a3a;border-color:#555;border-bottom-color:#444;color:#d4d4d4;border-radius:3px}
+
+/* ВИДЖЕТЫ поверх холста (suggest widget / find widget) */
+.left,.canvas-ctl,.floor-overlay,.compass,.tour-toolbar,#tourSettingsBtn,.page-ops,.page-adj,.page-name{
+  background:var(--dc-widget)!important;border:1px solid var(--dc-widget-border)!important;box-shadow:0 0 8px 2px rgba(0,0,0,.36)!important}
+.left{border-radius:6px;padding:3px}
+.tool{border-radius:var(--r-sm);color:#b5b5b5}
+.tool:hover{background:rgba(255,255,255,.08);color:#e6e6e6}
+.tool.active{background:var(--dc-sel);color:#fff;box-shadow:inset 0 0 0 1px var(--vscode-focus)}
+#planShowHiddenCams[aria-pressed="true"]{background:rgba(204,120,50,.28);box-shadow:inset 0 0 0 1px var(--dc-orange)}
+.canvas-ctl{border-radius:6px!important;padding:5px 10px}
+.canvas-ctl label{color:var(--vscode-fg-dim)}
+.canvas-ctl output{color:var(--dc-num);font-family:"JetBrains Mono",Consolas,monospace;font-weight:500}
+.floor-overlay{border-radius:6px!important}
+.floor-overlay button{background:transparent;border-color:transparent}
+.floor-overlay button:hover{background:rgba(255,255,255,.07)}
+.floor-overlay button.active{background:var(--dc-sel);border-color:var(--vscode-focus);color:#fff}
+.compass{border-radius:50%!important}
+.compass-val input:focus{background:var(--dc-editor)}
+.tour-toolbar{border-radius:6px!important}
+#tourSettingsBtn{border-radius:var(--r-sm)}
+
+/* поля ввода */
+.field input,.field textarea,.field select,.tour-toolbar input,.tour-toolbar select,.tour-head input,#askInput{
+  background:var(--vscode-input-bg)!important;border:1px solid var(--vscode-input-border)!important;border-radius:var(--r-sm)!important;color:#d4d4d4}
+.field input:focus,.field textarea:focus,.field select:focus,#askInput:focus{outline:none;border-color:var(--vscode-focus)!important}
+.field label,.section h3{color:var(--vscode-fg-dim)}
+.section h3{font-weight:600;letter-spacing:.8px}
+
+/* НИЖНЯЯ ПАНЕЛЬ «Маршрут» — как Panel в VS Code: заголовок-вкладка и фон редактора */
+.bottom{background:var(--dc-editor);border:1px solid var(--dc-border);border-radius:var(--r-pane);
+  margin:0 var(--gap-pane) var(--gap-pane) var(--activity);padding:0 12px 0 0;gap:12px}
+.bottom>b{display:flex;align-self:stretch;align-items:center;padding:0 12px;font-size:11px;font-weight:400;letter-spacing:.6px;
+  color:#e7e7e7;border-right:1px solid var(--dc-border);position:relative;flex-shrink:0}
+.bottom>b::after{content:'';position:absolute;left:12px;right:12px;bottom:0;height:1px;background:var(--dc-accent,#e7e7e7)}
+.bottom #count{color:var(--vscode-fg-mute)}
+.route .r{border-color:#1e1e1e;box-shadow:0 0 0 1px rgba(255,255,255,.5)}
+.rgroup{border-color:rgba(255,255,255,.08)}
+
+/* STATUS BAR — серый, как statusBar.background Darcula */
+.status{height:var(--status);background:var(--dc-chrome);color:var(--vscode-status-fg);border-top:0!important;padding:0;gap:0;font-size:12px}
+.status>span{display:flex;align-items:center;height:100%;padding:0 9px;color:var(--vscode-status-fg)!important}
+.status>span:hover{background:rgba(255,255,255,.08)}
+.status .badge{background:var(--dc-accent,#0c7d9d);color:#fff!important;padding:0 11px;opacity:1}
+html[data-theme="mono"] .status .badge{background:#4a4a4a}
+
+/* ДИАЛОГИ — как quick input / notifications */
+.modal{background:rgba(0,0,0,.45)!important}
+.dialog{background:#2b2b2b!important;border:1px solid var(--dc-widget-border)!important;border-radius:8px!important;
+  box-shadow:0 0 8px 2px rgba(0,0,0,.36),0 16px 40px rgba(0,0,0,.35)}
+.dialog h2{font-size:15px;font-weight:600;color:#e0e0e0}
+.drop{border-color:#555;border-radius:6px}
+.page-card,.page-card img{background:var(--dc-editor)}
+.save-grid button{border-radius:var(--r-sm)}
+html[data-theme="color"] .save-grid button.primary .small{color:rgba(255,255,255,.72)!important}
+
+/* ПОВТОРЕНИЕ — плавающий виджет */
+.review-bar{background:var(--dc-widget);border:1px solid var(--dc-widget-border);border-radius:8px;box-shadow:0 0 8px 2px rgba(0,0,0,.36),0 18px 40px rgba(0,0,0,.35)}
+.rv-actions button{border-radius:var(--r-sm)}
+.rv-actions button.primary{box-shadow:none}
+.rv-pill{border-radius:var(--r-sm)}
+.rv-chip{border-radius:var(--r-sm)}
+
+/* миникарта 3D — тот же стиль виджета */
+.minimap{background:rgba(48,48,48,.82);border-color:var(--dc-widget-border);border-radius:8px}
+.minimap-btn{border-radius:var(--r-sm)}
+</style>
 <script>
 /* ===== темы: mono (ЧБ, по умолчанию) / color ===== */
 (function(){
@@ -873,6 +1043,7 @@ html[data-theme="mono"] #compassNeedle circle{fill:#fafafa}
 <symbol id="i-contrast" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.8"/><path class="fill" d="M8 2.2a5.8 5.8 0 0 1 0 11.6z"/></symbol>
 <symbol id="i-expand" viewBox="0 0 16 16"><path d="M9.6 2.4h4v4M13.6 2.4 9.2 6.8M6.4 13.6h-4v-4M2.4 13.6l4.4-4.4"/></symbol>
 <symbol id="i-collapse" viewBox="0 0 16 16"><path d="M13.6 6.8h-4.4V2.4M9.2 6.8l4.4-4.4M2.4 9.2h4.4v4.4M6.8 9.2l-4.4 4.4"/></symbol>
+<symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.4"/><path d="M10.2 10.2 13.6 13.6"/></symbol>
 <symbol id="i-transparent" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.6"/><path class="fill" d="M2 3.6A1.6 1.6 0 0 1 3.6 2H8v6H2zM8 8h6v4.4a1.6 1.6 0 0 1-1.6 1.6H8z" opacity=".55"/></symbol>
 </defs></svg>
 <div class="app" data-ui="editor" data-layout="plan" id="appRoot">
@@ -882,7 +1053,7 @@ html[data-theme="mono"] #compassNeedle circle{fill:#fafafa}
       <button type="button" class="menu-item" id="modeBtn" title="Режим редактирования / просмотра">Вид</button>
       <button type="button" class="menu-item" id="abUploadMenu" title="Загрузить планы">Планы</button>
     </div>
-    <div class="title"><input aria-label="Название дворца" id="palaceName" value="Новый дворец памяти — PALACE"/></div>
+    <div class="title"><div class="cc"><svg class="ic"><use href="#i-search"/></svg><input aria-label="Название дворца" id="palaceName" value="Новый дворец памяти — PALACE"/></div></div>
     <div class="top-actions">
       <button id="themeBtn" type="button" title="Тема"><svg class="ic"><use href="#i-contrast"/></svg><span class="lbl">ЧБ</span></button>
       <button id="reviewBtn" title="Случайно выбрать режим повторения (1–5) и начать">Повторение</button>
