@@ -616,6 +616,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .canvas-ctl input[type=range]{width:120px;accent-color:var(--blue)}
 .canvas-ctl output{font-size:11px;font-weight:700;min-width:26px;text-align:right}
 #markerCtl{left:12px;bottom:12px}
+.canvas-ctl input[type=color]{width:28px;height:20px;padding:0;border:1px solid var(--vscode-widget-border);border-radius:4px;background:transparent;cursor:pointer}
+.canvas-ctl input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+.canvas-ctl input[type=color]::-webkit-color-swatch{border:0;border-radius:2px}
+.canvas-ctl input[type=color]::-moz-color-swatch{border:0;border-radius:2px}
+.ctl-reset{width:22px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:transparent;border-color:transparent;color:var(--vscode-fg-dim)}
+.ctl-reset:hover{color:var(--vscode-fg)}
+.ctl-reset .ic{width:13px;height:13px}
+.ctl-reset[hidden]{display:none}
 
 /* ПОВТОРЕНИЕ — плавающая панель сессии над планом */
 .review-bar{position:absolute;left:50%;top:18px;z-index:13;transform:translateX(-50%);
@@ -768,7 +776,7 @@ button .ic{pointer-events:none}
 #vcur[data-m="orbit"] .c-orbit,#vcur[data-m="orbiting"] .c-orbiting{display:inline}
 /* клетки холста под прозрачным фоном плана */
 .plan{box-shadow:none}
-.plan canvas.plan-keyed{position:absolute;left:0;top:0;pointer-events:none}
+.plan canvas.plan-keyed,.plan canvas.plan-walls{position:absolute;left:0;top:0;pointer-events:none}
 /* ===== полировка ===== */
 button,.abtn,.tool,.menu-item{transition:background-color .12s ease,color .12s ease,border-color .12s ease,opacity .12s ease}
 .ic{stroke-width:1.5}
@@ -1304,6 +1312,63 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
     t.marker.shape = u[4];
     t.camera.icon = u[5];
   });
+  /* Палитры, проверенные на контраст: локус (заливка + обводка) и камера (фон + обводка) заметны и на
+     светлом плане Zillow, и на тёмном полу темы; стены (canvas.walls) — средней яркости (контраст ≥ 3 с
+     обоими полами) и другого оттенка, чем первые цвета локусов, чтобы локус у стены не сливался с ней.
+     Darcula не трогаем — её схема прежняя. */
+  var TUNE = {
+    'github-dark-default':{ walls:'#1f6feb',
+      marker:{ palette:['#ffa657','#3fb950','#d2a8ff','#ff7b72','#79c0ff','#e3b341','#56d4dd','#f778ba','#a5d6ff','#c9d1d9'], text:'#0d1117', stroke:'#0d1117', ring:'rgba(240,246,252,.8)' },
+      camera:{ border:'#c9d1d9', fg:'#f0f6fc' } },
+    'github-dark-dimmed':{ walls:'#316dca',
+      marker:{ palette:['#f69d50','#57ab5a','#dcbdfb','#f47067','#6cb6ff','#daaa3f','#39c5cf','#fc8dc7','#96d0ff','#adbac7'], text:'#1c2128', stroke:'#1c2128', ring:'rgba(205,217,229,.8)' },
+      camera:{ border:'#adbac7', fg:'#cdd9e5' } },
+    'github-dark-high-contrast':{ walls:'#2f81f7',
+      marker:{ palette:['#ffb757','#26cd4d','#cb9eff','#ff80d2','#ff9492','#39c5cf','#f0b72f','#fe9a2d','#f0f3f6','#71b7ff'] } },
+    'atom-one-dark':{ walls:'#b064d4',
+      marker:{ palette:['#61afef','#98c379','#e5c07b','#e06c75','#56b6c2','#d19a66','#abb2bf','#f0a3ab','#dcdfe4','#8fb8f7'], ring:'rgba(255,255,255,.6)' },
+      camera:{ border:'#abb2bf', fg:'#d7dae0' } },
+    'gruvbox-dark-medium':{ walls:'#458588',
+      marker:{ palette:['#fabd2f','#b8bb26','#fe8019','#d3869b','#8ec07c','#fb4934','#d79921','#bdae93','#83a598','#689d6a'], ring:'rgba(251,241,199,.7)' },
+      camera:{ border:'#d5c4a1' } },
+    'gruvbox-dark-hard':{ walls:'#b16286',
+      marker:{ palette:['#fabd2f','#b8bb26','#83a598','#fe8019','#8ec07c','#fb4934','#d79921','#bdae93','#689d6a','#d3869b'], ring:'rgba(249,245,215,.7)' },
+      camera:{ border:'#d5c4a1' } },
+    'gruvbox-dark-soft':{ walls:'#d65d0e',
+      marker:{ palette:['#b8bb26','#83a598','#d3869b','#8ec07c','#fabd2f','#689d6a','#bdae93','#ebdbb2','#fb4934','#fe8019'], ring:'rgba(242,229,188,.7)' },
+      camera:{ border:'#d5c4a1' } },
+    'sublime-material-dark':{ walls:'#00897b',
+      marker:{ stroke:'#1e1e1e', width:2, palette:['#82aaff','#ffcb6b','#c792ea','#f07178','#c3e88d','#89ddff','#f78c6c','#ff5370','#b2ccd6','#80cbc4'], ring:'rgba(238,255,255,.6)' },
+      camera:{ border:'#eeffff', borderWidth:1.5, fg:'#80cbc4' } },
+    'min-dark':{ walls:'#6b6b6b' },
+    'macos-modern-dark-ventura-xcode':{ walls:'#128cff',
+      marker:{ palette:['#ff9f0a','#30d158','#bf5af2','#ff375f','#64d2ff','#ffd60a','#66d4cf','#ac8e68','#ff453a','#e5e5ea'], text:'#1c1c1e', stroke:'#1c1c1e', ring:'rgba(255,255,255,.85)' },
+      camera:{ border:'rgba(255,255,255,.8)' } },
+    'macos-modern-dark-xcode-modern':{ walls:'#c94f8f',
+      marker:{ palette:['#199aff','#91d462','#d8c87c','#6bdfff','#fe8170','#b181ec','#4db1cb','#ff9f0a','#a0a0a0','#fc5fa3'] },
+      camera:{ border:'#dfdfe0' } },
+    '2077':{ walls:'#008fd6',
+      marker:{ palette:['#ff2592','#ffd400','#00ff9c','#ff2cf1','#0ef3ff','#fdfeff','#ee0077','#39c0ff','#d31b77','#40a9ff'] } },
+    'borealis':{ walls:'#049a8c',
+      marker:{ palette:['#ffde11','#ff9d00','#ff628c','#80ffbb','#e1feff','#a5ff90','#ffc2d4','#9df5ff','#c6a7ff','#00a2a4'] },
+      camera:{ border:'#9df5ff' } },
+    'one-monokai-80s-plus':{ walls:'#cf5f69',
+      marker:{ palette:['#61afef','#9cc284','#e5c07b','#ca90d0','#56b6c2','#d6c294','#93a1d2','#d19a66','#b267e6','#e06c75'], ring:'rgba(255,255,255,.55)' } },
+    'vue-theme':{ walls:'#0093a6',
+      marker:{ palette:['#42b883','#ffcc95','#ff2c6d','#f48fb1','#b39ddb','#ff5622','#19f9d8','#e6e6e6','#09cbdd','#00abc1'], ring:'rgba(255,255,255,.55)' },
+      camera:{ border:'#19f9d8' } },
+    'vue-theme-high-contrast':{ walls:'#e0561f',
+      marker:{ palette:['#14c5ab','#00b7ff','#ffd54f','#b388ff','#69f0ae','#ff6a9b','#40c4ff','#ffffff','#ff0e56','#ff5622'] } },
+    'gitpod-dark':{ walls:'#3b82c4',
+      marker:{ palette:['#ff8a00','#ffb45b','#dcdcaa','#4ec9b0','#ce9178','#c586c0','#b5cea8','#f14c4c','#d6d3d1','#569cd6'], ring:'rgba(255,255,255,.5)' },
+      camera:{ border:'#ffb45b' } }
+  };
+  THEMES.forEach(function(t){
+    var x = TUNE[t.id]; if(!x) return;
+    if(x.walls) t.canvas.walls = x.walls;
+    if(x.marker) Object.keys(x.marker).forEach(function(k){ t.marker[k] = x.marker[k]; });
+    if(x.camera) Object.keys(x.camera).forEach(function(k){ t.camera[k] = x.camera[k]; });
+  });
 
   /* цвета пола для режимов «тёмный / светлый пол»: [тёмный, светлый, текст на светлом] */
   var FLOORS = {
@@ -1418,7 +1483,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
       '--t-status-item-bg':u.statusItem, '--t-status-item-fg':u.statusItemFg, '--t-scroll':u.scroll || 'rgba(121,121,121,.4)',
       '--t-str':x.str, '--t-kw':x.kw, '--t-num':x.num, '--t-fn':x.fn, '--t-comment':x.comment,
       '--t-green':x.green, '--t-red':x.red, '--t-orange':x.orange, '--t-yellow':x.yellow,
-      '--t-canvas-bg':t.canvas.bg, '--t-floor-dark':(FLOORS[t.id] || [])[0] || t.canvas.bg, '--t-floor-light':(FLOORS[t.id] || [])[1] || '#f5f5f5',
+      '--t-canvas-bg':t.canvas.bg, '--t-walls':themeWallColor(t.id), '--t-floor-dark':(FLOORS[t.id] || [])[0] || t.canvas.bg, '--t-floor-light':(FLOORS[t.id] || [])[1] || '#f5f5f5',
       '--t-label-ink-light':(FLOORS[t.id] || [])[2] || '#1f1f1f', '--t-label-ink-dark':u.fgStrong, '--t-label-font':f.label || f.ui, '--t-font-ui':f.ui, '--t-font-mono':f.mono, '--t-font-size':f.size || '13px',
       '--vscode-fg':u.fg, '--vscode-fg-dim':u.fgDim, '--vscode-fg-mute':u.fgMute,
       '--vscode-titlebar-bg':u.chrome, '--vscode-activity-bg':u.activity || u.chrome, '--vscode-sidebar-bg':u.widget,
@@ -1439,7 +1504,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
     css += canvasCss(t.canvas) + markerCss(t.marker, t) + cameraCss(t.camera, t);
     css += '#compassNeedle path:first-child{fill:' + u.accent + '}#compassNeedle path:nth-child(2){fill:' + u.fgMute + '}#compassNeedle circle{fill:' + u.fgStrong + '}';
     css += '.guess-mark{border-color:' + u.focus + '}';
-    css += '.wall-line{stroke:' + (t.canvas.walls || u.accent) + '}';
+    css += '.wall-line{stroke:var(--t-walls)}';
     return css;
   }
 
@@ -1455,8 +1520,20 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
   window.themeMarkerShape = function(id){ var t = id ? byId[id] : current; return (t && t.marker.shape) || 'circle'; };
   /* содержимое метки / фишки маршрута: фигура темы + номер */
   window.markerInner = function(n){ return '<svg class="mk-shape" viewBox="0 0 40 40" aria-hidden="true"><use href="#mk-' + (current.marker.shape || 'circle') + '"/></svg><span class="mk-num">' + n + '</span>'; };
-  window.themeWallColor = function(){
-    return current.canvas.walls || current.ui.accent;
+  /* цвет стен: у каждой темы свой (canvas.walls); пользователь может заменить его —
+     выбор хранится отдельно для каждой темы в localStorage (palace.wallColors) */
+  var WALLS_KEY = 'palace.wallColors';
+  function wallOverrides(){ try{ var o = JSON.parse(localStorage.getItem(WALLS_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; }catch(e){ return {}; } }
+  function isHex(c){ return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c); }
+  window.themeWallDefault = function(id){ var t = (id && byId[id]) || current; return (t.canvas.walls || t.ui.accent).toLowerCase(); };
+  window.themeWallColor = function(id){ var t = (id && byId[id]) || current, o = wallOverrides()[t.id]; return isHex(o) ? o.toLowerCase() : themeWallDefault(t.id); };
+  /* null — вернуть цвет темы */
+  window.setThemeWallColor = function(c){
+    var o = wallOverrides();
+    if(isHex(c) && c.toLowerCase() !== themeWallDefault()) o[current.id] = c.toLowerCase(); else delete o[current.id];
+    try{ localStorage.setItem(WALLS_KEY, JSON.stringify(o)); }catch(e){}
+    styleEl.textContent = buildCss(current);
+    return themeWallColor();
   };
   window.savedTheme = function(){ var v = null; try{ v = localStorage.getItem(KEY); }catch(e){} return byId[v] ? v : DEFAULT_ID; };
   /* opt.preview — показать тему, не запоминая выбор (предпросмотр в списке тем) */
@@ -1471,6 +1548,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
     if(!opt.preview){ try{ localStorage.setItem(KEY, t.id); }catch(e){} }
     var b = document.getElementById('themeBtn');
     if(b){ var l = b.querySelector('.lbl'); if(l) l.textContent = t.name; var hk = window.hotkeyText ? hotkeyText('theme.pick') : ''; b.title = 'Цветовая тема: ' + t.name + (hk ? ' (' + hk + ')' : ''); }
+    try{ if(typeof syncWallColorCtl === 'function') syncWallColorCtl(); }catch(e){}
     if(opt.rerender !== false){
       try{ if(typeof render === 'function') render(); }catch(e){}
       try{ if(typeof renderMinimap === 'function') renderMinimap(); }catch(e){}
@@ -1506,6 +1584,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 <symbol id="i-arrow-right" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9.6 4.6 13 8l-3.4 3.4"/></symbol>
 <symbol id="i-turn-cw" viewBox="0 0 16 16"><path d="M3.4 8.6a4.6 4.6 0 1 0 1.4-3.4"/><path d="M4.6 2v3.2h3.2"/></symbol>
 <symbol id="i-turn-ccw" viewBox="0 0 16 16"><path d="M12.6 8.6a4.6 4.6 0 1 1-1.4-3.4"/><path d="M11.4 2v3.2H8.2"/></symbol>
+<symbol id="i-reset" viewBox="0 0 16 16"><path d="M3.3 8.6a4.8 4.8 0 1 0 1.4-4.2"/><path d="M4.4 1.9v2.8h2.8"/></symbol>
 <symbol id="i-close" viewBox="0 0 16 16"><path d="M3.6 3.6l8.8 8.8M12.4 3.6l-8.8 8.8"/></symbol>
 <symbol id="i-eye-hidden" viewBox="0 0 16 16"><path d="M1.8 8S4 4 8 4s6.2 4 6.2 4-2.2 4-6.2 4-6.2-4-6.2-4z"/><circle cx="8" cy="8" r="1.8"/><path d="M2.8 13.2 13.2 2.8"/></symbol>
 <symbol id="i-camera" viewBox="0 0 16 16"><path d="M2 6.2a1.2 1.2 0 0 1 1.2-1.2h1.6l1-1.6h4.4l1 1.6h1.6A1.2 1.2 0 0 1 14 6.2v5.6a1.2 1.2 0 0 1-1.2 1.2H3.2A1.2 1.2 0 0 1 2 11.8z"/><circle cx="8" cy="8.9" r="2.2"/></symbol>
@@ -1666,6 +1745,10 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
         <label for="markerSize">Размер маркера</label>
         <input id="markerSize" type="range" min="35" max="100" value="55"/>
         <output id="markerSizeVal" for="markerSize">55</output>
+        <span class="ctl-sep"></span>
+        <label for="wallColor">Стены</label>
+        <input id="wallColor" type="color" value="#cc7832" title="Цвет стен в этой теме (запоминается для каждой темы)"/>
+        <button type="button" class="ctl-reset" id="wallColorReset" title="Вернуть цвет стен темы" aria-label="Вернуть цвет стен темы" hidden><svg class="ic"><use href="#i-reset"/></svg></button>
       </div>
     </section>
     <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0"
@@ -2662,6 +2745,11 @@ function drawPlan(){
     im.ondragstart = e => e.preventDefault();
     p.appendChild(im);
     im.style.opacity = '';
+    /* цвет «чернил» стен нужен и слою стен ниже, и режиму повторения */
+    if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
+      const entry = cacheFloorPixelsFromImage(l, im);
+      if(entry) autoDetectWallsIfNeeded(l, entry);
+    }
     try{
       const kc = planKeyedCanvas(l.src, im);
       if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
@@ -2673,15 +2761,16 @@ function drawPlan(){
       const labels = Array.isArray(l.labels) && l.labels.length ? l.labels : null;
       const cc = planCleanCanvas(l.src, kc || im, !!kc, labels);
       if(cc){ if(kc) kc.remove(); p.insertBefore(cc, im); im.style.opacity = '0'; }
+      /* стены — в цвет темы (или выбранный пользователем): подложка без стен + слой стен */
+      const wl = planWallLayer(l, cc || kc || im);
+      if(wl){
+        if(cc) cc.remove(); else if(kc) kc.remove();
+        p.insertBefore(wl.base, im); p.insertBefore(tintWallLayer(wl, themeWallColor()), im); im.style.opacity = '0';
+      }
       if(labels && cc && cc.dataset.labels === '1') renderRoomLabels(p, labels);
       p.classList.toggle('dark-floor', dark);
     }catch(err){ console.warn('plan overlay', err); }
-    if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
-      const entry = cacheFloorPixelsFromImage(l, im);
-      if(entry) autoDetectWallsIfNeeded(l, entry);
-    }
-    /* стены больше не подсвечиваются (цвет стен остаётся как на самом плане);
-       вместо этого отмечаются окна — см. detectPlanWindows */
+    /* окна — одинаковым «стеклом» во всех темах, см. detectPlanWindows */
     renderPlanWindows(p, detectPlanWindows(l, im));
     const size = markerSize(), off = floorOffset();
     (l.markers || []).forEach((m, i) => {
@@ -3705,6 +3794,133 @@ function cleanupMovedCamera(pano, oldPos, l){
   pano.bakedMarkErased = true;
   eraseBakedCamMark(l || level(), oldPos).then(ok => { if(ok){ touch(); drawPlan(); renderMinimap(); } })
     .catch(err => console.warn('eraseBakedCamMark', err));
+}
+/* ---------- стены в цвет темы ----------
+   «Чернила» стен (их цвет находит detectWallColor) переносятся в отдельную маску: для каждого
+   пикселя берётся доля цвета стены в смеси «стена ↔ белый пол» — так сохраняется сглаженный край,
+   а заливка комнат, текст и мебель (другого цвета) не задеваются. На подложке эта доля убирается —
+   остаётся пол. Маска красится в цвет стен темы; подложка в тёмном режиме инвертируется фильтром,
+   а слой стен — нет, поэтому цвет стен одинаков в обоих режимах. Серые/чёрные «чернила» похожи
+   на текст — для них в маске остаются только толстые протяжённые линии. */
+const planWallCache = new WeakMap();   /* подложка (img/canvas) -> { key, ok, base, A, w, h, tint, tintColor } */
+function planWallLayer(l, src){
+  if(!src) return null;
+  const aw = l && l.autoWalls && l.autoWalls.color;
+  const key = aw ? aw.r + ',' + aw.g + ',' + aw.b : '-';
+  const hit = planWallCache.get(src);
+  if(hit && hit.key === key) return hit.ok ? hit : null;
+  const entry = { key, ok:false };
+  planWallCache.set(src, entry);
+  const w = src.naturalWidth || src.width, h = src.naturalHeight || src.height;
+  if(!w || !h || w * h > 24e6) return null;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently:true });
+  g.drawImage(src, 0, 0);
+  let id; try{ id = g.getImageData(0, 0, w, h); }catch(err){ return null; }
+  const ink = planInkColor(id.data, w * h) || aw;
+  if(!ink) return null;
+  const Wr = ink.r, Wg = ink.g, Wb = ink.b;
+  const dr = 255 - Wr, dg = 255 - Wg, db = 255 - Wb, L2 = dr * dr + dg * dg + db * db, WW = Wr * Wr + Wg * Wg + Wb * Wb || 1;
+  if(L2 < 3600) return null;   /* «чернила» почти белые — перекрашивать нечего */
+  const px = id.data, N = w * h, A = new Uint8Array(N);
+  let n = 0;
+  for(let i = 0, o = 0; i < N; i++, o += 4){
+    if(px[o+3] < 8) continue;
+    const r = px[o], gg = px[o+1], b = px[o+2];
+    const t = ((255 - r) * dr + (255 - gg) * dg + (255 - b) * db) / L2;   /* 0 — белый пол, 1 — цвет стены */
+    let a = 0;
+    if(t > 1){
+      /* стена, затемнённая к чёрному (край вырезанного фона .3dview) */
+      const k = (r * Wr + gg * Wg + b * Wb) / WW, er = r - k * Wr, eg = gg - k * Wg, eb = b - k * Wb;
+      if(k > 0.45 && er * er + eg * eg + eb * eb <= 900) a = 1;
+    }else if(t > 0.16){
+      const er = r - 255 + t * dr, eg = gg - 255 + t * dg, eb = b - 255 + t * db;
+      if(er * er + eg * eg + eb * eb <= 1296) a = Math.min(1, (t - 0.16) / 0.78);
+    }
+    if(a > 0){ A[i] = Math.round(a * 255); n++; }
+  }
+  if(Math.max(Wr, Wg, Wb) - Math.min(Wr, Wg, Wb) < 36) n = wallThickOnly(A, w, h);
+  if(n < 50) return null;
+  for(let i = 0, o = 0; i < N; i++, o += 4){
+    const a8 = A[i]; if(!a8) continue;
+    if(a8 >= 242){ px[o] = 240; px[o+1] = 246; px[o+2] = 252; continue; }
+    const a = a8 / 255, k = 1 / (1 - a);
+    px[o] = (px[o] - a * Wr) * k; px[o+1] = (px[o+1] - a * Wg) * k; px[o+2] = (px[o+2] - a * Wb) * k;   /* Uint8Clamped — сам ограничит */
+    A[i] = Math.round(a8 * px[o+3] / 255);
+  }
+  for(let i = 0, o = 3; i < N; i++, o += 4) if(A[i] >= 242) A[i] = Math.round(A[i] * px[o] / 255);
+  g.putImageData(id, 0, 0);
+  c.className = 'plan-keyed plan-clean plan-nowall';
+  c.style.width = w + 'px'; c.style.height = h + 'px';
+  Object.assign(entry, { ok:true, base:c, A, w, h });
+  return entry;
+}
+/* цвет «чернил» стен: самый частый насыщенный тёмный цвет плана (у Zillow — тёмно-синий),
+   уточнённый до самого частого точного цвета рядом; нет такого — берётся detectWallColor */
+function planInkColor(px, N){
+  const counts = new Map();
+  let total = 0;
+  for(let i = 0; i < N; i += 2){
+    const o = i * 4; if(px[o+3] < 200) continue;
+    total++;
+    const r = px[o], g = px[o+1], b = px[o+2], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if(0.299 * r + 0.587 * g + 0.114 * b >= 150 || mx - mn <= 40) continue;
+    const k = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+    counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  let bk = -1, bn = 0; counts.forEach((n, k) => { if(n > bn){ bn = n; bk = k; } });
+  if(bk < 0 || bn < Math.max(200, total * 0.004)) return null;
+  const cr = ((bk >> 8) & 15) * 16 + 8, cg = ((bk >> 4) & 15) * 16 + 8, cb = (bk & 15) * 16 + 8;
+  const exact = new Map();
+  for(let i = 0; i < N; i += 2){
+    const o = i * 4; if(px[o+3] < 200) continue;
+    const r = px[o], g = px[o+1], b = px[o+2];
+    if((r - cr) * (r - cr) + (g - cg) * (g - cg) + (b - cb) * (b - cb) > 1600) continue;
+    const k = (r << 16) | (g << 8) | b;
+    exact.set(k, (exact.get(k) || 0) + 1);
+  }
+  let ek = -1, en = 0; exact.forEach((n, k) => { if(n > en){ en = n; ek = k; } });
+  return ek < 0 ? { r:cr, g:cg, b:cb } : { r:(ek >> 16) & 255, g:(ek >> 8) & 255, b:ek & 255 };
+}
+/* серые «чернила»: оставить в маске только толстые (≥3 px) протяжённые (≥24 px) линии и их
+   сглаженный край — буквы подписей и тонкие линии мебели того же цвета не перекрашиваются */
+function wallThickOnly(A, w, h){
+  const N = w * h, core = new Uint8Array(N), hr = new Uint16Array(N), vr = new Uint16Array(N);
+  for(let i = 0; i < N; i++) if(A[i] >= 128) core[i] = 1;
+  for(let y = 0; y < h; y++){
+    let x = 0; const row = y * w;
+    while(x < w){ if(!core[row + x]){ x++; continue; } const s0 = x; while(x < w && core[row + x]) x++; const len = Math.min(65535, x - s0); for(let k = s0; k < x; k++) hr[row + k] = len; }
+  }
+  for(let x = 0; x < w; x++){
+    let y = 0;
+    while(y < h){ if(!core[y * w + x]){ y++; continue; } const s0 = y; while(y < h && core[y * w + x]) y++; const len = Math.min(65535, y - s0); for(let k = s0; k < y; k++) vr[k * w + x] = len; }
+  }
+  for(let i = 0; i < N; i++) if(core[i] && !(Math.min(hr[i], vr[i]) >= 3 && Math.max(hr[i], vr[i]) >= 24)) core[i] = 0;
+  let n = 0;
+  for(let i = 0; i < N; i++){
+    if(!A[i]) continue;
+    if(core[i]){ n++; continue; }
+    const x = i % w;
+    const near = A[i] < 128 && ((x > 0 && core[i-1]) || (x < w - 1 && core[i+1]) || (i >= w && core[i-w]) || (i < N - w && core[i+w]));
+    if(near) n++; else A[i] = 0;
+  }
+  return n;
+}
+/* слой стен нужного цвета (пересчитывается только при смене цвета) */
+function tintWallLayer(e, color){
+  if(e.tint && e.tintColor === color) return e.tint;
+  const hex = /^#[0-9a-f]{6}$/i.test(color) ? color : '#808080';
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  const c = e.tint || document.createElement('canvas');
+  c.width = e.w; c.height = e.h;
+  const ctx = c.getContext('2d');
+  const out = ctx.createImageData(e.w, e.h), dst = new Uint32Array(out.data.buffer), A = e.A, rgb = (b << 16) | (g << 8) | r;
+  for(let i = 0; i < A.length; i++) if(A[i]) dst[i] = ((A[i] << 24) | rgb) >>> 0;   /* RGBA, little-endian */
+  ctx.putImageData(out, 0, 0);
+  c.className = 'plan-walls';
+  c.style.width = e.w + 'px'; c.style.height = e.h + 'px';
+  e.tint = c; e.tintColor = color;
+  return c;
 }
 /* ---------- окна на плане ----------
    На планах Zillow окно — прямоугольник в линии стены: белый, с тонкими серыми
@@ -8294,6 +8510,23 @@ on('#markerSize', 'input', e => {
   touchSoft();
 });
 on('#markerSize', 'change', () => flushHistorySoft());
+/* цвет стен — свой в каждой теме; выбор пользователя хранится по теме (palace.wallColors) */
+function syncWallColorCtl(){
+  const inp = $('#wallColor'); if(!inp || !window.themeWallColor) return;
+  const c = themeWallColor();
+  if(inp.value.toLowerCase() !== c) inp.value = c;
+  const rs = $('#wallColorReset'); if(rs) rs.hidden = c === themeWallDefault();
+}
+window.syncWallColorCtl = syncWallColorCtl;
+let wallColorRaf = 0;
+on('#wallColor', 'input', e => {
+  setThemeWallColor(e.target.value);
+  const rs = $('#wallColorReset'); if(rs) rs.hidden = themeWallColor() === themeWallDefault();
+  if(!wallColorRaf) wallColorRaf = requestAnimationFrame(() => { wallColorRaf = 0; if(level()) drawPlan(); });
+});
+on('#wallColor', 'change', () => status('Цвет стен для темы «' + getThemeDef().name + '»: ' + themeWallColor()));
+on('#wallColorReset', 'click', () => { setThemeWallColor(null); syncWallColorCtl(); if(level()) drawPlan(); status('Цвет стен: как в теме «' + getThemeDef().name + '»'); });
+syncWallColorCtl();
 /* Регулятор лежит на холсте — его клики не должны ставить маркеры. */
 (function shieldMarkerCtl(){
   const c = $('#markerCtl'); if(!c) return;
@@ -9145,7 +9378,7 @@ window.addEventListener('error', e => {
         return '<svg class="tp-mk" viewBox="0 0 40 40" style="fill:' + (solid ? c : t.canvas.bg) + ';stroke:' + (solid ? 'none' : c) + ';stroke-width:4px"><use href="#mk-' + t.marker.shape + '"/></svg>';
       }).join('');
       return '<span class="tp-sw"><i class="c" style="background:' + t.ui.chrome + ';box-shadow:inset -2px 0 0 ' + t.ui.accent + '"></i>' +
-             '<i class="e" style="background-color:' + t.canvas.bg + '">' + dots + '</i></span>';
+             '<i class="e" style="background-color:' + t.canvas.bg + ';box-shadow:inset 0 -3px 0 ' + themeWallColor(t.id) + '">' + dots + '</i></span>';
     }
     function build(){
       var q = input.value.trim().toLowerCase();
