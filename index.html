@@ -1003,6 +1003,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 #planDarkFloor[aria-pressed="true"]{background:var(--t-sel);color:var(--t-sel-fg);box-shadow:inset 0 0 0 1px var(--vscode-focus)}
 .plan.dark-floor{background:var(--t-floor-dark)}
 .plan.light-floor{background:var(--t-floor-light)}
+.plan.light-floor .wall-line{stroke:var(--t-label-ink-light)}
 /* серый + контраст: голубоватый пол Zillow становится белым и после multiply — ровно цветом пола темы;
    стены при этом перекрашивает подсветка стен темы */
 .plan.light-floor > img,.plan.light-floor > canvas.plan-keyed{filter:grayscale(1) brightness(1.06) contrast(1.15);mix-blend-mode:multiply}
@@ -1312,7 +1313,11 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
   window.getThemeDef = function(id){ return id ? byId[id] : current; };
   window.themeFloorColor = function(i){ var p = current.marker.palette; return p[((i % p.length) + p.length) % p.length]; };
   window.themeCamIcon = function(){ return current.camera.icon || 'camera'; };
-  window.themeWallColor = function(){ return current.canvas.walls || current.ui.accent; };
+  /* на светлом полу стены — тёмным цветом подписей, иначе светлые стены темы теряются */
+  window.themeWallColor = function(){
+    if(typeof floorMode === 'function' && floorMode() === 'light') return (FLOORS[current.id] || [])[2] || '#2b2b2b';
+    return current.canvas.walls || current.ui.accent;
+  };
   window.savedTheme = function(){ var v = null; try{ v = localStorage.getItem(KEY); }catch(e){} return byId[v] ? v : DEFAULT_ID; };
   /* opt.preview — показать тему, не запоминая выбор (предпросмотр в списке тем) */
   window.applyTheme = function(id, opt){
@@ -2493,6 +2498,7 @@ function drawPlan(){
       if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
       /* план без запечённых номеров камер и (если известны) без исходных подписей
          комнат — их рисуем заново шрифтом темы (см. planCleanCanvas, renderRoomLabels) */
+      if(l.labels === undefined) scheduleOcrLabels(l);
       const labels = Array.isArray(l.labels) && l.labels.length ? l.labels : null;
       const cc = planCleanCanvas(l.src, kc || im, !!kc, labels);
       if(cc){ if(kc) kc.remove(); p.insertBefore(cc, im); im.style.opacity = '0'; }
@@ -3183,23 +3189,29 @@ function planCleanCanvas(src, source, keyed, labels){
           return px[o+3] > 40 && ((mx < 120 && mx - mn < 50) || mn > 243); };
         labels.forEach(lb => {
           const size = lb.size || 12, ang = (lb.angle || 0) * Math.PI / 180, cs = Math.cos(ang), sn = Math.sin(ang);
-          const hw = Math.max(lb.w || 0, String(lb.text || '').length * size * 0.62) / 2 + size * 0.35, hh = size * 0.78;
+          const hw = lb.exact ? (lb.w / 2 + size * 0.22) : (Math.max(lb.w || 0, String(lb.text || '').length * size * 0.62) / 2 + size * 0.35);
+          const hh = lb.exact ? (lb.h / 2 + size * 0.22) : size * 0.78;
           const ext = Math.ceil(Math.hypot(hw, hh)) + 1;
           const x0 = Math.max(0, Math.floor(lb.x - ext)), x1 = Math.min(w - 1, Math.ceil(lb.x + ext));
           const y0 = Math.max(0, Math.floor(lb.y - ext)), y1 = Math.min(h - 1, Math.ceil(lb.y + ext));
           const inside = (x, y) => { const dx = x - lb.x, dy = y - lb.y, lx = dx * cs + dy * sn, ly = -dx * sn + dy * cs; return Math.abs(lx) <= hw && Math.abs(ly) <= hh; };
+          /* цвет пола под подписью — медиана светлых пикселей рамки */
           const bg = [[], [], [], []];
           for(let y = y0; y <= y1; y++) for(let x = x0; x <= x1; x++){
             if(!inside(x, y)) continue;
             const o = (y * w + x) * 4;
-            if(!textLike(o)){ bg[0].push(px[o]); bg[1].push(px[o+1]); bg[2].push(px[o+2]); bg[3].push(px[o+3]); }
+            if(px[o+3] > 40 && Math.min(px[o], px[o+1], px[o+2]) > 200){ bg[0].push(px[o]); bg[1].push(px[o+1]); bg[2].push(px[o+2]); bg[3].push(px[o+3]); }
           }
           const med = a => { a.sort((u, v) => u - v); return a[a.length >> 1]; };
           const fill = bg[0].length > 8 ? bg.map(med) : [239, 249, 255, 255];
+          /* «чернила» подписи — любые серые пиксели (включая полупрозрачные края букв
+             и белую обводку), отличающиеся от пола; насыщенные цвета — стены, мебель — не трогаем */
+          const ink = o => { const r = px[o], g2 = px[o+1], b = px[o+2], mx = Math.max(r, g2, b), mn = Math.min(r, g2, b);
+            return px[o+3] > 40 && mx - mn < 60 && (Math.abs(r - fill[0]) + Math.abs(g2 - fill[1]) + Math.abs(b - fill[2])) > 24; };
           for(let y = y0; y <= y1; y++) for(let x = x0; x <= x1; x++){
             if(!inside(x, y)) continue;
             const o = (y * w + x) * 4;
-            if(textLike(o)){ for(let k = 0; k < 4; k++) px[o+k] = fill[k]; erased++; labelsErased = true; }
+            if(textLike(o) || ink(o)){ for(let k = 0; k < 4; k++) px[o+k] = fill[k]; erased++; labelsErased = true; }
           }
         });
       }
@@ -3274,6 +3286,121 @@ async function extractPlanLabels(zip, planFile, src){
     }
   }catch(err){ console.warn('extractPlanLabels', err); }
   return [];
+}
+/* ---------- распознавание подписей комнат (OCR) ----------
+   Для планов без векторных подписей (загруженные картинки, .3dview без SVG)
+   подписи находятся Tesseract.js прямо на картинке: обычный проход и два
+   прохода по плану, повёрнутому на ±90° (вертикальные «Closet» и т.п.).
+   Названия берутся при уверенности ≥ 80%, размеры — при ≥ 40% и только если
+   их удаётся разобрать как Ф'Д" x Ф'Д" (OCR часто теряет апостроф: 182" → 18'2").
+   Нераспознанное остаётся на картинке как было. Результат хранится в этаже
+   (l.labels) и сохраняется с дворцом — распознавание выполняется один раз. */
+const TESS_CDN = 'https://cdn.jsdelivr.net/npm/';
+let tessLoading = null, ocrQueue = Promise.resolve(), ocrOffline = false;
+const ocrPending = new WeakSet();
+function loadTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(tessLoading) return tessLoading;
+  tessLoading = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = TESS_CDN + 'tesseract.js@5.1.1/dist/tesseract.min.js';
+    sc.onload = () => res();
+    sc.onerror = () => { tessLoading = null; rej(new Error('Tesseract.js не загрузился')); };
+    document.head.appendChild(sc);
+  });
+  return tessLoading;
+}
+function fixDimText(t){
+  const parts = String(t).replace(/[“”″]/g, '"').replace(/[‘’′°`]/g, "'").split(/\s*[xх×]\s*/i);
+  if(parts.length !== 2) return null;
+  const side = raw => {
+    let q = raw.replace(/[^0-9']/g, '');
+    const m = q.match(/^(\d{1,2})'(\d{1,2})'?$/);
+    if(m && +m[2] < 12) return m[1] + "'" + m[2] + '"';
+    q = q.replace(/'/g, '');
+    if(!/^\d{2,5}$/.test(q)) return null;
+    const cut = d => (d.length >= 4 && /1[01]$/.test(d)) ? [d.slice(0, -2), d.slice(-2)] : [d.slice(0, -1), d.slice(-1)];
+    let [f, i] = cut(q);
+    if(+f > 60 && /7$/.test(q)) [f, i] = cut(q.slice(0, -1));      /* «"» распознана как 7 */
+    if(!(+f >= 1 && +f <= 99 && +i < 12)) return null;
+    return (+f) + "'" + (+i) + '"';
+  };
+  const a = side(parts[0]), b = side(parts[1]);
+  return a && b ? a + ' x ' + b : null;
+}
+async function ocrPlanLabels(l){
+  await loadTesseract();
+  let im = await loadImage(l.src);
+  const W = im.naturalWidth, H = im.naturalHeight;
+  if(!W || !H) return [];
+  /* источник без запечённых номеров камер, на белом фоне (у вырезанного фона — прозрачность) */
+  const kc = planKeyedCanvas(l.src, im);
+  const base = planCleanCanvas(l.src, kc || im, !!kc, null) || kc || im;
+  const S = Math.max(1, Math.min(2, 4200 / Math.max(W, H)));
+  const worker = await Tesseract.createWorker('eng', 1, {
+    workerPath: TESS_CDN + 'tesseract.js@5.1.1/dist/worker.min.js',
+    corePath: TESS_CDN + 'tesseract.js-core@5.1.0',
+    langPath: TESS_CDN + '@tesseract.js-data/eng/4.0.0_best_int'
+  });
+  const out = [];
+  try{
+    await worker.setParameters({ tessedit_pageseg_mode: '11' });
+    for(const ang of [0, 90, -90]){
+      const rot = ang !== 0;
+      const cw = Math.round((rot ? H : W) * S), ch = Math.round((rot ? W : H) * S);
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, cw, ch);
+      g.imageSmoothingQuality = 'high';
+      g.scale(S, S);
+      if(ang === 90){ g.translate(0, W); g.rotate(-Math.PI / 2); }       /* текст, повёрнутый по часовой, становится горизонтальным */
+      else if(ang === -90){ g.translate(H, 0); g.rotate(Math.PI / 2); }
+      g.drawImage(base, 0, 0, W, H);
+      const r = await worker.recognize(c);
+      (r.data.lines || []).forEach(line => {
+        const text = (line.text || '').replace(/\s+/g, ' ').trim();
+        const conf = line.confidence || 0;
+        let kind = null, shown = text;
+        if(/\d.*[xх×].*\d/i.test(text)){ shown = fixDimText(text); if(shown && conf >= 40) kind = 'dim'; }
+        else if(/^[A-Za-z][A-Za-z ()/&.\-]{2,}$/.test(text) && /[a-z]{2}/i.test(text) && conf >= 80) kind = 'name';
+        if(!kind) return;
+        const b = line.bbox;
+        const bw = (b.x1 - b.x0) / S, bh = (b.y1 - b.y0) / S;
+        const rx = (b.x0 + b.x1) / 2 / S, ry = (b.y0 + b.y1) / 2 / S;
+        const x = ang === 90 ? W - ry : ang === -90 ? ry : rx;
+        const y = ang === 90 ? rx : ang === -90 ? H - rx : ry;
+        if(bw < 6 || bh < 4) return;
+        /* та же надпись, найденная в другом проходе, — по пересечению рамок (в осях картинки) */
+        const ow = rot ? bh : bw, oh = rot ? bw : bh;
+        if(out.some(o => { const w2 = o.angle ? o.h : o.w, h2 = o.angle ? o.w : o.h;
+          return Math.abs(o.x - x) < (w2 + ow) / 2 * 0.9 && Math.abs(o.y - y) < (h2 + oh) / 2 * 0.9; })) return;
+        const size = bh / (/[gjpqy(),]/.test(shown) ? 0.95 : 0.74);
+        out.push({ text: shown, kind: kind, x: +x.toFixed(1), y: +y.toFixed(1), size: +size.toFixed(2), angle: ang,
+                   w: +bw.toFixed(1), h: +bh.toFixed(1), exact: true, ocr: true });
+      });
+    }
+  }finally{ try{ await worker.terminate(); }catch(e){} }
+  return out;
+}
+function scheduleOcrLabels(l){
+  if(ocrOffline || !l || !l.src || ocrPending.has(l)) return;
+  ocrPending.add(l);
+  ocrQueue = ocrQueue.then(async () => {
+    if(l.labels !== undefined) return;
+    const idx = state.levels.indexOf(l);
+    if(idx < 0) return;
+    status('Распознаю подписи комнат на плане «' + (l.name || ('Этаж ' + (idx + 1))) + '»…');
+    try{
+      const labels = await ocrPlanLabels(l);
+      l.labels = labels;
+      if(level() === l) drawPlan();
+      status(labels.length ? 'Подписи комнат распознаны: ' + labels.length + ' — теперь они шрифтом темы' : 'Подписей комнат на плане не найдено');
+    }catch(err){
+      console.warn('OCR', err);
+      ocrOffline = true;   /* нет сети / CDN недоступен — не повторяем в этой сессии, план остаётся как есть */
+      ocrPending.delete(l);
+    }
+  });
 }
 async function eraseBakedCamMark(l, pos){
   if(!l || !l.src || !pos || !isFinite(pos.x) || !isFinite(pos.y)) return false;
@@ -4000,7 +4127,8 @@ async function importThreeDViewZip(zip){
           floorId: floorId != null ? floorId : null,
           markers: [], walls: [], autoWalls: null, selected: null
         };
-        levelObj.labels = await extractPlanLabels(zip, planFile, levelObj.src);
+        const svgLabels = await extractPlanLabels(zip, planFile, levelObj.src);
+        if(svgLabels.length) levelObj.labels = svgLabels;   /* нет SVG — подписи распознаются OCR (см. ocrPlanLabels) */
         state.levels.push(levelObj);
         addedLevels++;
       }else skippedNoPlan += group.length;
