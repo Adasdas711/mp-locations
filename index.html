@@ -1002,17 +1002,11 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 .plan{box-shadow:0 0 0 1px rgba(0,0,0,.7),0 0 0 2px rgba(255,255,255,.09),0 22px 64px 18px rgba(0,0,0,.85),0 6px 18px 2px rgba(0,0,0,.7)!important}
 #planDarkFloor[aria-pressed="true"]{background:var(--t-sel);color:var(--t-sel-fg);box-shadow:inset 0 0 0 1px var(--vscode-focus)}
 .plan.dark-floor{background:var(--t-floor-dark)}
-.plan.light-floor{background:var(--t-floor-light)}
-.plan.light-floor .wall-line{stroke:var(--t-label-ink-light)}
-/* серый + контраст: голубоватый пол Zillow становится белым и после multiply — ровно цветом пола темы;
-   стены при этом перекрашивает подсветка стен темы */
-.plan.light-floor > img,.plan.light-floor > canvas.plan-keyed{filter:grayscale(1) brightness(1.06) contrast(1.15);mix-blend-mode:multiply}
 /* подписи комнат, перерисованные шрифтом темы */
 .room-label{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;z-index:2;line-height:1;
   font-family:var(--t-label-font);font-weight:700;color:#0a0a14;letter-spacing:.01em;
   text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 4px #fff}
 .room-label.dim{font-weight:500;opacity:.9}
-.plan.light-floor .room-label{color:var(--t-label-ink-light);text-shadow:0 0 2px var(--t-floor-light),0 0 3px var(--t-floor-light),0 0 5px var(--t-floor-light)}
 .plan.dark-floor .room-label{color:var(--t-label-ink-dark);text-shadow:0 0 2px var(--t-floor-dark),0 0 3px var(--t-floor-dark),0 0 5px var(--t-floor-dark)}
 .plan.dark-floor > img,.plan.dark-floor > canvas.plan-keyed{filter:invert(1) hue-rotate(180deg) saturate(1.15);mix-blend-mode:lighten}
 
@@ -1313,9 +1307,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
   window.getThemeDef = function(id){ return id ? byId[id] : current; };
   window.themeFloorColor = function(i){ var p = current.marker.palette; return p[((i % p.length) + p.length) % p.length]; };
   window.themeCamIcon = function(){ return current.camera.icon || 'camera'; };
-  /* на светлом полу стены — тёмным цветом подписей, иначе светлые стены темы теряются */
   window.themeWallColor = function(){
-    if(typeof floorMode === 'function' && floorMode() === 'light') return (FLOORS[current.id] || [])[2] || '#2b2b2b';
     return current.canvas.walls || current.ui.accent;
   };
   window.savedTheme = function(){ var v = null; try{ v = localStorage.getItem(KEY); }catch(e){} return byId[v] ? v : DEFAULT_ID; };
@@ -1444,7 +1436,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
         <span class="tool-sep"></span>
         <button class="tool" id="planShowHiddenCams" title="Показать скрытые камеры" aria-label="Показать скрытые камеры" aria-pressed="false"><svg class="ic"><use href="#i-eye-hidden"/></svg></button>
         <button class="tool" id="planTransparentBg" title="Убрать белый фон плана и сделать его прозрачным" aria-label="Прозрачный фон плана"><svg class="ic"><use href="#i-transparent"/></svg></button>
-        <button class="tool" id="planDarkFloor" title="Пол плана: исходный / тёмный / светлый" aria-label="Пол плана" aria-pressed="false"><svg class="ic"><use href="#i-moon"/></svg></button>
+        <button class="tool" id="planDarkFloor" title="Тёмный план / исходный план Zillow" aria-label="Тёмный план" aria-pressed="false"><svg class="ic"><use href="#i-moon"/></svg></button>
       </aside>
       <div class="floor-overlay" id="floorOverlay"></div>
       <div class="review-bar" id="reviewBar" hidden>
@@ -1851,11 +1843,11 @@ const planKeyCanvasCache = new Map(); /* src -> готовый canvas с про�
    оттенок), а mix-blend-mode:lighten заменяет получившийся чёрный на цвет
    холста темы. Пиксели не читаются — работает с любым планом (SVG, огромные
    PNG из .3dview), мгновенно. Меняется только отображение, не сам план. */
-/* Пол плана: 'off' — как есть; 'dark' — инверсия + lighten на тёмный пол темы
-   (--t-floor-dark); 'light' — multiply на светлый пол темы (--t-floor-light):
-   белое становится цветом пола, стены и подписи остаются. Выбор — в localStorage. */
+/* Пол плана: 'off' — исходный план Zillow (без подмен, убраны только красные
+   номера камер граббера); 'dark' — тёмный план: инверсия + lighten на тёмный пол
+   темы (--t-floor-dark), подписи комнат — шрифтом темы. Выбор — в localStorage. */
 const FLOOR_MODE_KEY = 'palace.floorMode';
-const FLOOR_MODES = ['off', 'dark', 'light'];
+const FLOOR_MODES = ['off', 'dark'];
 let floorModeState = (() => {
   try{
     const v = localStorage.getItem(FLOOR_MODE_KEY);
@@ -1868,8 +1860,7 @@ function syncFloorButton(){
   const b = $('#planDarkFloor'); if(!b) return;
   const m = floorModeState;
   b.setAttribute('aria-pressed', m === 'off' ? 'false' : 'true');
-  const u = b.querySelector('use'); if(u) u.setAttribute('href', m === 'light' ? '#i-sun' : '#i-moon');
-  const t = { off:'Пол плана: исходный', dark:'Пол плана: тёмный', light:'Пол плана: светлый' }[m] + ' · нажмите, чтобы переключить';
+  const t = (m === 'dark' ? 'Тёмный план: включён' : 'Тёмный план: выключен — исходный план Zillow') + ' · нажмите, чтобы переключить';
   b.dataset.baseTitle = t;
   const k = window.hotkeyText ? hotkeyText('plan.dark') : '';
   b.title = t + (k ? ' (' + k + ')' : '');
@@ -1879,7 +1870,7 @@ function setFloorMode(m){
   try{ localStorage.setItem(FLOOR_MODE_KEY, floorModeState); }catch(e){}
   syncFloorButton();
   drawPlan();
-  status({ off:'Пол плана: исходный', dark:'Пол плана: тёмный — план на тёмном фоне темы', light:'Пол плана: светлый — стены и подписи на светлом фоне темы' }[floorModeState]);
+  status(floorModeState === 'dark' ? 'Тёмный план: план на тёмном фоне темы, подписи — шрифтом темы' : 'Исходный план Zillow');
 }
 function floorColor(i){
   /* палитра этажей берётся из текущей темы (PALACE_THEMES → marker.palette) */
@@ -2496,18 +2487,16 @@ function drawPlan(){
     try{
       const kc = planKeyedCanvas(l.src, im);
       if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
-      /* план без запечённых номеров камер и (если известны) без исходных подписей
-         комнат — их рисуем заново шрифтом темы (см. planCleanCanvas, renderRoomLabels) */
-      if(l.labels === undefined) scheduleOcrLabels(l);
-      const labels = Array.isArray(l.labels) && l.labels.length ? l.labels : null;
+      /* исходный план — без красных номеров камер (их дорисовывает граббер);
+         тёмный план — ещё и без исходных подписей комнат: они рисуются заново
+         шрифтом темы (см. planCleanCanvas, renderRoomLabels, ocrPlanLabels) */
+      const dark = floorMode() === 'dark';
+      if(dark && needsOcrLabels(l)) scheduleOcrLabels(l);
+      const labels = dark && Array.isArray(l.labels) && l.labels.length ? l.labels : null;
       const cc = planCleanCanvas(l.src, kc || im, !!kc, labels);
       if(cc){ if(kc) kc.remove(); p.insertBefore(cc, im); im.style.opacity = '0'; }
-      if(cc && cc.dataset.labels === '1') renderRoomLabels(p, labels);
-      /* пол плана: исходный / тёмный / светлый (у планов из .3dview фон вокруг дома
-         чёрный и вырезается в прозрачность — canvas.plan-keyed; пол внутри светлый) */
-      const fm = floorMode();
-      p.classList.toggle('dark-floor', fm === 'dark');
-      p.classList.toggle('light-floor', fm === 'light');
+      if(labels && cc && cc.dataset.labels === '1') renderRoomLabels(p, labels);
+      p.classList.toggle('dark-floor', dark);
     }catch(err){ console.warn('plan overlay', err); }
     if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
       const entry = cacheFloorPixelsFromImage(l, im);
@@ -3141,6 +3130,7 @@ function planCleanCanvas(src, source, keyed, labels){
     let id = null; try{ id = g.getImageData(0, 0, w, h); }catch(err){}
     if(id){
       const px = id.data, seen = new Uint8Array(w * h), stack = [];
+      const badges = [];   /* закрашенные номера камер — OCR не доверяет цифрам рядом с ними */
       let erased = 0;
       for(let s0 = 0; s0 < w * h; s0++){
         if(seen[s0] || !isBadgeRed(px, s0 * 4)) continue;
@@ -3159,6 +3149,7 @@ function planCleanCanvas(src, source, keyed, labels){
         /* метка: не мелкая точка, не длинная линия, примерно круглая, заполнена */
         if(n < 25 || bw > 90 || bh > 90 || bw / bh > 1.6 || bh / bw > 1.6 || n < bw * bh * 0.35) continue;
         const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, rad = Math.max(bw, bh) / 2 + 2;
+        badges.push({ x:cx, y:cy, r:rad });
         const ring = [[], [], [], []];
         const x0 = Math.max(0, Math.floor(cx - rad - 8)), x1 = Math.min(w - 1, Math.ceil(cx + rad + 8));
         const y0 = Math.max(0, Math.floor(cy - rad - 8)), y1 = Math.min(h - 1, Math.ceil(cy + rad + 8));
@@ -3215,7 +3206,7 @@ function planCleanCanvas(src, source, keyed, labels){
           }
         });
       }
-      if(erased){ g.putImageData(id, 0, 0); out = c; c.dataset.labels = labelsErased ? '1' : '0'; }
+      if(erased){ g.putImageData(id, 0, 0); out = c; c.dataset.labels = labelsErased ? '1' : '0'; c.badges = badges; }
     }
   }
   if(planCleanCache.size > 6) planCleanCache.delete(planCleanCache.keys().next().value);
@@ -3328,24 +3319,55 @@ function fixDimText(t){
   const a = side(parts[0]), b = side(parts[1]);
   return a && b ? a + ' x ' + b : null;
 }
+/* типовые подписи комнат Zillow — чтобы достроить слово, часть которого закрыта
+   номером камеры («Bed…om» → Bedroom, «…tchen» → Kitchen) */
+const ROOM_WORDS = ['Primary Bedroom','Primary Bathroom','Primary Closet','Bedroom','Bathroom','Half Bathroom','Kitchen','Living Room',
+  'Dining Room','Family Room','Laundry Room','Sitting Room','Great Room','Bonus Room','Powder Room','Utility Room','Recreation Room',
+  'Media Room','Game Room','Mud Room','Mudroom','Sunroom','Closet','Walk-in Closet','Foyer','Entry','Hallway','Hall','Office','Den',
+  'Library','Study','Garage','Basement','Attic','Loft','Deck','Porch','Patio','Balcony','Pantry','Storage','Workshop','Gym',
+  'Nook','Breakfast Nook','Stairs (Up)','Stairs (Down)','Space Not Shown','Unfinished','Mechanical','Utility','Laundry','Wine Cellar'];
+function completeRoomWord(text){
+  const t = String(text).toLowerCase().replace(/[^a-z]/g, '');
+  if(t.length < 3) return null;
+  const hits = [];
+  ROOM_WORDS.forEach(wd => {
+    const w = wd.toLowerCase().replace(/[^a-z]/g, '');
+    const miss = w.length - t.length;
+    if(miss < 1 || miss > 6 || t.length < w.length * 0.45) return;
+    for(let k = 0; k <= t.length; k++){
+      if(w.startsWith(t.slice(0, k)) && w.endsWith(t.slice(k))){ hits.push({ word: wd, side: k === 0 ? 'start' : k === t.length ? 'end' : 'mid', ratio: w.length / t.length }); break; }
+    }
+  });
+  return hits.length === 1 ? hits[0] : null;
+}
 async function ocrPlanLabels(l){
   await loadTesseract();
   let im = await loadImage(l.src);
   const W = im.naturalWidth, H = im.naturalHeight;
   if(!W || !H) return [];
-  /* источник без запечённых номеров камер, на белом фоне (у вырезанного фона — прозрачность) */
+  /* распознаём копию без номеров камер (на белом фоне): красный кружок посреди
+     слова сбивает Tesseract целиком, а на закрашенном месте остаются читаемые
+     обрывки («Bed…om»), которые достраиваются по словарю (completeRoomWord) */
   const kc = planKeyedCanvas(l.src, im);
-  const base = planCleanCanvas(l.src, kc || im, !!kc, null) || kc || im;
+  const clean = planCleanCanvas(l.src, kc || im, !!kc, null);
+  const badges = (clean && clean.badges) || [];
   const S = Math.max(1, Math.min(2, 4200 / Math.max(W, H)));
   const worker = await Tesseract.createWorker('eng', 1, {
     workerPath: TESS_CDN + 'tesseract.js@5.1.1/dist/worker.min.js',
     corePath: TESS_CDN + 'tesseract.js-core@5.1.0',
     langPath: TESS_CDN + '@tesseract.js-data/eng/4.0.0_best_int'
   });
-  const out = [];
+  const cands = [];
+  const nearBadge = (x, y, ow, oh) => badges.some(bd => Math.abs(bd.x - x) < ow / 2 + bd.r + 2 && Math.abs(bd.y - y) < oh / 2 + bd.r + 2);
+  const exactWord = t => ROOM_WORDS.some(wd => wd.toLowerCase() === t.toLowerCase());
   try{
     await worker.setParameters({ tessedit_pageseg_mode: '11' });
-    for(const ang of [0, 90, -90]){
+    /* проходы: исходная картинка и копия без номеров камер (на каждой Tesseract
+       находит немного разное), плюс копия, повёрнутая на ±90° — для вертикальных подписей */
+    const passes = [[kc || im, 0]];
+    if(clean) passes.push([clean, 0]);
+    passes.push([clean || kc || im, 90], [clean || kc || im, -90]);
+    for(const [src, ang] of passes){
       const rot = ang !== 0;
       const cw = Math.round((rot ? H : W) * S), ch = Math.round((rot ? W : H) * S);
       const c = document.createElement('canvas'); c.width = cw; c.height = ch;
@@ -3355,48 +3377,82 @@ async function ocrPlanLabels(l){
       g.scale(S, S);
       if(ang === 90){ g.translate(0, W); g.rotate(-Math.PI / 2); }       /* текст, повёрнутый по часовой, становится горизонтальным */
       else if(ang === -90){ g.translate(H, 0); g.rotate(Math.PI / 2); }
-      g.drawImage(base, 0, 0, W, H);
+      g.drawImage(src, 0, 0, W, H);
       const r = await worker.recognize(c);
       (r.data.lines || []).forEach(line => {
         const text = (line.text || '').replace(/\s+/g, ' ').trim();
         const conf = line.confidence || 0;
-        let kind = null, shown = text;
-        if(/\d.*[xх×].*\d/i.test(text)){ shown = fixDimText(text); if(shown && conf >= 40) kind = 'dim'; }
-        else if(/^[A-Za-z][A-Za-z ()/&.\-]{2,}$/.test(text) && /[a-z]{2}/i.test(text) && conf >= 80) kind = 'name';
-        if(!kind) return;
         const b = line.bbox;
-        const bw = (b.x1 - b.x0) / S, bh = (b.y1 - b.y0) / S;
-        const rx = (b.x0 + b.x1) / 2 / S, ry = (b.y0 + b.y1) / 2 / S;
-        const x = ang === 90 ? W - ry : ang === -90 ? ry : rx;
-        const y = ang === 90 ? rx : ang === -90 ? H - rx : ry;
+        let bw = (b.x1 - b.x0) / S;
+        const bh = (b.y1 - b.y0) / S;
+        let rx = (b.x0 + b.x1) / 2 / S;
+        const ry = (b.y0 + b.y1) / 2 / S;
         if(bw < 6 || bh < 4) return;
-        /* та же надпись, найденная в другом проходе, — по пересечению рамок (в осях картинки) */
-        const ow = rot ? bh : bw, oh = rot ? bw : bh;
-        if(out.some(o => { const w2 = o.angle ? o.h : o.w, h2 = o.angle ? o.w : o.h;
-          return Math.abs(o.x - x) < (w2 + ow) / 2 * 0.9 && Math.abs(o.y - y) < (h2 + oh) / 2 * 0.9; })) return;
+        const toX = (px2, py2) => ang === 90 ? W - py2 : ang === -90 ? py2 : px2;
+        const toY = (px2, py2) => ang === 90 ? px2 : ang === -90 ? H - px2 : py2;
+        const hitBadge = nearBadge(toX(rx, ry), toY(rx, ry), rot ? bh : bw, rot ? bw : bh);
+        let kind = null, shown = text, grow = null, score = conf;
+        if(/\d.*[xх×].*\d/i.test(text)){
+          /* цифры рядом с номером камеры могли быть закрашены — такие размеры не трогаем */
+          shown = fixDimText(text);
+          if(shown && conf >= 40 && !hitBadge) kind = 'dim';
+        }else if(/^[A-Za-z][A-Za-z ()/&.\-]{2,}$/.test(text) && /[a-z]{2}/i.test(text) &&
+                 (exactWord(text) ? conf >= 70 : (conf >= 90 && text.replace(/[^a-z]/gi, '').length >= 4 && !hitBadge))){
+          kind = 'name'; score = conf + (exactWord(text) ? 20 : 0);
+        }
+        if(!kind && conf >= 45 && /[a-z]{2}/i.test(text) && !/\d{2}/.test(text)){
+          const hit = completeRoomWord(text);
+          if(hit){ kind = 'name'; shown = hit.word; grow = hit; score = conf - 10; }
+        }
+        if(!kind) return;
+        /* слово достроено: рамку расширяем на недостающие буквы в нужную сторону */
+        if(grow && grow.side !== 'mid'){
+          const full = bw * grow.ratio;
+          rx += (grow.side === 'start' ? -1 : 1) * (full - bw) / 2;
+          bw = full;
+        }
+        const x = toX(rx, ry), y = toY(rx, ry);
         const size = bh / (/[gjpqy(),]/.test(shown) ? 0.95 : 0.74);
-        out.push({ text: shown, kind: kind, x: +x.toFixed(1), y: +y.toFixed(1), size: +size.toFixed(2), angle: ang,
-                   w: +bw.toFixed(1), h: +bh.toFixed(1), exact: true, ocr: true });
+        cands.push({ text: shown, kind: kind, x: +x.toFixed(1), y: +y.toFixed(1), size: +size.toFixed(2), angle: ang,
+                     w: +bw.toFixed(1), h: +bh.toFixed(1), exact: true, ocr: true, score: score });
       });
     }
   }finally{ try{ await worker.terminate(); }catch(e){} }
+  /* одна и та же надпись из разных проходов — берём самый уверенный вариант */
+  const out = [];
+  cands.sort((a2, b2) => b2.score - a2.score).forEach(cd => {
+    const ow = cd.angle ? cd.h : cd.w, oh = cd.angle ? cd.w : cd.h;
+    if(out.some(o => { const w2 = o.angle ? o.h : o.w, h2 = o.angle ? o.w : o.h;
+      return Math.abs(o.x - cd.x) < (w2 + ow) / 2 * 0.9 && Math.abs(o.y - cd.y) < (h2 + oh) / 2 * 0.9; })) return;
+    delete cd.score;
+    out.push(cd);
+  });
   return out;
+}
+/* распознавать заново: подписей ещё нет, или они получены прежней версией OCR
+   (по копии с закрашенными номерами камер — часть слов терялась) */
+const OCR_LABELS_V = 3;
+function needsOcrLabels(l){
+  if(!l) return false;
+  if(l.labels === undefined) return true;
+  return Array.isArray(l.labels) && l.labelsV !== OCR_LABELS_V && (!l.labels.length || l.labels.some(x => x && x.ocr)) && l.labelsSrc !== 'svg';
 }
 function scheduleOcrLabels(l){
   if(ocrOffline || !l || !l.src || ocrPending.has(l)) return;
   ocrPending.add(l);
   ocrQueue = ocrQueue.then(async () => {
-    if(l.labels !== undefined) return;
+    if(!needsOcrLabels(l)) return;
     const idx = state.levels.indexOf(l);
     if(idx < 0) return;
     status('Распознаю подписи комнат на плане «' + (l.name || ('Этаж ' + (idx + 1))) + '»…');
     try{
       const labels = await ocrPlanLabels(l);
-      l.labels = labels;
+      l.labels = labels; l.labelsV = OCR_LABELS_V;
       if(level() === l) drawPlan();
       status(labels.length ? 'Подписи комнат распознаны: ' + labels.length + ' — теперь они шрифтом темы' : 'Подписей комнат на плане не найдено');
     }catch(err){
       console.warn('OCR', err);
+      status('Не удалось распознать подписи комнат (' + (err && err.message ? err.message : err) + ') — план показан с исходными надписями');
       ocrOffline = true;   /* нет сети / CDN недоступен — не повторяем в этой сессии, план остаётся как есть */
       ocrPending.delete(l);
     }
@@ -4128,7 +4184,7 @@ async function importThreeDViewZip(zip){
           markers: [], walls: [], autoWalls: null, selected: null
         };
         const svgLabels = await extractPlanLabels(zip, planFile, levelObj.src);
-        if(svgLabels.length) levelObj.labels = svgLabels;   /* нет SVG — подписи распознаются OCR (см. ocrPlanLabels) */
+        if(svgLabels.length){ levelObj.labels = svgLabels; levelObj.labelsSrc = 'svg'; }   /* нет SVG — подписи распознаются OCR (см. ocrPlanLabels) */
         state.levels.push(levelObj);
         addedLevels++;
       }else skippedNoPlan += group.length;
@@ -7489,7 +7545,7 @@ const HOTKEYS = [
   { group:'Инструменты', id:'tool.select', label:'Выбор', def:'KeyV', run:() => hkTool('select') },
   { group:'Инструменты', id:'tool.marker', label:'Маркер', def:'KeyM', run:() => hkTool('marker') },
   { group:'Инструменты', id:'tool.camera', label:'Перемещать камеры', def:'KeyC', run:() => hkTool('camera') },
-  { group:'Инструменты', id:'plan.dark', label:'Пол плана: исходный / тёмный / светлый', def:'KeyD', run:() => hkClick('#planDarkFloor') },
+  { group:'Инструменты', id:'plan.dark', label:'Тёмный план / исходный план Zillow', def:'KeyD', run:() => hkClick('#planDarkFloor') },
   { group:'Инструменты', id:'plan.hiddenCams', label:'Показать скрытые камеры', def:'KeyH', run:() => hkClick('#planShowHiddenCams') },
   { group:'Вид', id:'zoom.in', label:'Увеличить план', def:'Equal', run:() => hkClick('#zoomIn') },
   { group:'Вид', id:'zoom.out', label:'Уменьшить план', def:'Minus', run:() => hkClick('#zoomOut') },
