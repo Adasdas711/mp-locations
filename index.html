@@ -1001,7 +1001,18 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 /* граница плана с холстом — плотная тень, чтобы план не сливался с фоном (особенно с тёмным полом) */
 .plan{box-shadow:0 0 0 1px rgba(0,0,0,.7),0 0 0 2px rgba(255,255,255,.09),0 22px 64px 18px rgba(0,0,0,.85),0 6px 18px 2px rgba(0,0,0,.7)!important}
 #planDarkFloor[aria-pressed="true"]{background:var(--t-sel);color:var(--t-sel-fg);box-shadow:inset 0 0 0 1px var(--vscode-focus)}
-.plan.dark-floor{background:var(--t-canvas-bg)}
+.plan.dark-floor{background:var(--t-floor-dark)}
+.plan.light-floor{background:var(--t-floor-light)}
+/* серый + контраст: голубоватый пол Zillow становится белым и после multiply — ровно цветом пола темы;
+   стены при этом перекрашивает подсветка стен темы */
+.plan.light-floor > img,.plan.light-floor > canvas.plan-keyed{filter:grayscale(1) brightness(1.06) contrast(1.15);mix-blend-mode:multiply}
+/* подписи комнат, перерисованные шрифтом темы */
+.room-label{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;z-index:2;line-height:1;
+  font-family:var(--t-label-font);font-weight:700;color:#0a0a14;letter-spacing:.01em;
+  text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 4px #fff}
+.room-label.dim{font-weight:500;opacity:.9}
+.plan.light-floor .room-label{color:var(--t-label-ink-light);text-shadow:0 0 2px var(--t-floor-light),0 0 3px var(--t-floor-light),0 0 5px var(--t-floor-light)}
+.plan.dark-floor .room-label{color:var(--t-label-ink-dark);text-shadow:0 0 2px var(--t-floor-dark),0 0 3px var(--t-floor-dark),0 0 5px var(--t-floor-dark)}
 .plan.dark-floor > img,.plan.dark-floor > canvas.plan-keyed{filter:invert(1) hue-rotate(180deg) saturate(1.15);mix-blend-mode:lighten}
 
 /* миникарта 3D — тот же стиль виджета */
@@ -1181,6 +1192,16 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
         shadow:'0 0 10px rgba(14,243,255,.55)', fov:'rgba(14,243,255,.13)', fovStroke:'rgba(14,243,255,.85)' } }
   ];
 
+  /* цвета пола для режимов «тёмный / светлый пол»: [тёмный, светлый, текст на светлом] */
+  var FLOORS = {
+    'darcula':['#2b2b2b','#f2f0eb','#2b2b2b'], 'github-dark-default':['#0d1117','#f6f8fa','#1f2328'],
+    'github-dark-dimmed':['#22272e','#eef1f4','#22272e'], 'github-dark-high-contrast':['#0a0c10','#ffffff','#0e1116'],
+    'atom-one-dark':['#282c34','#fafafa','#383a42'], 'gruvbox-dark-medium':['#282828','#fbf1c7','#3c3836'],
+    'gruvbox-dark-hard':['#1d2021','#f9f5d7','#3c3836'], 'gruvbox-dark-soft':['#32302f','#f2e5bc','#3c3836'],
+    'sublime-material-dark':['#212121','#fafafa','#546e7a'], 'min-dark':['#1b1b1b','#f7f7f7','#1f1f1f'],
+    'macos-modern-dark-ventura-xcode':['#232222','#ececec','#1d1d1f'], 'macos-modern-dark-xcode-modern':['#242529','#f5f5f7','#1d1d1f'],
+    '2077':['#030d22','#eaf6ff','#0b082e']
+  };
   var RADIUS = { circle:'50%', rounded:'30%', square:'4px', sharp:'2px' };
   var DEFAULT_ID = 'darcula', KEY = 'palace.theme';
   var byId = {}; THEMES.forEach(function(t){ byId[t.id] = t; });
@@ -1257,7 +1278,8 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
       '--t-status-item-bg':u.statusItem, '--t-status-item-fg':u.statusItemFg, '--t-scroll':u.scroll || 'rgba(121,121,121,.4)',
       '--t-str':x.str, '--t-kw':x.kw, '--t-num':x.num, '--t-fn':x.fn, '--t-comment':x.comment,
       '--t-green':x.green, '--t-red':x.red, '--t-orange':x.orange, '--t-yellow':x.yellow,
-      '--t-canvas-bg':t.canvas.bg, '--t-font-ui':f.ui, '--t-font-mono':f.mono, '--t-font-size':f.size || '13px',
+      '--t-canvas-bg':t.canvas.bg, '--t-floor-dark':(FLOORS[t.id] || [])[0] || t.canvas.bg, '--t-floor-light':(FLOORS[t.id] || [])[1] || '#f5f5f5',
+      '--t-label-ink-light':(FLOORS[t.id] || [])[2] || '#1f1f1f', '--t-label-ink-dark':u.fgStrong, '--t-label-font':f.label || f.ui, '--t-font-ui':f.ui, '--t-font-mono':f.mono, '--t-font-size':f.size || '13px',
       '--vscode-fg':u.fg, '--vscode-fg-dim':u.fgDim, '--vscode-fg-mute':u.fgMute,
       '--vscode-titlebar-bg':u.chrome, '--vscode-activity-bg':u.activity || u.chrome, '--vscode-sidebar-bg':u.widget,
       '--vscode-editor-bg':u.editor, '--vscode-tab-bg':u.chrome, '--vscode-tab-active-bg':u.editor, '--vscode-tab-border':u.border,
@@ -1357,6 +1379,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 <symbol id="i-cam-move" viewBox="0 0 16 16"><path d="M3.2 7.2a1 1 0 0 1 1-1h1l.8-1.2h2.8l.8 1.2h1a1 1 0 0 1 1 1v3.4a1 1 0 0 1-1 1H4.2a1 1 0 0 1-1-1z"/><circle cx="7.4" cy="8.8" r="1.3"/><path d="M7.4 1.2v2M6.4 2.2l1-1 1 1M14.8 8.8h-1.6M13.8 7.8l1 1-1 1"/></symbol>
 <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13.2 10.2A5.6 5.6 0 0 1 5.8 2.8a5.6 5.6 0 1 0 7.4 7.4z"/></symbol>
 <symbol id="i-keyboard" viewBox="0 0 16 16"><rect x="1.6" y="4" width="12.8" height="8" rx="1.4"/><path d="M4 6.6h.01M6.4 6.6h.01M8.8 6.6h.01M11.2 6.6h.01M4 9.4h.01M11.2 9.4h.01M6 9.4h4"/></symbol>
+<symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.9"/><path d="M8 1.6v1.6M8 12.8v1.6M1.6 8h1.6M12.8 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"/></symbol>
 <symbol id="i-transparent" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.6"/><path class="fill" d="M2 3.6A1.6 1.6 0 0 1 3.6 2H8v6H2zM8 8h6v4.4a1.6 1.6 0 0 1-1.6 1.6H8z" opacity=".55"/></symbol>
 </defs></svg>
 <div class="app" data-ui="editor" data-layout="plan" id="appRoot">
@@ -1416,7 +1439,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
         <span class="tool-sep"></span>
         <button class="tool" id="planShowHiddenCams" title="Показать скрытые камеры" aria-label="Показать скрытые камеры" aria-pressed="false"><svg class="ic"><use href="#i-eye-hidden"/></svg></button>
         <button class="tool" id="planTransparentBg" title="Убрать белый фон плана и сделать его прозрачным" aria-label="Прозрачный фон плана"><svg class="ic"><use href="#i-transparent"/></svg></button>
-        <button class="tool" id="planDarkFloor" title="Тёмный пол: белое содержимое плана под цвет фона темы" aria-label="Тёмный пол" aria-pressed="false"><svg class="ic"><use href="#i-moon"/></svg></button>
+        <button class="tool" id="planDarkFloor" title="Пол плана: исходный / тёмный / светлый" aria-label="Пол плана" aria-pressed="false"><svg class="ic"><use href="#i-moon"/></svg></button>
       </aside>
       <div class="floor-overlay" id="floorOverlay"></div>
       <div class="review-bar" id="reviewBar" hidden>
@@ -1823,15 +1846,35 @@ const planKeyCanvasCache = new Map(); /* src -> готовый canvas с про�
    оттенок), а mix-blend-mode:lighten заменяет получившийся чёрный на цвет
    холста темы. Пиксели не читаются — работает с любым планом (SVG, огромные
    PNG из .3dview), мгновенно. Меняется только отображение, не сам план. */
-const PLAN_DARK_KEY = 'palace.planDark';
-let planDarkState = (() => { try{ return localStorage.getItem(PLAN_DARK_KEY) === '1'; }catch(e){ return false; } })();
-function planDarkOn(){ return planDarkState; }
-function setPlanDark(on){
-  planDarkState = !!on;
-  try{ localStorage.setItem(PLAN_DARK_KEY, planDarkState ? '1' : '0'); }catch(e){}
-  const b = $('#planDarkFloor'); if(b) b.setAttribute('aria-pressed', planDarkState ? 'true' : 'false');
+/* Пол плана: 'off' — как есть; 'dark' — инверсия + lighten на тёмный пол темы
+   (--t-floor-dark); 'light' — multiply на светлый пол темы (--t-floor-light):
+   белое становится цветом пола, стены и подписи остаются. Выбор — в localStorage. */
+const FLOOR_MODE_KEY = 'palace.floorMode';
+const FLOOR_MODES = ['off', 'dark', 'light'];
+let floorModeState = (() => {
+  try{
+    const v = localStorage.getItem(FLOOR_MODE_KEY);
+    if(FLOOR_MODES.indexOf(v) >= 0) return v;
+    return localStorage.getItem('palace.planDark') === '1' ? 'dark' : 'off';
+  }catch(e){ return 'off'; }
+})();
+function floorMode(){ return floorModeState; }
+function syncFloorButton(){
+  const b = $('#planDarkFloor'); if(!b) return;
+  const m = floorModeState;
+  b.setAttribute('aria-pressed', m === 'off' ? 'false' : 'true');
+  const u = b.querySelector('use'); if(u) u.setAttribute('href', m === 'light' ? '#i-sun' : '#i-moon');
+  const t = { off:'Пол плана: исходный', dark:'Пол плана: тёмный', light:'Пол плана: светлый' }[m] + ' · нажмите, чтобы переключить';
+  b.dataset.baseTitle = t;
+  const k = window.hotkeyText ? hotkeyText('plan.dark') : '';
+  b.title = t + (k ? ' (' + k + ')' : '');
+}
+function setFloorMode(m){
+  floorModeState = FLOOR_MODES.indexOf(m) >= 0 ? m : 'off';
+  try{ localStorage.setItem(FLOOR_MODE_KEY, floorModeState); }catch(e){}
+  syncFloorButton();
   drawPlan();
-  status(planDarkState ? 'Тёмный пол: белое содержимое плана под цвет фона' : 'Тёмный пол выключен');
+  status({ off:'Пол плана: исходный', dark:'Пол плана: тёмный — план на тёмном фоне темы', light:'Пол плана: светлый — стены и подписи на светлом фоне темы' }[floorModeState]);
 }
 function floorColor(i){
   /* палитра этажей берётся из текущей темы (PALACE_THEMES → marker.palette) */
@@ -2448,16 +2491,17 @@ function drawPlan(){
     try{
       const kc = planKeyedCanvas(l.src, im);
       if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
-      /* режим «только план»: без запечённых номеров камер (см. planCleanCanvas) */
-      const wantClean = state.layout === 'plan';
-      p.dataset.clean = wantClean ? '1' : '0';
-      if(wantClean){
-        const cc = planCleanCanvas(l.src, kc || im, !!kc);
-        if(cc){ if(kc) kc.remove(); p.insertBefore(cc, im); im.style.opacity = '0'; }
-      }
-      /* у планов из .3dview фон вокруг дома чёрный и вырезается в прозрачность
-         (canvas.plan-keyed), но пол внутри всё равно светлый — тёмный пол нужен и им */
-      p.classList.toggle('dark-floor', planDarkOn());
+      /* план без запечённых номеров камер и (если известны) без исходных подписей
+         комнат — их рисуем заново шрифтом темы (см. planCleanCanvas, renderRoomLabels) */
+      const labels = Array.isArray(l.labels) && l.labels.length ? l.labels : null;
+      const cc = planCleanCanvas(l.src, kc || im, !!kc, labels);
+      if(cc){ if(kc) kc.remove(); p.insertBefore(cc, im); im.style.opacity = '0'; }
+      if(cc && cc.dataset.labels === '1') renderRoomLabels(p, labels);
+      /* пол плана: исходный / тёмный / светлый (у планов из .3dview фон вокруг дома
+         чёрный и вырезается в прозрачность — canvas.plan-keyed; пол внутри светлый) */
+      const fm = floorMode();
+      p.classList.toggle('dark-floor', fm === 'dark');
+      p.classList.toggle('light-floor', fm === 'light');
     }catch(err){ console.warn('plan overlay', err); }
     if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
       const entry = cacheFloorPixelsFromImage(l, im);
@@ -3078,8 +3122,8 @@ function isBadgeRed(px, o){ const r = px[o], g = px[o+1], b = px[o+2]; return px
    результат кэшируется по изображению. Класс plan-keyed — чтобы на копию
    действовал и «тёмный пол». */
 const planCleanCache = new Map();
-function planCleanCanvas(src, source, keyed){
-  const key = (keyed ? 'k:' : 'i:') + src.length + ':' + src.slice(-64);
+function planCleanCanvas(src, source, keyed, labels){
+  const key = (keyed ? 'k:' : 'i:') + src.length + ':' + src.slice(-64) + ':L' + (labels ? labels.length : 0);
   if(planCleanCache.has(key)) return planCleanCache.get(key);
   const w = source.naturalWidth || source.width, h = source.naturalHeight || source.height;
   let out = null;
@@ -3130,12 +3174,106 @@ function planCleanCanvas(src, source, keyed){
         }
         erased++;
       }
-      if(erased){ g.putImageData(id, 0, 0); out = c; }
+      /* исходные подписи комнат: внутри повёрнутого прямоугольника каждой подписи
+         стираются только «текстовые» пиксели — почти чёрные (буквы) и белые
+         (обводка), а стены и мебель (цветные) остаются */
+      let labelsErased = false;
+      if(labels){
+        const textLike = o => { const r = px[o], g2 = px[o+1], b = px[o+2], mx = Math.max(r, g2, b), mn = Math.min(r, g2, b);
+          return px[o+3] > 40 && ((mx < 120 && mx - mn < 50) || mn > 243); };
+        labels.forEach(lb => {
+          const size = lb.size || 12, ang = (lb.angle || 0) * Math.PI / 180, cs = Math.cos(ang), sn = Math.sin(ang);
+          const hw = Math.max(lb.w || 0, String(lb.text || '').length * size * 0.62) / 2 + size * 0.35, hh = size * 0.78;
+          const ext = Math.ceil(Math.hypot(hw, hh)) + 1;
+          const x0 = Math.max(0, Math.floor(lb.x - ext)), x1 = Math.min(w - 1, Math.ceil(lb.x + ext));
+          const y0 = Math.max(0, Math.floor(lb.y - ext)), y1 = Math.min(h - 1, Math.ceil(lb.y + ext));
+          const inside = (x, y) => { const dx = x - lb.x, dy = y - lb.y, lx = dx * cs + dy * sn, ly = -dx * sn + dy * cs; return Math.abs(lx) <= hw && Math.abs(ly) <= hh; };
+          const bg = [[], [], [], []];
+          for(let y = y0; y <= y1; y++) for(let x = x0; x <= x1; x++){
+            if(!inside(x, y)) continue;
+            const o = (y * w + x) * 4;
+            if(!textLike(o)){ bg[0].push(px[o]); bg[1].push(px[o+1]); bg[2].push(px[o+2]); bg[3].push(px[o+3]); }
+          }
+          const med = a => { a.sort((u, v) => u - v); return a[a.length >> 1]; };
+          const fill = bg[0].length > 8 ? bg.map(med) : [239, 249, 255, 255];
+          for(let y = y0; y <= y1; y++) for(let x = x0; x <= x1; x++){
+            if(!inside(x, y)) continue;
+            const o = (y * w + x) * 4;
+            if(textLike(o)){ for(let k = 0; k < 4; k++) px[o+k] = fill[k]; erased++; labelsErased = true; }
+          }
+        });
+      }
+      if(erased){ g.putImageData(id, 0, 0); out = c; c.dataset.labels = labelsErased ? '1' : '0'; }
     }
   }
   if(planCleanCache.size > 6) planCleanCache.delete(planCleanCache.keys().next().value);
   planCleanCache.set(key, out);
   return out;
+}
+/* подписи комнат поверх плана — шрифтом темы (--t-label-font) */
+function renderRoomLabels(p, labels){
+  labels.forEach(lb => {
+    const d = document.createElement('div');
+    d.className = 'room-label ' + (lb.kind === 'dim' ? 'dim' : 'name');
+    d.textContent = lb.text;
+    d.style.left = lb.x + 'px'; d.style.top = lb.y + 'px';
+    d.style.fontSize = (lb.size || 12) + 'px';
+    if(lb.angle) d.style.transform = 'translate(-50%,-50%) rotate(' + lb.angle + 'deg)';
+    p.appendChild(d);
+  });
+}
+/* Подписи комнат из векторного плана в .3dview (plan_listing*.svg — из него же
+   растеризован plan*.png): текст, центр в пикселях картинки, размер, поворот.
+   SVG разбирается через DOMParser, из него выкидываются скрипты и обработчики
+   событий, затем он временно рисуется вне экрана в размере картинки — позиции
+   берутся из реальной вёрстки браузера. Нет SVG или пропорции не совпали — [] */
+async function extractPlanLabels(zip, planFile, src){
+  try{
+    const svgs = [];
+    zip.forEach((path, entry) => { if(/(^|\/)plan_listing[^/]*\.svg$/i.test(path) && !entry.dir) svgs.push(path); });
+    if(!svgs.length) return [];
+    const suffix = (String(planFile).match(/plan([^/]*)\.[a-z0-9]+$/i) || [,''])[1];
+    svgs.sort((a, b) => (b.indexOf('plan_listing' + suffix + '.svg') >= 0) - (a.indexOf('plan_listing' + suffix + '.svg') >= 0));
+    const im = await loadImage(src);
+    const W = im.naturalWidth, H = im.naturalHeight;
+    if(!W || !H) return [];
+    for(const path of svgs){
+      const text = await zip.file(path).async('string');
+      const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+      const svg = doc.documentElement;
+      if(!svg || svg.nodeName.toLowerCase() !== 'svg') continue;
+      const vb = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+      if(vb.length !== 4 || !(vb[2] > 0) || !(vb[3] > 0)) continue;
+      if(Math.abs(vb[2] / vb[3] - W / H) > 0.01 * (W / H)) continue;     /* не тот этаж */
+      svg.querySelectorAll('script, foreignObject, image, use').forEach(n => n.remove());
+      svg.querySelectorAll('*').forEach(n => { [...n.attributes].forEach(a => { if(/^on/i.test(a.name) || /href/i.test(a.name)) n.removeAttribute(a.name); }); });
+      svg.setAttribute('width', W); svg.setAttribute('height', H);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      const host = document.createElement('div');
+      host.style.cssText = 'position:fixed;left:-100000px;top:0;width:' + W + 'px;height:' + H + 'px;visibility:hidden;pointer-events:none;contain:strict';
+      host.appendChild(document.importNode(svg, true));
+      document.body.appendChild(host);
+      const out = [];
+      try{
+        const hr = host.getBoundingClientRect();
+        host.querySelectorAll('text').forEach(t => {
+          if(t.closest('#fixtures')) return;
+          const txt = (t.textContent || '').trim();
+          if(!txt) return;
+          const m = t.getScreenCTM(); if(!m) return;
+          const r = t.getBoundingClientRect();
+          const fs = parseFloat(t.style.fontSize || getComputedStyle(t).fontSize) || 0;
+          const k = Math.hypot(m.a, m.b);
+          const angle = Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI);
+          out.push({ text: txt, kind: t.closest('.dimensionLabel') ? 'dim' : 'name',
+                     x: +(r.left + r.width / 2 - hr.left).toFixed(1), y: +(r.top + r.height / 2 - hr.top).toFixed(1),
+                     size: +(fs * k).toFixed(2), angle: angle, w: +(Math.abs(angle) % 180 === 90 ? r.height : r.width).toFixed(1) });
+        });
+      }finally{ host.remove(); }
+      if(out.length) return out;
+    }
+  }catch(err){ console.warn('extractPlanLabels', err); }
+  return [];
 }
 async function eraseBakedCamMark(l, pos){
   if(!l || !l.src || !pos || !isFinite(pos.x) || !isFinite(pos.y)) return false;
@@ -3862,6 +4000,7 @@ async function importThreeDViewZip(zip){
           floorId: floorId != null ? floorId : null,
           markers: [], walls: [], autoWalls: null, selected: null
         };
+        levelObj.labels = await extractPlanLabels(zip, planFile, levelObj.src);
         state.levels.push(levelObj);
         addedLevels++;
       }else skippedNoPlan += group.length;
@@ -5991,7 +6130,9 @@ function pickDefaultLocalPano(){
     const entranceRx = /вход|прихож|entry|entrance|foyer/i;
     const findEntrance = ids => ids.find(id => entranceRx.test((state.panoramas[id] && state.panoramas[id].room) || ''));
     const scopedIds = (anyLevelHasFloorId && l) ? allIds.filter(id => state.panoramas[id] && state.panoramas[id].floorId === l.floorId) : allIds;
-    const entrance = findEntrance(scopedIds) || findEntrance(allIds);
+    /* вход с другого этажа не подставляем, если на этом этаже есть свои панорамы —
+       иначе при смене этажа на плане 3D оставался на прежнем этаже */
+    const entrance = findEntrance(scopedIds) || (scopedIds.length ? null : findEntrance(allIds));
     if(entrance) return entrance;
   }
   if(l){
@@ -6352,6 +6493,18 @@ function setActiveLocalPano(panoId, focusPanel){
   }catch(err){}
   if(!panoId || !state.panoramas || !state.panoramas[panoId]) return;
   activeLocalPano = panoId;
+  /* 3D ушёл на панораму другого этажа (переход по лестнице, список панорам,
+     миникарта) — план переключается на тот же этаж */
+  const pn = state.panoramas[panoId];
+  if(pn.floorId != null){
+    const li = state.levels.findIndex(x => x && x.floorId === pn.floorId);
+    if(li >= 0 && li !== state.active){
+      state.active = li; state.zoom = 1;
+      const v = $('#viewport'); if(v) v.style.transform = '';
+      render();
+      status('Этаж: ' + (state.levels[li].name || ('Этаж ' + (li + 1))));
+    }
+  }
   if(focusPanel) openTour(true, true);
   else renderTour();
   renderMinimap();
@@ -6587,8 +6740,6 @@ function applyLayout(){
   if(!root) return;
   const layout = state.layout || 'plan';
   root.setAttribute('data-layout', layout);
-  /* переход в «только план» и обратно: план без номеров камер / с ними */
-  { const pl = $('#plan'); if(pl && level() && pl.dataset.clean && pl.dataset.clean !== (layout === 'plan' ? '1' : '0')) drawPlan(); }
   /* Стартового экрана больше нет: приложение всегда открывается на холсте плана. */
   state.uiMode = 'editor';
   root.setAttribute('data-ui', 'editor');
@@ -6777,12 +6928,13 @@ function setUiMode(mode, silent){
   if(!silent){ touch(); status(mode === 'plan' ? 'Редактор: план' : 'Редактор: 3D-тур'); }
 }
 function toggleSplit(){
+  /* основной (левой) остаётся та панель, что была открыта до переключения */
   if(state.layout === 'split' || state.layout === 'split-rev'){
-    state.layout = 'plan';
-    status('Один экран: план');
+    state.layout = state.layout === 'split-rev' ? 'tour' : 'plan';
+    status(state.layout === 'tour' ? 'Один экран: 3D' : 'Один экран: план');
   }else{
-    state.layout = 'split';
-    status('Два экрана: план и 3D рядом — границу между ними можно тянуть мышью');
+    state.layout = state.layout === 'tour' ? 'split-rev' : 'split';
+    status('Два экрана: ' + (state.layout === 'split-rev' ? '3D слева, план справа' : 'план слева, 3D справа') + ' — границу между ними можно тянуть мышью');
   }
   state.uiMode = 'editor';
   applyLayout();
@@ -7209,7 +7361,7 @@ const HOTKEYS = [
   { group:'Инструменты', id:'tool.select', label:'Выбор', def:'KeyV', run:() => hkTool('select') },
   { group:'Инструменты', id:'tool.marker', label:'Маркер', def:'KeyM', run:() => hkTool('marker') },
   { group:'Инструменты', id:'tool.camera', label:'Перемещать камеры', def:'KeyC', run:() => hkTool('camera') },
-  { group:'Инструменты', id:'plan.dark', label:'Тёмный пол плана', def:'KeyD', run:() => hkClick('#planDarkFloor') },
+  { group:'Инструменты', id:'plan.dark', label:'Пол плана: исходный / тёмный / светлый', def:'KeyD', run:() => hkClick('#planDarkFloor') },
   { group:'Инструменты', id:'plan.hiddenCams', label:'Показать скрытые камеры', def:'KeyH', run:() => hkClick('#planShowHiddenCams') },
   { group:'Вид', id:'zoom.in', label:'Увеличить план', def:'Equal', run:() => hkClick('#zoomIn') },
   { group:'Вид', id:'zoom.out', label:'Уменьшить план', def:'Minus', run:() => hkClick('#zoomOut') },
@@ -7374,8 +7526,8 @@ function applyZoom(z, cx, cy){
 on('#zoomIn', 'click', () => applyZoom(state.zoom*1.2));
 on('#zoomOut', 'click', () => applyZoom(state.zoom/1.2));
 on('#planTransparentBg', 'click', () => { stripPlanWhiteBackground(); });
-on('#planDarkFloor', 'click', () => setPlanDark(!planDarkOn()));
-(() => { const b = $('#planDarkFloor'); if(b) b.setAttribute('aria-pressed', planDarkOn() ? 'true' : 'false'); })();
+on('#planDarkFloor', 'click', () => setFloorMode(FLOOR_MODES[(FLOOR_MODES.indexOf(floorMode()) + 1) % FLOOR_MODES.length]));
+syncFloorButton();
 on('#planShowHiddenCams', 'click', () => {
   showHiddenCams = !showHiddenCams;
   try{ localStorage.setItem('palace.showHiddenCams', showHiddenCams ? '1' : '0'); }catch(err){}
