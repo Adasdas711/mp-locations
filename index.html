@@ -957,6 +957,7 @@ button.primary{border-color:rgba(255,255,255,.08);color:var(--t-button-fg)}
 .tp-sw i{display:block;height:100%}
 .tp-sw .c{width:12px}.tp-sw .e{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;background-size:8px 8px}
 .tp-sw .e b{display:block;width:9px;height:9px}
+.tp-sw .tp-mk{display:block;width:11px;height:11px;overflow:visible}
 .tp-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tp-src{flex:none;font-size:11px;color:var(--vscode-fg-mute)}
 .tp-item.hl .tp-src{color:inherit;opacity:.75}
@@ -1002,6 +1003,19 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 .plan{box-shadow:0 0 0 1px rgba(0,0,0,.7),0 0 0 2px rgba(255,255,255,.09),0 22px 64px 18px rgba(0,0,0,.85),0 6px 18px 2px rgba(0,0,0,.7)!important}
 #planDarkFloor[aria-pressed="true"]{background:var(--t-sel);color:var(--t-sel-fg);box-shadow:inset 0 0 0 1px var(--vscode-focus)}
 .plan.dark-floor{background:var(--t-floor-dark)}
+/* метки-локусы и фишки маршрута: фигура темы (SVG) + номер */
+.marker .mk-shape,.route .r .mk-shape{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;stroke-linejoin:round}
+.marker .mk-num,.route .r .mk-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;line-height:1;pointer-events:none;
+  transform:translate(var(--mk-dx,0),var(--mk-dy,0));font-size:calc(1em * var(--mk-fs,1))}
+.route .r .rb{z-index:2}
+/* окна на плане — одинаковое «стекло» во всех темах и в обоих режимах плана */
+.plan-window{position:absolute;pointer-events:none;z-index:1;border-radius:1px;
+  background:linear-gradient(var(--wdir,180deg),rgba(56,189,248,.9),rgba(186,230,253,.98) 50%,rgba(56,189,248,.9));
+  box-shadow:0 0 0 1px rgba(7,42,64,.6),0 0 7px rgba(125,211,252,.55)}
+.plan-window::after{content:'';position:absolute;background:rgba(255,255,255,.95)}
+.plan-window.h::after{left:4%;right:4%;top:50%;height:1px;margin-top:-.5px}
+.plan-window.v{--wdir:90deg}
+.plan-window.v::after{top:4%;bottom:4%;left:50%;width:1px;margin-left:-.5px}
 /* подписи комнат, перерисованные шрифтом темы */
 .room-label{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;z-index:2;line-height:1;
   font-family:var(--t-label-font);font-weight:700;color:var(--t-label-ink-light,#0a0a14);letter-spacing:.01em;
@@ -1184,8 +1198,112 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
       marker:{ shape:'sharp', style:'neon', palette:['#ff2592','#0ef3ff','#ffd400','#ff2cf1','#39c0ff','#00ff9c','#ee0077','#40a9ff','#fdfeff','#d31b77'],
         fill:'rgba(3,13,34,.88)', width:2, weight:700, mono:true },
       camera:{ icon:'target', shape:'sharp', bg:'rgba(3,13,34,.9)', border:'#0ef3ff', fg:'#0ef3ff', activeBg:'#ff2592', activeFg:'#030d22',
-        shadow:'0 0 10px rgba(14,243,255,.55)', fov:'rgba(14,243,255,.13)', fovStroke:'rgba(14,243,255,.85)' } }
+        shadow:'0 0 10px rgba(14,243,255,.55)', fov:'rgba(14,243,255,.13)', fovStroke:'rgba(14,243,255,.85)' } },
+
+    { id:'borealis', name:'Borealis', source:'eckertalex/borealis-vscode',
+      font:{ ui:'"Josefin Sans"' + SANS, mono:'"Azeret Mono"' + MONO },
+      ui:{ chrome:'#152d2b', activity:'#123836', editor:'#194945', widget:'#152d2b', dialog:'#152d2b', border:'#0d5851', widgetBorder:'#1f6b63',
+        fg:'#d8f2ef', fgStrong:'#ffffff', fgDim:'#aaaaaa', fgMute:'#6f9994', input:'#194945', inputBorder:'#0d5851',
+        btn:'#02877b', btnHover:'#ff9d00', btnFg:'#ffffff', btn2:'#1d4f4a', btn2Hover:'#245c56',
+        accent:'#ffde11', focus:'#00a2a4', sel:'rgba(0,162,164,.45)', status:'#152d2b', statusFg:'#aaaaaa',
+        statusItem:'#ffde11', statusItemFg:'#152d2b', activityFg:'#ffffff', activityInactive:'#5f8f89',
+        syntax:{ str:'#a5ff90', kw:'#ff9d00', num:'#ff628c', fn:'#80ffbb', comment:'#02877b', green:'#a5ff90', red:'#ff628c', orange:'#ff9d00', yellow:'#ffde11' } },
+      canvas:{ bg:'#194945', grid:'dots', color:'rgba(225,254,255,.08)', size:26,
+        extra:'radial-gradient(ellipse at 15% -10%,rgba(128,255,187,.16),transparent 55%),radial-gradient(ellipse at 95% 0%,rgba(0,162,164,.18),transparent 50%)' },
+      marker:{ shape:'hexagon', style:'solid', palette:['#80ffbb','#ffde11','#ff9d00','#ff628c','#a5ff90','#00a2a4','#e1feff','#02877b','#ffc2d4','#9df5ff'],
+        text:'#0f2e2b', stroke:'#0f2e2b', width:2, ring:'rgba(255,255,255,.5)', shadow:'0 2px 8px rgba(0,0,0,.45)', weight:700 },
+      camera:{ icon:'compass', shape:'circle', bg:'#152d2b', border:'#00a2a4', fg:'#e1feff', activeBg:'#ffde11', activeFg:'#152d2b',
+        fov:'rgba(128,255,187,.16)', fovStroke:'rgba(128,255,187,.8)' } },
+
+    { id:'one-monokai-80s-plus', name:'One Monokai 80s Plus', source:'victortrusov/one-monokai-80s-plus',
+      font:{ ui:'"Chakra Petch"' + SANS, mono:'"VT323"' + MONO },
+      ui:{ chrome:'#282c34', activity:'#2f333d', editor:'#282c34', widget:'#21252b', dialog:'#21252b', border:'#181a1f', widgetBorder:'#383e4a',
+        fg:'#bec2ca', fgStrong:'#e3e5e8', fgDim:'#9da5b4', fgMute:'#6f7887', input:'#1d1f23', inputBorder:'#383e4a',
+        btn:'#528bff', btnHover:'#6a9cff', btnFg:'#ffffff', btn2:'#2c313a', btn2Hover:'#383e4a',
+        accent:'#ca90d0', focus:'#528bff', sel:'#2f5093', selFg:'#e3e5e8', status:'#21252b', statusFg:'#9da5b4',
+        statusItem:'#ca90d0', statusItemFg:'#21252b', activityFg:'#d7dae0', activityInactive:'#6f7887',
+        syntax:{ str:'#d6c294', kw:'#61afef', num:'#d19a66', fn:'#ca90d0', comment:'#6f7887', green:'#9cc284', red:'#e06c75', orange:'#d19a66', yellow:'#e5c07b' } },
+      canvas:{ bg:'#282c34', grid:'graph', color:'rgba(202,144,208,.05)', major:'rgba(202,144,208,.1)', size:20, majorEvery:4,
+        extra:'linear-gradient(180deg,rgba(202,144,208,.06),transparent 45%)' },
+      marker:{ shape:'parallelogram', style:'solid', palette:['#61afef','#ca90d0','#9cc284','#d19a66','#e06c75','#56b6c2','#e5c07b','#d6c294','#b267e6','#93a1d2'],
+        text:'#1d1f23', stroke:'#1d1f23', width:2, shadow:'2px 2px 0 rgba(0,0,0,.55)', weight:700 },
+      camera:{ icon:'tv', shape:'rounded', bg:'#21252b', border:'#ca90d0', fg:'#e3e5e8', activeBg:'#ca90d0', activeFg:'#21252b',
+        fov:'rgba(202,144,208,.18)', fovStroke:'rgba(202,144,208,.85)' } },
+
+    { id:'vue-theme', name:'Vue Theme', source:'mariorodeghiero/vue-theme-vscode',
+      font:{ ui:'"Source Sans 3"' + SANS, mono:'"Source Code Pro"' + MONO },
+      ui:{ chrome:'#002b36', editor:'#002b36', widget:'#00323f', dialog:'#00323f', border:'#0f4150', widgetBorder:'#1d5563',
+        fg:'#e6e6e6', fgStrong:'#ffffff', fgDim:'#9fb3b8', fgMute:'#6b8a91', input:'#002b36', inputBorder:'#19f9d880',
+        btn:'#19f9d8', btnHover:'#5ffbe4', btnFg:'#002b36', btn2:'#0a3d4a', btn2Hover:'#10495a',
+        accent:'#19f9d8', focus:'#19f9d8', sel:'rgba(9,105,129,.55)', status:'#002b36', statusFg:'#19f9d8',
+        statusItem:'#19f9d8', statusItemFg:'#002b36', activityFg:'#19f9d8', activityInactive:'#4f7f86',
+        syntax:{ str:'#00abc1', kw:'#ff2c6d', num:'#ff5622', fn:'#09cbdd', comment:'#8a8787', green:'#19f9d8', red:'#ff2c6d', orange:'#ff5622', yellow:'#ffcc95' } },
+      canvas:{ bg:'#002b36', grid:'cross', color:'rgba(25,249,216,.13)', size:30 },
+      marker:{ shape:'vtriangle', style:'solid', palette:['#42b883','#19f9d8','#ff2c6d','#09cbdd','#ffcc95','#f48fb1','#ff5622','#00abc1','#e6e6e6','#b39ddb'],
+        text:'#002b36', stroke:'#002b36', width:2, shadow:'0 2px 6px rgba(0,0,0,.5)', weight:700 },
+      camera:{ icon:'pano360', shape:'circle', bg:'#00323f', border:'#19f9d8', fg:'#19f9d8', activeBg:'#19f9d8', activeFg:'#002b36',
+        fov:'rgba(25,249,216,.15)', fovStroke:'rgba(25,249,216,.85)' } },
+
+    { id:'vue-theme-high-contrast', name:'Vue Theme High Contrast', source:'mariorodeghiero/vue-theme-vscode',
+      font:{ ui:'"Lexend"' + SANS, mono:'"Inconsolata"' + MONO },
+      ui:{ chrome:'#001f27', editor:'#002933', widget:'#002933', dialog:'#002933', border:'#14c5ab', widgetBorder:'#14c5ab',
+        fg:'#e6e6e6', fgStrong:'#ffffff', fgDim:'#b8c7cb', fgMute:'#9e9e9e', input:'#001f27', inputBorder:'#14c5ab',
+        btn:'#14c5ab', btnHover:'#19f9d7', btnFg:'#002933', btn2:'#003a47', btn2Hover:'#004a5a',
+        accent:'#14c5ab', focus:'#00b7ff', sel:'rgba(0,183,255,.32)', status:'#001f27', statusFg:'#14c5ab',
+        statusItem:'#14c5ab', statusItemFg:'#002933', activityFg:'#ffffff', activityInactive:'#14c5ab', scroll:'rgba(20,197,171,.5)',
+        syntax:{ str:'#00b7ff', kw:'#09cbdd', num:'#ff5622', fn:'#09cbdd', comment:'#9e9e9e', green:'#14c5ab', red:'#ff0e56', orange:'#ff5622', yellow:'#ffd54f' } },
+      canvas:{ bg:'#002933', grid:'lines', color:'rgba(20,197,171,.14)', size:28 },
+      marker:{ shape:'house', style:'ring', palette:['#14c5ab','#00b7ff','#ff6a9b','#ffd54f','#ff5622','#b388ff','#69f0ae','#ffffff','#ff0e56','#40c4ff'],
+        fill:'#002933', text:'#ffffff', width:3, weight:800 },
+      camera:{ icon:'globe', shape:'circle', bg:'#002933', border:'#ffffff', borderWidth:2, fg:'#ffffff', activeBg:'#00b7ff', activeFg:'#002933',
+        fov:'rgba(0,183,255,.2)', fovStroke:'#00b7ff' } },
+
+    { id:'gitpod-dark', name:'Gitpod Dark', source:'gitpod-io/gitpod-vscode-theme',
+      font:{ ui:'"Manrope"' + SANS, mono:'"Geist Mono"' + MONO },
+      ui:{ chrome:'#1c1917', activity:'#292524', editor:'#12100c', widget:'#1c1917', dialog:'#1c1917', border:'#292524', widgetBorder:'#44403c',
+        fg:'#d6d3d1', fgStrong:'#fafaf9', fgDim:'#a8a29e', fgMute:'#78716c', input:'#292524', inputBorder:'#44403c',
+        btn:'#d67400', btnHover:'#ff8a00', btnFg:'#ffffff', btn2:'#292524', btn2Hover:'#44403c',
+        accent:'#d67400', focus:'#ffb45b', sel:'rgba(163,88,0,.45)', status:'#252526', statusFg:'#f3f3f3',
+        statusItem:'#d67400', statusItemFg:'#ffffff', activityFg:'#f3f3f3', activityInactive:'#78716c',
+        syntax:{ str:'#ce9178', kw:'#569cd6', num:'#b5cea8', fn:'#dcdcaa', comment:'#6a9955', green:'#b5cea8', red:'#f14c4c', orange:'#ffb45b', yellow:'#dcdcaa' } },
+      canvas:{ bg:'#12100c', grid:'dots', color:'rgba(255,180,91,.11)', size:24 },
+      marker:{ shape:'cloud', style:'solid', palette:['#ff8a00','#ffb45b','#569cd6','#dcdcaa','#ce9178','#4ec9b0','#c586c0','#b5cea8','#f14c4c','#d6d3d1'],
+        text:'#12100c', stroke:'#12100c', width:2, shadow:'0 2px 8px rgba(0,0,0,.6)', weight:700 },
+      camera:{ icon:'radar', shape:'rounded', bg:'#1c1917', border:'#d67400', fg:'#ffb45b', activeBg:'#d67400', activeFg:'#ffffff',
+        fov:'rgba(255,138,0,.16)', fovStroke:'rgba(255,180,91,.85)' } }
   ];
+
+  /* Уникальность тем: у каждой — свой шрифт интерфейса и подписей плана, свой
+     моноширинный шрифт (Google Fonts), своя форма метки-локуса и своя иконка камеры.
+     [шрифт интерфейса, веса, моноширинный, веса, форма метки, иконка камеры] */
+  var UNIQUE = {
+    'darcula':                        ['Inter','400;500;600;700', 'JetBrains Mono','400;700', 'circle',        'camera'],
+    'github-dark-default':            ['Mona Sans','400;500;600;700', 'Noto Sans Mono','400;700', 'squircle', 'video'],
+    'github-dark-dimmed':             ['Hubot Sans','400;500;600;700', 'Spline Sans Mono','400;700', 'shield', 'binoculars'],
+    'github-dark-high-contrast':      ['Atkinson Hyperlegible','400;700', 'Atkinson Hyperlegible Mono','400;700', 'target', 'eye'],
+    'atom-one-dark':                  ['Fira Sans','400;500;600;700', 'Fira Code','400;700', 'rounded',     'atom'],
+    'gruvbox-dark-medium':            ['IBM Plex Sans','400;500;600;700', 'IBM Plex Mono','400;700', 'square', 'aperture'],
+    'gruvbox-dark-hard':              ['IBM Plex Sans Condensed','400;500;600;700', 'Space Mono','400;700', 'octagon', 'film'],
+    'gruvbox-dark-soft':              ['Nunito','400;500;600;700', 'Ubuntu Mono','400;700', 'scallop',      'polaroid'],
+    'sublime-material-dark':          ['Roboto','400;500;700', 'Roboto Mono','400;700', 'pin',              'lens'],
+    'min-dark':                       ['DM Sans','400;500;600;700', 'DM Mono','400;500', 'diamond',         'dot'],
+    'macos-modern-dark-ventura-xcode':['Figtree','400;500;600;700', 'Red Hat Mono','400;700', 'bubble',     'camera-solid'],
+    'macos-modern-dark-xcode-modern': ['Plus Jakarta Sans','400;500;600;700', 'Martian Mono','400;700', 'breakpoint', 'viewfinder'],
+    '2077':                           ['Rajdhani','500;600;700', 'Share Tech Mono','', 'chamfer',           'target'],
+    'borealis':                       ['Josefin Sans','400;500;600;700', 'Azeret Mono','400;700', 'hexagon', 'compass'],
+    'one-monokai-80s-plus':           ['Chakra Petch','400;500;600;700', 'VT323','', 'parallelogram',      'tv'],
+    'vue-theme':                      ['Source Sans 3','400;500;600;700', 'Source Code Pro','400;700', 'vtriangle', 'pano360'],
+    'vue-theme-high-contrast':        ['Lexend','400;500;600;700', 'Inconsolata','400;700', 'house',        'globe'],
+    'gitpod-dark':                    ['Manrope','400;500;600;700', 'Geist Mono','400;700', 'cloud',        'radar']
+  };
+  function gfOne(name, weights){ return 'https://fonts.googleapis.com/css2?family=' + name.replace(/ /g, '+') + (weights ? ':wght@' + weights : '') + '&display=swap'; }
+  THEMES.forEach(function(t){
+    var u = UNIQUE[t.id]; if(!u) return;
+    t.font = { ui:'"' + u[0] + '"' + SANS, mono:'"' + u[2] + '"' + MONO, size:(t.font && t.font.size) || null,
+               links:[gfOne(u[0], u[1]), gfOne(u[2], u[3])], family:u[0], monoFamily:u[2] };
+    t.marker.shape = u[4];
+    t.camera.icon = u[5];
+  });
 
   /* цвета пола для режимов «тёмный / светлый пол»: [тёмный, светлый, текст на светлом] */
   var FLOORS = {
@@ -1195,7 +1313,9 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
     'gruvbox-dark-hard':['#1d2021','#f9f5d7','#3c3836'], 'gruvbox-dark-soft':['#32302f','#f2e5bc','#3c3836'],
     'sublime-material-dark':['#212121','#fafafa','#546e7a'], 'min-dark':['#1b1b1b','#f7f7f7','#1f1f1f'],
     'macos-modern-dark-ventura-xcode':['#232222','#ececec','#1d1d1f'], 'macos-modern-dark-xcode-modern':['#242529','#f5f5f7','#1d1d1f'],
-    '2077':['#030d22','#eaf6ff','#0b082e']
+    '2077':['#030d22','#eaf6ff','#0b082e'], 'borealis':['#123836','#eefcf8','#0d3b37'],
+    'one-monokai-80s-plus':['#23262d','#f6f4fa','#2c2f38'], 'vue-theme':['#00232c','#effcfa','#003340'],
+    'vue-theme-high-contrast':['#001e26','#ffffff','#002933'], 'gitpod-dark':['#0f0d0a','#fafaf9','#1c1917']
   };
   var RADIUS = { circle:'50%', rounded:'30%', square:'4px', sharp:'2px' };
   var DEFAULT_ID = 'darcula', KEY = 'palace.theme';
@@ -1226,27 +1346,52 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
     return '.stage{background-color:' + c.bg + ';background-image:' + (imgs.length ? imgs.join(',') : 'none') +
            ';background-size:' + (sizes.length ? sizes.join(',') : 'auto') + ';background-attachment:local}';
   }
-  function markerCss(m, t){
-    var R = RADIUS[m.shape] || '50%', w = (m.width == null ? 2 : m.width);
-    var fill, stroke, text, glow = m.shadow || 'none', tshadow = 'none';
-    if(m.style === 'solid'){ fill = 'var(--fc)'; stroke = m.stroke || 'transparent'; text = m.text || '#fff';
-      if(m.ring) glow = '0 0 0 1px ' + m.ring + (m.shadow && m.shadow !== 'none' ? ',' + m.shadow : ''); }
-    else{ fill = m.fill; stroke = 'var(--fc)'; text = m.text || 'var(--fc)'; }
-    if(m.style === 'neon'){
-      glow = '0 0 10px var(--fc),inset 0 0 8px color-mix(in srgb,var(--fc) 35%,transparent)';
-      tshadow = '0 0 6px var(--fc)';
+  /* формы меток-локусов — SVG-символы #mk-<форма> (см. <defs>); dx/dy — сдвиг
+     номера внутри фигуры (доля размера метки), fs — масштаб шрифта номера */
+  var SHAPES = { circle:{}, squircle:{}, shield:{ dy:-.04, fs:.9 }, target:{ fs:.82 }, rounded:{}, square:{}, octagon:{},
+    scallop:{ fs:.86 }, pin:{ dy:-.11, fs:.84 }, diamond:{ fs:.72 }, bubble:{ dy:-.075, fs:.88 }, breakpoint:{ dx:-.05, fs:.9 },
+    chamfer:{}, hexagon:{ fs:.9 }, parallelogram:{ fs:.86 }, vtriangle:{ dy:-.13, fs:.72 }, house:{ dy:.1, fs:.84 }, cloud:{ dy:.09, fs:.78 } };
+  /* та же форма в мелком виде (миникарта, просвет в маршруте) — обычным скруглением */
+  var MINI_R = { circle:'50%', target:'50%', scallop:'50%', pin:'50%', bubble:'35%', cloud:'50%', squircle:'32%', rounded:'28%',
+    shield:'30%', breakpoint:'25%', house:'20%', vtriangle:'20%' };
+  /* box-shadow → filter:drop-shadow() (у SVG-фигуры тень задаётся фильтром) */
+  function toDrop(sh){
+    if(!sh || sh === 'none') return '';
+    var parts = [], depth = 0, cur = '';
+    for(var i = 0; i < sh.length; i++){
+      var ch = sh[i];
+      if(ch === '(') depth++; else if(ch === ')') depth--;
+      if(ch === ',' && !depth){ parts.push(cur); cur = ''; } else cur += ch;
     }
+    parts.push(cur);
+    return parts.map(function(pt){
+      pt = pt.trim(); if(!pt || /inset/.test(pt)) return '';
+      var toks = pt.match(/(rgba?\([^)]*\)|hsla?\([^)]*\)|color-mix\([^)]*\)\)?|var\([^)]*\)|#[0-9a-fA-F]+|[^\s]+)/g) || [];
+      var lens = toks.filter(function(x){ return /^-?[\d.]+(px|em)?$/.test(x); }), col = toks.filter(function(x){ return !/^-?[\d.]+(px|em)?$/.test(x); })[0] || 'rgba(0,0,0,.5)';
+      return 'drop-shadow(' + (lens[0] || 0) + ' ' + (lens[1] || 0) + ' ' + (lens[2] || 0) + ' ' + col + ')';
+    }).join(' ').trim();
+  }
+  function markerCss(m, t){
+    var sh = SHAPES[m.shape] || {}, w = (m.width == null ? 2 : m.width), R = MINI_R[m.shape] || '3px';
+    var fill, stroke, text, drop = toDrop(m.shadow), tshadow = 'none';
+    if(m.style === 'solid'){ fill = 'var(--fc)'; stroke = m.stroke || 'transparent'; text = m.text || '#fff';
+      if(m.ring) drop = ('drop-shadow(0 0 .7px ' + m.ring + ') drop-shadow(0 0 .7px ' + m.ring + ') ' + drop).trim(); }
+    else{ fill = m.fill; stroke = 'var(--fc)'; text = m.text || 'var(--fc)'; }
+    if(m.style === 'neon'){ drop = 'drop-shadow(0 0 5px var(--fc)) drop-shadow(0 0 2px var(--fc))'; tshadow = '0 0 6px var(--fc)'; }
     var fam = m.mono ? 'var(--t-font-mono)' : 'var(--t-font-ui)';
-    var chip = 'border-radius:' + R + ';background:' + fill + ';color:' + text + ';font-family:' + fam + ';font-weight:' + (m.weight || 700) + ';text-shadow:' + tshadow;
+    var vars = '--mk-dx:' + ((sh.dx || 0) * 100) + '%;--mk-dy:' + ((sh.dy || 0) * 100) + '%;--mk-fs:' + (sh.fs || 1);
+    var shapeCss = 'fill:' + fill + ';stroke:' + stroke + ';filter:' + (drop || 'none');
     return '.route,.minimap-layer{--fc:' + m.palette[0] + '}' +
-      '.marker{' + chip + ';border:' + w + 'px solid ' + stroke + ';box-shadow:' + glow + '}' +
-      '.route .r,.rgroup .r{' + chip + ';border:' + Math.min(w, 2) + 'px solid ' + stroke + ';box-shadow:' + (m.style === 'neon' ? '0 0 6px var(--fc)' : (m.ring ? '0 0 0 1px ' + m.ring : 'none')) + ';opacity:.75}' +
-      '.rgroup.current .r{opacity:1}' +
+      '.marker,.route .r,.rgroup .r{' + vars + ';background:transparent!important;border:0!important;border-radius:50%;color:' + text +
+        ';font-family:' + fam + ';font-weight:' + (m.weight || 700) + ';text-shadow:' + tshadow + '}' +
+      '.marker{box-shadow:none}.route .r,.rgroup .r{box-shadow:none;opacity:.78}.rgroup.current .r{opacity:1}' +
+      '.marker .mk-shape{' + shapeCss + ';stroke-width:' + (w * 0.8).toFixed(2) + 'px}' +
+      '.route .r .mk-shape,.rgroup .r .mk-shape{' + shapeCss + ';stroke-width:' + (Math.min(w, 2) * 1.1).toFixed(2) + 'px}' +
       '.rslot{border-radius:' + R + '}' +
       '.minimap-layer .mm-marker{border-radius:' + R + ';background:' + fill + ';border:1.5px solid ' + (m.style === 'solid' ? (m.stroke && m.stroke !== 'transparent' ? m.stroke : '#fff') : 'var(--fc)') + ';color:' + text + '}' +
       '.minimap-layer .mm-marker.sel,.marker.selected,.route .r.sel{outline-color:var(--t-focus)}' +
       '.marker.pinned::after{background:var(--t-accent);border-color:' + t.ui.editor + '}' +
-      '.rlabel::before{border-radius:' + (m.shape === 'circle' ? '50%' : '2px') + '}';
+      '.rlabel::before{border-radius:' + R + '}';
   }
   function cameraCss(c, t){
     var R = RADIUS[c.shape] || '50%', bw = (c.borderWidth == null ? 1.5 : c.borderWidth);
@@ -1299,14 +1444,17 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
   }
 
   var styleEl = document.createElement('style'); styleEl.id = 'themeVars';
-  var fontEl = document.createElement('link'); fontEl.id = 'themeFonts'; fontEl.rel = 'stylesheet';
-  document.head.appendChild(fontEl); document.head.appendChild(styleEl);
+  var fontEls = [0, 1].map(function(i){ var el = document.createElement('link'); el.id = 'themeFonts' + i; el.rel = 'stylesheet'; document.head.appendChild(el); return el; });
+  document.head.appendChild(styleEl);
 
   window.PALACE_THEMES = THEMES;
   window.getTheme = function(){ return current.id; };
   window.getThemeDef = function(id){ return id ? byId[id] : current; };
   window.themeFloorColor = function(i){ var p = current.marker.palette; return p[((i % p.length) + p.length) % p.length]; };
   window.themeCamIcon = function(){ return current.camera.icon || 'camera'; };
+  window.themeMarkerShape = function(id){ var t = id ? byId[id] : current; return (t && t.marker.shape) || 'circle'; };
+  /* содержимое метки / фишки маршрута: фигура темы + номер */
+  window.markerInner = function(n){ return '<svg class="mk-shape" viewBox="0 0 40 40" aria-hidden="true"><use href="#mk-' + (current.marker.shape || 'circle') + '"/></svg><span class="mk-num">' + n + '</span>'; };
   window.themeWallColor = function(){
     return current.canvas.walls || current.ui.accent;
   };
@@ -1317,7 +1465,8 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
     var t = byId[id] || byId[DEFAULT_ID];
     current = t;
     styleEl.textContent = buildCss(t);
-    if(fontEl.getAttribute('href') !== t.font.href) fontEl.setAttribute('href', t.font.href);
+    var links = t.font.links || (t.font.href ? [t.font.href] : []);
+    fontEls.forEach(function(el, i){ var h = links[i] || ''; if(h){ if(el.getAttribute('href') !== h) el.setAttribute('href', h); } else el.removeAttribute('href'); });
     document.documentElement.setAttribute('data-theme', t.id);
     if(!opt.preview){ try{ localStorage.setItem(KEY, t.id); }catch(e){} }
     var b = document.getElementById('themeBtn');
@@ -1377,6 +1526,36 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13.2 10.2A5.6 5.6 0 0 1 5.8 2.8a5.6 5.6 0 1 0 7.4 7.4z"/></symbol>
 <symbol id="i-keyboard" viewBox="0 0 16 16"><rect x="1.6" y="4" width="12.8" height="8" rx="1.4"/><path d="M4 6.6h.01M6.4 6.6h.01M8.8 6.6h.01M11.2 6.6h.01M4 9.4h.01M11.2 9.4h.01M6 9.4h4"/></symbol>
 <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.9"/><path d="M8 1.6v1.6M8 12.8v1.6M1.6 8h1.6M12.8 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"/></symbol>
+<symbol id="mk-circle" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18"/></symbol>
+<symbol id="mk-squircle" viewBox="0 0 40 40"><path d="M20 2c13.5 0 18 4.5 18 18s-4.5 18-18 18S2 33.5 2 20 6.5 2 20 2Z"/></symbol>
+<symbol id="mk-shield" viewBox="0 0 40 40"><path d="M20 2.5 35 8v10.5C35 28 28.5 34.5 20 37.5 11.5 34.5 5 28 5 18.5V8Z"/></symbol>
+<symbol id="mk-target" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18"/><circle cx="20" cy="20" r="13.2" fill="none"/></symbol>
+<symbol id="mk-rounded" viewBox="0 0 40 40"><rect x="3" y="3" width="34" height="34" rx="9"/></symbol>
+<symbol id="mk-square" viewBox="0 0 40 40"><rect x="3" y="3" width="34" height="34" rx="2"/></symbol>
+<symbol id="mk-octagon" viewBox="0 0 40 40"><path d="M13 2h14l11 11v14L27 38H13L2 27V13Z"/></symbol>
+<symbol id="mk-scallop" viewBox="0 0 40 40"><path d="M20.0 4.8Q26.7 -0.7 28.9 7.7Q37.6 7.2 34.5 15.3Q41.8 20.0 34.5 24.7Q37.6 32.8 28.9 32.3Q26.7 40.7 20.0 35.2Q13.3 40.7 11.1 32.3Q2.4 32.8 5.5 24.7Q-1.8 20.0 5.5 15.3Q2.4 7.2 11.1 7.7Q13.3 -0.7 20.0 4.8Z"/></symbol>
+<symbol id="mk-pin" viewBox="0 0 40 40"><path d="M20 38.5S6 25.2 6 15.6a14 14 0 0 1 28 0c0 9.6-14 22.9-14 22.9Z"/></symbol>
+<symbol id="mk-diamond" viewBox="0 0 40 40"><path d="M20 1 39 20 20 39 1 20Z"/></symbol>
+<symbol id="mk-bubble" viewBox="0 0 40 40"><path d="M9 4h22a6 6 0 0 1 6 6v14a6 6 0 0 1-6 6H19l-7.5 7v-7H9a6 6 0 0 1-6-6V10a6 6 0 0 1 6-6Z"/></symbol>
+<symbol id="mk-breakpoint" viewBox="0 0 40 40"><path d="M3 8a4 4 0 0 1 4-4h21.5L38 20l-9.5 16H7a4 4 0 0 1-4-4Z"/></symbol>
+<symbol id="mk-chamfer" viewBox="0 0 40 40"><path d="M11 2h27v27l-9 9H2V11Z"/></symbol>
+<symbol id="mk-hexagon" viewBox="0 0 40 40"><path d="M20 1.5 36.5 11v18L20 38.5 3.5 29V11Z"/></symbol>
+<symbol id="mk-parallelogram" viewBox="0 0 40 40"><path d="M11 5h28L29 35H1Z"/></symbol>
+<symbol id="mk-vtriangle" viewBox="0 0 40 40"><path d="M5.2 5h29.6a3 3 0 0 1 2.6 4.5L22.6 35a3 3 0 0 1-5.2 0L2.6 9.5A3 3 0 0 1 5.2 5Z"/></symbol>
+<symbol id="mk-house" viewBox="0 0 40 40"><path d="M20 3 37 17.5V36a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V17.5Z"/></symbol>
+<symbol id="mk-cloud" viewBox="0 0 40 40"><path d="M11.5 33h18a8 8 0 0 0 1.2-15.9A11 11 0 0 0 9.6 15.2 9 9 0 0 0 11.5 33Z"/></symbol>
+<symbol id="i-binoculars" viewBox="0 0 16 16"><circle cx="4.6" cy="10.6" r="2.7"/><circle cx="11.4" cy="10.6" r="2.7"/><path d="M7.3 10.2h1.4M2.4 8.8 4 4.2a1.3 1.3 0 0 1 2.5.4V8M13.6 8.8 12 4.2a1.3 1.3 0 0 0-2.5.4V8"/></symbol>
+<symbol id="i-atom" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="6.4" ry="2.5"/><ellipse cx="8" cy="8" rx="6.4" ry="2.5" transform="rotate(60 8 8)"/><ellipse cx="8" cy="8" rx="6.4" ry="2.5" transform="rotate(-60 8 8)"/><circle class="fill" cx="8" cy="8" r="1.2"/></symbol>
+<symbol id="i-film" viewBox="0 0 16 16"><rect x="2.5" y="2" width="11" height="12" rx="1"/><path d="M5 2v12M11 2v12M2.5 5H5M2.5 8H5M2.5 11H5M11 5h2.5M11 8h2.5M11 11h2.5"/></symbol>
+<symbol id="i-polaroid" viewBox="0 0 16 16"><rect x="3" y="1.8" width="10" height="12.4" rx="1"/><rect x="4.6" y="3.4" width="6.8" height="6.4" rx=".4"/><circle cx="8" cy="6.6" r="1.5"/></symbol>
+<symbol id="i-lens" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3.4"/><circle class="fill" cx="8" cy="8" r="1.1"/><path d="M5.9 5.4a3 3 0 0 1 2.3-.9"/></symbol>
+<symbol id="i-camera-solid" viewBox="0 0 16 16"><path d="M2 6.2a1.2 1.2 0 0 1 1.2-1.2h1.6l1-1.6h4.4l1 1.6h1.6A1.2 1.2 0 0 1 14 6.2v5.6a1.2 1.2 0 0 1-1.2 1.2H3.2A1.2 1.2 0 0 1 2 11.8z"/><circle class="fill" cx="8" cy="8.9" r="2.4"/><circle class="fill" cx="11.7" cy="6.6" r=".6"/></symbol>
+<symbol id="i-viewfinder" viewBox="0 0 16 16"><path d="M2.5 5.5V3.5a1 1 0 0 1 1-1h2M10.5 2.5h2a1 1 0 0 1 1 1v2M13.5 10.5v2a1 1 0 0 1-1 1h-2M5.5 13.5h-2a1 1 0 0 1-1-1v-2"/><circle cx="8" cy="8" r="2.4"/><circle class="fill" cx="8" cy="8" r=".8"/></symbol>
+<symbol id="i-compass" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path class="fill" d="M8 3.6 9.5 8H6.5Z"/><path d="M6.5 8 8 12.4 9.5 8"/></symbol>
+<symbol id="i-tv" viewBox="0 0 16 16"><rect x="2" y="4.6" width="12" height="9" rx="1.6"/><path d="M5.8 2 8 4.6 10.2 2"/><rect x="3.8" y="6.4" width="6.4" height="5.4" rx=".8"/><circle class="fill" cx="12" cy="7.4" r=".6"/><circle class="fill" cx="12" cy="9.6" r=".6"/></symbol>
+<symbol id="i-pano360" viewBox="0 0 16 16"><ellipse cx="8" cy="8.8" rx="6.4" ry="2.6"/><path d="M4.4 4.6A5 5 0 0 1 12.4 5.2M12.4 5.2l.3-2M12.4 5.2l-2-.3"/><circle class="fill" cx="8" cy="8.8" r="1"/></symbol>
+<symbol id="i-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><ellipse cx="8" cy="8" rx="2.6" ry="6.2"/><path d="M1.8 8h12.4M2.9 5h10.2M2.9 11h10.2"/></symbol>
+<symbol id="i-radar" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3.4"/><path d="M8 8l4.4-4.4"/><circle class="fill" cx="10.6" cy="6" r=".9"/></symbol>
 <symbol id="i-transparent" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.6"/><path class="fill" d="M2 3.6A1.6 1.6 0 0 1 3.6 2H8v6H2zM8 8h6v4.4a1.6 1.6 0 0 1-1.6 1.6H8z" opacity=".55"/></symbol>
 </defs></svg>
 <div class="app" data-ui="editor" data-layout="plan" id="appRoot">
@@ -1432,7 +1611,6 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
         <span class="tool-sep"></span>
         <button class="tool" id="zoomOut" title="Уменьшить" aria-label="Уменьшить"><svg class="ic"><use href="#i-minus"/></svg></button>
         <button class="tool" id="zoomIn" title="Увеличить" aria-label="Увеличить"><svg class="ic"><use href="#i-plus"/></svg></button>
-        <button class="tool" id="resetView" title="Сбросить вид" aria-label="Сбросить вид"><svg class="ic"><use href="#i-fit"/></svg></button>
         <span class="tool-sep"></span>
         <button class="tool" id="planShowHiddenCams" title="Показать скрытые камеры" aria-label="Показать скрытые камеры" aria-pressed="false"><svg class="ic"><use href="#i-eye-hidden"/></svg></button>
         <button class="tool" id="planTransparentBg" title="Убрать белый фон плана и сделать его прозрачным" aria-label="Прозрачный фон плана"><svg class="ic"><use href="#i-transparent"/></svg></button>
@@ -2502,8 +2680,9 @@ function drawPlan(){
       const entry = cacheFloorPixelsFromImage(l, im);
       if(entry) autoDetectWallsIfNeeded(l, entry);
     }
-    renderWalls(p, im.naturalWidth, im.naturalHeight, l.walls);
-    renderAutoWallOverlay(p, im.naturalWidth, im.naturalHeight, l);
+    /* стены больше не подсвечиваются (цвет стен остаётся как на самом плане);
+       вместо этого отмечаются окна — см. detectPlanWindows */
+    renderPlanWindows(p, detectPlanWindows(l, im));
     const size = markerSize(), off = floorOffset();
     (l.markers || []).forEach((m, i) => {
       if(!reviewMarkerVisible(i)) return;
@@ -2511,7 +2690,7 @@ function drawPlan(){
       const resultClass = reviewMarkerResultClass(i);
       d.className = 'marker' + (m.dragging ? ' dragging' : '') + (l.selected === i ? ' selected' : '') + ((m.pano || m.localPano) ? ' pinned' : '') + resultClass;
       d.dataset.mi = String(i);
-      d.textContent = i + 1 + off;
+      d.innerHTML = window.markerInner ? markerInner(i + 1 + off) : String(i + 1 + off);
       d.style.left = m.x + 'px';
       d.style.top = m.y + 'px';
       d.style.width = d.style.height = size + 'px';
@@ -2721,7 +2900,7 @@ function renderRoute(){
     ms.forEach((m, i) => {
       num++;
       html += '<button class="r' + (cur && l.selected === i ? ' sel' : '') + '" draggable="true" data-l="' + li + '" data-i="' + i + '"' +
-              ' title="' + esc('Этаж ' + (li + 1) + ', локус ' + num + ((m.pano || m.localPano) ? ' · привязан к 3D' : '')) + '">' + num +
+              ' title="' + esc('Этаж ' + (li + 1) + ', локус ' + num + ((m.pano || m.localPano) ? ' · привязан к 3D' : '')) + '">' + (window.markerInner ? markerInner(num) : num) +
               ((m.pano || m.localPano) ? '<span class="rb" title="Привязан к 3D"><svg class="ic sm"><use href="#i-dot"/></svg></span>' : '') + '</button>';
     });
     html += '</div>';
@@ -3526,6 +3705,116 @@ function cleanupMovedCamera(pano, oldPos, l){
   pano.bakedMarkErased = true;
   eraseBakedCamMark(l || level(), oldPos).then(ok => { if(ok){ touch(); drawPlan(); renderMinimap(); } })
     .catch(err => console.warn('eraseBakedCamMark', err));
+}
+/* ---------- окна на плане ----------
+   На планах Zillow окно — прямоугольник в линии стены: белый, с тонкими серыми
+   или чёрными линиями вдоль стены, а с торцов его ограничивает сама стена.
+   Ищем такие линии (горизонтальные и вертикальные, тонкие, ровные по цвету,
+   почти сплошные, стена — на продолжении линии с обоих концов) и собираем
+   2+ параллельные линии в одно окно. Результат кэшируется по изображению. */
+const planWindowsCache = new Map();
+function detectPlanWindows(l, im){
+  if(!l || !l.src || !im) return [];
+  const key = l.src.length + ':' + l.src.slice(-64);
+  if(planWindowsCache.has(key)) return planWindowsCache.get(key);
+  let out = [];
+  try{ out = scanPlanWindows(im); }catch(err){ console.warn('detectPlanWindows', err); }
+  if(planWindowsCache.size > 8) planWindowsCache.delete(planWindowsCache.keys().next().value);
+  planWindowsCache.set(key, out);
+  return out;
+}
+function scanPlanWindows(im){
+  const W = im.naturalWidth || im.width, H = im.naturalHeight || im.height;
+  if(!W || !H || W * H > 30e6) return [];
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d', { willReadFrequently:true });
+  g.drawImage(im, 0, 0);
+  let px; try{ px = g.getImageData(0, 0, W, H).data; }catch(err){ return []; }
+  const N = W * H;
+  /* цвет стен — самый частый насыщенный тёмный цвет (квант 16 градаций) */
+  const counts = new Map();
+  for(let i = 0; i < N; i += 2){
+    const o = i * 4, r = px[o], gg = px[o+1], b = px[o+2];
+    if(px[o+3] < 200) continue;
+    const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), lum = 0.299 * r + 0.587 * gg + 0.114 * b;
+    if(lum >= 150 || mx - mn <= 40) continue;
+    const k = ((r >> 4) << 8) | ((gg >> 4) << 4) | (b >> 4);
+    counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  if(!counts.size) return [];
+  let bestK = 0, bestN = -1; counts.forEach((n, k) => { if(n > bestN){ bestN = n; bestK = k; } });
+  const wr = ((bestK >> 8) & 15) * 16 + 8, wg = ((bestK >> 4) & 15) * 16 + 8, wb = (bestK & 15) * 16 + 8;
+  const wall = new Uint8Array(N), line = new Uint8Array(N), lum = new Uint8Array(N);
+  for(let i = 0; i < N; i++){
+    const o = i * 4; if(px[o+3] <= 128) continue;
+    const r = px[o], gg = px[o+1], b = px[o+2];
+    const dr = r - wr, dg = gg - wg, db = b - wb;
+    if(dr * dr + dg * dg + db * db <= 3600){ wall[i] = 1; continue; }
+    const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), L = 0.299 * r + 0.587 * gg + 0.114 * b;
+    lum[i] = L;
+    if(mx - mn <= 18 && L <= 225) line[i] = 1;          /* нейтральная серая/чёрная линия */
+  }
+  const nearWall = (x0, x1, y0, y1) => {
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(W - 1, x1); y1 = Math.min(H - 1, y1);
+    for(let y = y0; y <= y1; y++) for(let x = x0; x <= x1; x++) if(wall[y * W + x]) return true;
+    return false;
+  };
+  const segs = [];
+  /* horiz: o — строка, t — столбец; vert: o — столбец, t — строка */
+  for(const horiz of [true, false]){
+    const OMAX = horiz ? H : W, TMAX = horiz ? W : H;
+    const at = horiz ? ((o2, t2) => o2 * W + t2) : ((o2, t2) => t2 * W + o2);
+    for(let o = 0; o < OMAX; o++){
+      let t = 0;
+      while(t < TMAX){
+        if(!line[at(o, t)]){ t++; continue; }
+        const s0 = t; let last = t;
+        while(t < TMAX){ if(line[at(o, t)]) last = t; else if(t - last > 1) break; t++; }
+        const e0 = last, len = e0 - s0 + 1;
+        if(len < 10 || len > 500) continue;
+        let fill = 0, thick = 0, sum = 0, sum2 = 0;
+        for(let k = s0; k <= e0; k++){
+          const i = at(o, k);
+          if(line[i]){ fill++; sum += lum[i]; sum2 += lum[i] * lum[i]; }
+          if(o >= 2 && o + 2 < OMAX && line[at(o - 2, k)] && line[at(o + 2, k)]) thick++;
+        }
+        if(fill < 0.9 * len || thick > 0.5 * len) continue;               /* сплошная и тонкая */
+        const mean = sum / fill; if(Math.sqrt(Math.max(0, sum2 / fill - mean * mean)) > 30) continue;   /* ровная по цвету */
+        const ok = horiz ? (nearWall(s0 - 16, s0 - 1, o - 2, o + 2) && nearWall(e0 + 1, e0 + 16, o - 2, o + 2))
+                         : (nearWall(o - 2, o + 2, s0 - 16, s0 - 1) && nearWall(o - 2, o + 2, e0 + 1, e0 + 16));
+        if(ok) segs.push({ horiz, o, s:s0, e:e0 });
+      }
+    }
+  }
+  /* 2+ параллельные линии рядом (не дальше толщины стены) — одно окно */
+  const used = new Uint8Array(segs.length), wins = [];
+  for(let i = 0; i < segs.length; i++){
+    if(used[i]) continue;
+    const a = segs[i]; used[i] = 1;
+    let o0 = a.o, o1 = a.o, s0 = a.s, e0 = a.e, n = 1;
+    for(let j = i + 1; j < segs.length; j++){
+      const b2 = segs[j];
+      if(used[j] || b2.horiz !== a.horiz) continue;
+      const ov = Math.min(a.e, b2.e) - Math.max(a.s, b2.s);
+      if(ov > 0.7 * Math.min(a.e - a.s, b2.e - b2.s) && b2.o - o1 <= 22 && o0 - b2.o <= 22){
+        used[j] = 1; n++;
+        o0 = Math.min(o0, b2.o); o1 = Math.max(o1, b2.o); s0 = Math.min(s0, b2.s); e0 = Math.max(e0, b2.e);
+      }
+    }
+    if(n < 2) continue;
+    if(o1 - o0 < 4){ const m = (o0 + o1) / 2; o0 = m - 2; o1 = m + 2; }
+    wins.push(a.horiz ? { dir:'h', x:s0, y:o0, w:e0 - s0 + 1, h:o1 - o0 + 1 } : { dir:'v', x:o0, y:s0, w:o1 - o0 + 1, h:e0 - s0 + 1 });
+  }
+  return wins;
+}
+function renderPlanWindows(p, wins){
+  (wins || []).forEach(wn => {
+    const d = document.createElement('div');
+    d.className = 'plan-window ' + wn.dir;
+    d.style.left = wn.x + 'px'; d.style.top = wn.y + 'px';
+    d.style.width = wn.w + 'px'; d.style.height = wn.h + 'px';
+    p.appendChild(d);
+  });
 }
 function loadImage(src){
   return new Promise((resolve, reject) => {
@@ -7549,7 +7838,7 @@ const HOTKEYS = [
   { group:'Инструменты', id:'plan.hiddenCams', label:'Показать скрытые камеры', def:'KeyH', run:() => hkClick('#planShowHiddenCams') },
   { group:'Вид', id:'zoom.in', label:'Увеличить план', def:'Equal', run:() => hkClick('#zoomIn') },
   { group:'Вид', id:'zoom.out', label:'Уменьшить план', def:'Minus', run:() => hkClick('#zoomOut') },
-  { group:'Вид', id:'view.reset', label:'Сбросить вид', def:'Digit0', run:() => hkClick('#resetView') },
+  { group:'Вид', id:'view.reset', label:'Сбросить вид', def:'Digit0', run:() => resetPlanView() },
   { group:'Вид', id:'layout.plan', label:'Только план', def:'Digit1', run:() => hkLayout('plan') },
   { group:'Вид', id:'layout.tour', label:'Только 3D', def:'Digit2', run:() => hkLayout('tour') },
   { group:'Вид', id:'layout.split', label:'Разделить экран', def:'Digit3', run:() => toggleSplit() },
@@ -7722,11 +8011,12 @@ on('#planShowHiddenCams', 'click', () => {
   status(showHiddenCams ? ('Скрытые камеры показаны' + (n ? ' (' + n + ' на этаже, оранжевый пунктир)' : ' — на этом этаже их нет'))
                         : 'Скрытые камеры спрятаны');
 });
-on('#resetView', 'click', () => {
+/* сброс масштаба и поворота плана — кнопки в панели больше нет, только горячая клавиша (0) */
+function resetPlanView(){
   state.zoom = 1; state.rotation = 0;
   const v = $('#viewport'); if(v) v.style.transform = '';
   render();
-});
+}
 /* ---------- компас поворота плана ---------- */
 function normDeg(d){ d = Number(d) || 0; d %= 360; return d < 0 ? d + 360 : d; }
 function applyRotation(deg, live){
@@ -8850,10 +9140,9 @@ window.addEventListener('error', e => {
     var saved = null, items = [], hl = -1;
     function esc(v){ return String(v).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
     function swatch(t){
-      var r = { circle:'50%', rounded:'30%', square:'2px', sharp:'1px' }[t.marker.shape] || '50%';
       var dots = t.marker.palette.slice(0, 3).map(function(c){
         var solid = t.marker.style === 'solid';
-        return '<b style="border-radius:' + r + ';background:' + (solid ? c : t.canvas.bg) + ';box-shadow:inset 0 0 0 ' + (solid ? 0 : 1.5) + 'px ' + c + '"></b>';
+        return '<svg class="tp-mk" viewBox="0 0 40 40" style="fill:' + (solid ? c : t.canvas.bg) + ';stroke:' + (solid ? 'none' : c) + ';stroke-width:4px"><use href="#mk-' + t.marker.shape + '"/></svg>';
       }).join('');
       return '<span class="tp-sw"><i class="c" style="background:' + t.ui.chrome + ';box-shadow:inset -2px 0 0 ' + t.ui.accent + '"></i>' +
              '<i class="e" style="background-color:' + t.canvas.bg + '">' + dots + '</i></span>';
