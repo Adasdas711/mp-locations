@@ -4679,15 +4679,28 @@ async function importThreeDViewZip(zip){
   if(!Array.isArray(rawLinks) || !rawLinks.length) throw new Error('links.json пуст — нечего импортировать');
   const isMatterport = rawLinks.some(l => l && l.platform === 'matterport');
   const points = rawLinks.map(normalizeThreeDViewLink);
+  /* raw_data.json бывает большим (Matterport — мегабайты) — разбираем один раз */
+  let rawData = null;
+  try{
+    const rawEntry = zip.file('raw_data.json') || zip.file('richMedia_raw.json');
+    if(rawEntry) rawData = JSON.parse(await rawEntry.async('string'));
+  }catch(err){ rawData = null; }
+  /* grabber 15.55+: meta.json → palace — подсказки для редактора: копия плана без
+     номеров камер (не нужно искать и стирать красные кружки) и готовые подписи
+     комнат в пикселях плана (не нужно рендерить SVG или распознавать OCR) */
+  let palaceHints = null;
+  try{
+    const me = zip.file('meta.json');
+    if(me){ const mj = JSON.parse(await me.async('string')); if(mj && mj.palace && mj.palace.plans) palaceHints = mj.palace; }
+  }catch(err){ palaceHints = null; }
   let mpNoPhoto = 0, mpUnplaced = 0;
   if(isMatterport){
     /* Поворот каждой панорамы: из links.json (grabber 15.52+: extra.panoYawDeg),
        иначе из raw_data.json (queries.GetModelPrefetch.data.model.locations[].pano.rotation). */
     let yawBySweep = {};
     try{
-      const rawEntry = zip.file('raw_data.json');
-      if(rawEntry){
-        const raw = JSON.parse(await rawEntry.async('string'));
+      if(rawData){
+        const raw = rawData;
         const locs = (((((raw || {}).queries || {}).GetModelPrefetch || {}).data || {}).model || {}).locations || [];
         locs.forEach(loc => {
           const p = loc && loc.pano;
@@ -4710,9 +4723,8 @@ async function importThreeDViewZip(zip){
 
   let floorNames = {};
   try{
-    const rawEntry = zip.file('raw_data.json') || zip.file('richMedia_raw.json');
-    if(rawEntry){
-      const raw = JSON.parse(await rawEntry.async('string'));
+    if(rawData){
+      const raw = rawData;
       (raw.floors || []).forEach(f => { if(f && f.id != null && f.name) floorNames[f.id] = f.name; });
     }
   }catch(err){ /* необязательные данные (актуально для Zillow) — молча пропускаем */ }
@@ -4728,9 +4740,8 @@ async function importThreeDViewZip(zip){
   });
   const rawFloorOrder = [];
   try{
-    const rawEntry = zip.file('raw_data.json') || zip.file('richMedia_raw.json');
-    if(rawEntry){
-      const raw = JSON.parse(await rawEntry.async('string'));
+    if(rawData){
+      const raw = rawData;
       (raw.floors || []).forEach(f => {
         if(f && f.id != null){
           const key = String(f.id);
@@ -4754,7 +4765,8 @@ async function importThreeDViewZip(zip){
     if(!planFile && floorOrder.length === 1 && zip.file('plan.png')) planFile = 'plan.png';
     let levelObj = null;
     if(planFile){
-      const planEntry = zip.file(planFile);
+      const hint = palaceHints && palaceHints.plans ? palaceHints.plans[planFile] : null;
+      const planEntry = (hint && hint.clean && zip.file(hint.clean)) || zip.file(planFile);
       if(planEntry){
         const bytes = await planEntry.async('uint8array');
         const floorId = group[0] && group[0].floorId;
@@ -4766,17 +4778,23 @@ async function importThreeDViewZip(zip){
           floorId: floorId != null ? floorId : null,
           markers: [], walls: [], autoWalls: null, selected: null
         };
-        const svgLabels = await extractPlanLabels(zip, planFile, levelObj.src);
-        if(svgLabels.length){ levelObj.labels = svgLabels; levelObj.labelsSrc = 'svg'; }   /* нет SVG — подписи распознаются OCR (см. ocrPlanLabels) */
+        if(hint && Array.isArray(hint.labels) && hint.labels.length){
+          levelObj.labels = hint.labels.map(lb => Object.assign({}, lb)); levelObj.labelsSrc = 'svg';   /* посчитаны grabber'ом по SVG этажа */
+        }else{
+          const svgLabels = await extractPlanLabels(zip, planFile, levelObj.src);
+          if(svgLabels.length){ levelObj.labels = svgLabels; levelObj.labelsSrc = 'svg'; }   /* нет SVG — подписи распознаются OCR (см. ocrPlanLabels) */
+        }
         state.levels.push(levelObj);
         addedLevels++;
       }else skippedNoPlan += group.length;
     }else skippedNoPlan += group.length;
 
+    /* фото этажа читаются из архива параллельно */
+    const recs = await Promise.all(group.map(p => p.id ? loadPanoFile(zip, p.files) : null));
     for(let i = 0; i < group.length; i++){
       const p = group[i];
       if(!p.id) continue;
-      const rec = await loadPanoFile(zip, p.files);
+      const rec = recs[i];
       newPanoramas[p.id] = Object.assign({
         room: p.room || '', roomId: p.roomId != null ? p.roomId : null,
         floorId: p.floorId != null ? p.floorId : null, world: p.world, planPx: p.planPx || null,
@@ -8100,12 +8118,15 @@ on('#stage', 'contextmenu', e => {
 function startPan(e){
   const q = viewTranslate($('#viewport'));
   pan = { x:e.clientX, y:e.clientY, tx:q.x, ty:q.y, cx:e.clientX, cy:e.clientY, raf:0 };
-  const st = $('#stage');
-  if(st){
-    let sh = st.querySelector(':scope > .pan-shield');
-    if(!sh){ sh = document.createElement('div'); sh.className = 'pan-shield'; st.appendChild(sh); }
-    st.classList.add('panning');
-  }
+  /* «щит» с курсором-ладонью включается только когда план реально поехал (см. onmousemove):
+     показанный сразу по нажатию, он перехватывал клик — и клик по камере на плане переставал
+     переключать 3D на эту камеру */
+}
+function panShieldOn(){
+  const st = $('#stage'); if(!st || st.classList.contains('panning')) return;
+  let sh = st.querySelector(':scope > .pan-shield');
+  if(!sh){ sh = document.createElement('div'); sh.className = 'pan-shield'; st.appendChild(sh); }
+  st.classList.add('panning');
 }
 on('#stage', 'mousedown', e => {
   /* Левая кнопка: как в iGUIDE — тянем план. Щелчок без движения по-прежнему
@@ -8157,6 +8178,7 @@ window.onmousemove = e => {
   }
   if(pan){
     pan.cx = e.clientX; pan.cy = e.clientY;
+    if(!pan.moved && Math.abs(pan.cx - pan.x) + Math.abs(pan.cy - pan.y) > 4){ pan.moved = true; panShieldOn(); }
     if(!pan.raf){
       const pp = pan;
       pp.raf = requestAnimationFrame(() => {

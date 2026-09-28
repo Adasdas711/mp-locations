@@ -162,24 +162,58 @@ PX_WATCH_INIT_JS = r"""
   try {
     if (window.__grabberPxWatch) return;
     window.__grabberPxWatch = 1;
+    /* раунд 74: ссылки на встроенные функции берём ДО скриптов страницы
+       (страница проверки их подменяет); проверяем не только обёртку формы,
+       но и сам #px-captcha, iframe «Human verification», заголовок вкладки
+       и текст формы; реагируем сразу на изменения DOM, а не раз в секунду */
     const qs = Document.prototype.querySelector;
     const gbr = Element.prototype.getBoundingClientRect;
     const gcs = window.getComputedStyle;
-    const tick = () => {
+    const MO = window.MutationObserver;
+    const SEL = '#px-captcha-wrapper, .px-captcha-container, #px-captcha, iframe[title*="Human verification" i], [class*="px-captcha"]';
+    const TITLE_RX = /access to this page has been denied|press\s*(&|and)\s*hold|human verification|verify you are (a )?human|are you a (human|robot)/i;
+    let last = 0, pending = 0;
+    const visible = el => {
       try {
-        const el = qs.call(document, '#px-captcha-wrapper, .px-captcha-container');
-        if (!el) return;
         const r = gbr.call(el);
-        if (r.width < 50 || r.height < 50) return;
+        if (r.width < 30 || r.height < 20) return false;
         const cs = gcs(el);
-        if (cs.display === 'none' || cs.visibility === 'hidden') return;
-        if (typeof window.__grabberPxSeen === 'function') window.__grabberPxSeen(location.href);
+        return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity || '1') > 0.05;
+      } catch (e) { return false; }
+    };
+    const report = () => {
+      const now = Date.now();
+      if (now - last < 1500) return;
+      last = now;
+      if (typeof window.__grabberPxSeen === 'function') window.__grabberPxSeen(location.href);
+    };
+    const tick = () => {
+      pending = 0;
+      try {
+        const el = qs.call(document, SEL);
+        if (el && visible(el)) { report(); return; }
+        if (TITLE_RX.test(document.title || '') && qs.call(document, SEL)) { report(); return; }
       } catch (e) {}
     };
     setInterval(tick, 1000);
+    const arm = () => {
+      try {
+        if (!MO || !document.documentElement) return;
+        new MO(() => { if (!pending) pending = setTimeout(tick, 250); })
+          .observe(document.documentElement, { childList: true, subtree: true });
+      } catch (e) {}
+    };
+    if (document.documentElement) arm(); else document.addEventListener('DOMContentLoaded', arm);
   } catch (e) {}
 })();
 """
+# Раунд 74: быстрые признаки формы «Press & Hold» (по всем фреймам, изолированный
+# мир Playwright). Дорогая полная проверка (_human_check_state) запускается только
+# если что-то из этого сработало — раньше она гонялась каждые полсекунды.
+PX_QUICK_SELECTOR = ('#px-captcha-wrapper, .px-captcha-container, #px-captcha, '
+                     'iframe[title*="Human verification" i], [class*="px-captcha"]')
+PX_TITLE_RX = re.compile(r"access to this page has been denied|press\s*(&|and)\s*hold|human verification|"
+                         r"verify you are (a )?human|are you a (human|robot)", re.I)
 PX_GUARD_INTERVAL_SEC = 2.5
 
 ARCHIVE_DIR = "arhive"
@@ -194,8 +228,8 @@ OUTPUT_BASENAME = "tour" + OUTPUT_EXT  # обычный zip, только с э�
 # Версия сборки — пишется в первую строку debug_log.txt и в meta.json,
 # чтобы сразу видеть по логу, какая версия grabber.py реально запускалась
 # (раунд 15, урок: дважды прогнали старый файл, не заметив этого).
-GRABBER_VERSION = ("15.54 / раунд 73: план Matterport в стиле Zillow — прозрачный фон, ровные стены (притянуты к осям помещения, куски слиты, углы сомкнуты), мебель отсекается срезами на разных высотах, сглаженная площадь этажа с контуром; прозрачность планов сохраняется при нанесении камер; раунд 72: ссылки Matterport любого вида — discover.matterport.com/space/ID (и /de/space/…), my.matterport.com/show?play=1&m=ID, iframe тура на чужой странице — приводятся к my.matterport.com/show/?m=ID; «Из файла…» читает и сохранённые страницы (.mhtml/.html): со страницы тура — только её тур, со страницы подборки/поиска — все туры; раунд 71: Matterport — поворот каждой панорамы (extra.panoYawDeg из pano.rotation, проверен по 3D-модели) для редактора PALACE; раунд 70: Matterport — настоящий 2D-план из 3D-модели (срез стен на высоте ~1.1 м, пол, контур, масштаб 1 м), камеры на плане по реальным координатам, неразмещённые фото (upload) не рисуются; без AVIF грани больше не пережимаются (архив не растёт); раунд 69: Matterport — правильная склейка панорам (раскладка граней проверена по стыкам на реальном туре), фото в AVIF, 3D-модель .dam в архив, точки без этажа — на ближайший этаж; раунд 68: комнаты по плану — копии одного этажа (план карточки и план тура с разными id) больше не складываются; раунд 67 / раунд 67: шаблон имени по умолчанию — комнаты - площадь - панорамы - этажи; раунд 66 / раунд 66: число комнат = комнаты, подписанные на плане этажа (SVG Zillow, помещения с размерами), вместо типов панорам / разделов фотоальбома; раунд 65 / раунд 65: постоянный контроль формы «Press & Hold» на протяжении всей обработки (сторож в странице + проверка на каждой паузе/логе рабочего потока), время паузы не съедает таймауты шагов; раунд 64 / раунд 64: форма «Press & Hold» определяется по её настоящей разметке (#px-captcha-wrapper / .px-captcha-container, .px-captcha-message, .px-captcha-refid, iframe «Human verification challenge»); раунд 63 / раунд 63: форма «Press & Hold» ищется локаторами Playwright в изолированном мире (страница проверки подменяет встроенные функции JS, из-за чего прежний поиск падал), с проходом в Shadow DOM, плюс дерево доступности браузера (CDP) для закрытого Shadow DOM; раунд 62 / раунд 62: загрузка ссылок из текстового файла (кнопка «Из файла…»); детект именно формы «Press & Hold» (и целая страница, и всплывающее окно «Before we continue…» поверх сайта), по всем фреймам, только видимые элементы; раунд 61 / раунд 61: ложное срабатывание «Press & Hold» на обычной карточке (фоновый iframe px-cloud / reCAPTCHA) — детект только по видимой заглушке; раунд 60 / раунд 60: площадь участка в шаблоне имени ({lot_sqft}, {lot_m2}), м² в шаблоне по умолчанию; раунд 59 / раунд 59: детект проверки «Press & Hold» (PerimeterX) при загрузке — пауза до ручного прохождения; раунд 58 / раунд 58: подпись тумблера «…на PNG-планах», окно прозрачнее (92%/78%); раунд 57: тёмная/светлая тема (как в macOS, выбор запоминается), лёгкая прозрачность окна, понятная подпись тумблера скрытых камер; баги: пустое место после «Скрыть» у переменных, счётчик очереди после удаления")
-GRABBER_VERSION_SHORT = "15.54"
+GRABBER_VERSION = ("15.55 / раунд 74: в архив для PALACE — копия плана без номеров камер (plan.clean.png) и готовые подписи комнат в пикселях плана (meta.json → palace); фото/планы в архиве без повторного сжатия (быстрее запись и открытие); проверка «Press & Hold» — быстрые признаки по всем фреймам (разметка PerimeterX, заголовок вкладки, ответы 403/429), сторож в странице реагирует на изменения DOM сразу, дорогая полная проверка — только при подозрении; меньше слепых пауз в шаге эталонных скриншотов; раунд 73: план Matterport в стиле Zillow — прозрачный фон, ровные стены (притянуты к осям помещения, куски слиты, углы сомкнуты), мебель отсекается срезами на разных высотах, сглаженная площадь этажа с контуром; прозрачность планов сохраняется при нанесении камер; раунд 72: ссылки Matterport любого вида — discover.matterport.com/space/ID (и /de/space/…), my.matterport.com/show?play=1&m=ID, iframe тура на чужой странице — приводятся к my.matterport.com/show/?m=ID; «Из файла…» читает и сохранённые страницы (.mhtml/.html): со страницы тура — только её тур, со страницы подборки/поиска — все туры; раунд 71: Matterport — поворот каждой панорамы (extra.panoYawDeg из pano.rotation, проверен по 3D-модели) для редактора PALACE; раунд 70: Matterport — настоящий 2D-план из 3D-модели (срез стен на высоте ~1.1 м, пол, контур, масштаб 1 м), камеры на плане по реальным координатам, неразмещённые фото (upload) не рисуются; без AVIF грани больше не пережимаются (архив не растёт); раунд 69: Matterport — правильная склейка панорам (раскладка граней проверена по стыкам на реальном туре), фото в AVIF, 3D-модель .dam в архив, точки без этажа — на ближайший этаж; раунд 68: комнаты по плану — копии одного этажа (план карточки и план тура с разными id) больше не складываются; раунд 67 / раунд 67: шаблон имени по умолчанию — комнаты - площадь - панорамы - этажи; раунд 66 / раунд 66: число комнат = комнаты, подписанные на плане этажа (SVG Zillow, помещения с размерами), вместо типов панорам / разделов фотоальбома; раунд 65 / раунд 65: постоянный контроль формы «Press & Hold» на протяжении всей обработки (сторож в странице + проверка на каждой паузе/логе рабочего потока), время паузы не съедает таймауты шагов; раунд 64 / раунд 64: форма «Press & Hold» определяется по её настоящей разметке (#px-captcha-wrapper / .px-captcha-container, .px-captcha-message, .px-captcha-refid, iframe «Human verification challenge»); раунд 63 / раунд 63: форма «Press & Hold» ищется локаторами Playwright в изолированном мире (страница проверки подменяет встроенные функции JS, из-за чего прежний поиск падал), с проходом в Shadow DOM, плюс дерево доступности браузера (CDP) для закрытого Shadow DOM; раунд 62 / раунд 62: загрузка ссылок из текстового файла (кнопка «Из файла…»); детект именно формы «Press & Hold» (и целая страница, и всплывающее окно «Before we continue…» поверх сайта), по всем фреймам, только видимые элементы; раунд 61 / раунд 61: ложное срабатывание «Press & Hold» на обычной карточке (фоновый iframe px-cloud / reCAPTCHA) — детект только по видимой заглушке; раунд 60 / раунд 60: площадь участка в шаблоне имени ({lot_sqft}, {lot_m2}), м² в шаблоне по умолчанию; раунд 59 / раунд 59: детект проверки «Press & Hold» (PerimeterX) при загрузке — пауза до ручного прохождения; раунд 58 / раунд 58: подпись тумблера «…на PNG-планах», окно прозрачнее (92%/78%); раунд 57: тёмная/светлая тема (как в macOS, выбор запоминается), лёгкая прозрачность окна, понятная подпись тумблера скрытых камер; баги: пустое место после «Скрыть» у переменных, счётчик очереди после удаления")
+GRABBER_VERSION_SHORT = "15.55"
 
 # Шаблон имени файла результата по умолчанию — можно поменять прямо в окне
 # программы. Обрабатывается как f-строка Python (см. render_name_template):
@@ -1604,6 +1638,114 @@ def plan_svg_rooms_full(svg_text):
     return out
 
 
+# ---------------------------------------------------------------------
+# Подписи комнат из SVG-плана → в пикселях растрового плана (для PALACE/index.html)
+# ---------------------------------------------------------------------
+# Раньше index.html сам рендерил SVG в браузере, чтобы узнать, где стоит каждая
+# подпись (а для планов без SVG — распознавал их OCR). Grabber знает SVG и размер
+# PNG заранее, поэтому считает то же самое здесь: вложенные transform (translate/
+# rotate/scale/matrix) складываются в одну матрицу, центр текста (text-anchor:middle,
+# alignment-baseline:central) переводится из координат viewBox в пиксели PNG.
+_SVG_NUM = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
+
+
+def _svg_parse_transform(t):
+    """transform="..." → матрица (a, b, c, d, e, f) как в SVG."""
+    m = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    for name, args in re.findall(r"(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]*)\)", t or ""):
+        v = [float(x) for x in re.findall(_SVG_NUM, args)]
+        if name == "matrix" and len(v) == 6:
+            n = tuple(v)
+        elif name == "translate":
+            n = (1, 0, 0, 1, v[0] if v else 0.0, v[1] if len(v) > 1 else 0.0)
+        elif name == "scale":
+            sx = v[0] if v else 1.0
+            n = (sx, 0, 0, v[1] if len(v) > 1 else sx, 0, 0)
+        elif name == "rotate":
+            a = math.radians(v[0] if v else 0.0)
+            ca, sa = math.cos(a), math.sin(a)
+            n = (ca, sa, -sa, ca, 0, 0)
+            if len(v) >= 3:
+                cx, cy = v[1], v[2]
+                n = _svg_mul((1, 0, 0, 1, cx, cy), _svg_mul(n, (1, 0, 0, 1, -cx, -cy)))
+        elif name == "skewX":
+            n = (1, 0, math.tan(math.radians(v[0] if v else 0.0)), 1, 0, 0)
+        else:
+            n = (1, math.tan(math.radians(v[0] if v else 0.0)), 0, 1, 0, 0)
+        m = _svg_mul(m, n)
+    return m
+
+
+def _svg_mul(m, n):
+    a, b, c, d, e, f = m
+    A, B, C, D, E, F = n
+    return (a * A + c * B, b * A + d * B, a * C + c * D, b * C + d * D,
+            a * E + c * F + e, b * E + d * F + f)
+
+
+def plan_svg_labels(svg_text, png_w, png_h):
+    """Подписи комнат/размеров из SVG плана Zillow в пикселях PNG того же плана.
+    → [{text, kind: 'name'|'dim', x, y, size, angle, w}] (формат l.labels в index.html)
+    или [] (не тот этаж по пропорциям, нет viewBox, битый SVG)."""
+    try:
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(svg_text)
+    except Exception:
+        return []
+    vb = [float(x) for x in re.findall(_SVG_NUM, root.get("viewBox") or "")]
+    if len(vb) != 4 or vb[2] <= 0 or vb[3] <= 0 or not png_w or not png_h:
+        return []
+    if abs(vb[2] / vb[3] - png_w / png_h) > 0.01 * (png_w / png_h):
+        return []   # пропорции не совпали — это SVG другого этажа
+    kx, ky = png_w / vb[2], png_h / vb[3]
+    out = []
+
+    def local(tag):
+        return tag.rsplit("}", 1)[-1]
+
+    def walk(el, m, in_fix, in_dim):
+        tag = local(el.tag)
+        if tag in ("script", "style", "defs", "foreignObject"):
+            return
+        m = _svg_mul(m, _svg_parse_transform(el.get("transform")))
+        cls = (el.get("class") or "").split()
+        in_fix = in_fix or el.get("id") == "fixtures"
+        in_dim = in_dim or "dimensionLabel" in cls
+        if tag == "text":
+            if in_fix:
+                return
+            txt = " ".join("".join(el.itertext()).split())
+            if not txt:
+                return
+            fs = 0.0
+            mm = re.search(r"font-size\s*:\s*(" + _SVG_NUM + ")", el.get("style") or "")
+            if mm:
+                fs = float(mm.group(1))
+            elif el.get("font-size"):
+                try:
+                    fs = float(re.findall(_SVG_NUM, el.get("font-size"))[0])
+                except Exception:
+                    fs = 0.0
+            tx = float((re.findall(_SVG_NUM, el.get("x") or "0") or ["0"])[0])
+            ty = float((re.findall(_SVG_NUM, el.get("y") or "0") or ["0"])[0])
+            a, b, c, d, e, f = m
+            X = (a * tx + c * ty + e - vb[0]) * kx
+            Y = (b * tx + d * ty + f - vb[1]) * ky
+            ang = math.degrees(math.atan2(b * ky, a * kx))
+            size = fs * math.hypot(a * kx, b * ky)
+            if not (math.isfinite(X) and math.isfinite(Y)) or size <= 0:
+                return
+            out.append({"text": txt, "kind": "dim" if in_dim else "name",
+                        "x": round(X, 1), "y": round(Y, 1), "size": round(size, 2),
+                        "angle": int(round(ang)), "w": round(len(txt) * size * 0.56, 1)})
+            return
+        for ch in el:
+            walk(ch, m, in_fix, in_dim)
+
+    walk(root, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0), False, False)
+    return out
+
+
 def merge_floor_plans(plans):
     """Складывает комнаты нескольких SVG-планов, НЕ считая один и тот же этаж
     дважды. Один этаж может лежать в архиве в двух копиях с РАЗНЫМИ id
@@ -3003,6 +3145,7 @@ class GrabberApp:
         # работает запасной путь «центроиды комнат официального SVG» (см.
         # _apply_showcase_floor_plan_positions).
         self._captured_imx_from_network = None
+        self._px_net_hits = 0
         # площадь участка (sqft) — ищется на карточке объявления при первой загрузке
         self._lot_sqft = None
         # Активная вкладка — нужна _process_zillow_richmedia для
@@ -3204,6 +3347,43 @@ class GrabberApp:
                 ctx.add_init_script(PX_WATCH_INIT_JS)
             except Exception as e:
                 self.log_msg(f"[проверка] сторож: init-скрипт не установлен ({e}) — остаётся опрос")
+            # раунд 74: уже открытые вкладки init-скрипт не получают — ставим сторожа вручную
+            try:
+                for pg in ctx.pages:
+                    for fr in pg.frames:
+                        try:
+                            fr.evaluate(PX_WATCH_INIT_JS)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+            # раунд 74: PerimeterX иногда не показывает форму, а молча отвечает 403/429
+            # на запросы данных тура — тогда данные «не находятся». Такой ответ — повод
+            # сразу проверить страницу (и перезагрузить её, если формы не видно).
+            try:
+                def _on_resp(resp):
+                    try:
+                        st = resp.status
+                        if st not in (403, 429):
+                            return
+                        u = (resp.url or "").lower()
+                        try:
+                            rt = resp.request.resource_type
+                        except Exception:
+                            rt = ""
+                        if rt not in ("document", "xhr", "fetch"):
+                            return
+                        if not (("zillow.com" in u) or ("captcha" in u) or ("perimeterx" in u)):
+                            return
+                        self._px_net_hits = getattr(self, "_px_net_hits", 0) + 1
+                        self._px_flag = True
+                    except Exception:
+                        pass
+                if not getattr(ctx, "_grabber_px_resp", False):
+                    ctx.on("response", _on_resp)
+                    ctx._grabber_px_resp = True
+            except Exception:
+                pass
 
     def _px_candidate_pages(self):
         pages = []
@@ -3248,13 +3428,9 @@ class GrabberApp:
         self._px_guard_busy = True
         try:
             for pg in self._px_candidate_pages():
-                # дешёвая предпроверка: есть ли разметка формы в главном фрейме
-                if not flagged:
-                    try:
-                        if pg.locator("#px-captcha-wrapper, .px-captcha-container").count() == 0:
-                            continue
-                    except Exception:
-                        continue
+                # дешёвая предпроверка по всем фреймам (см. _px_quick_suspect)
+                if not flagged and not self._px_quick_suspect(pg):
+                    continue
                 if not self._human_check_state(pg):
                     continue
                 t0 = _REAL_TIME.monotonic()
@@ -3267,6 +3443,42 @@ class GrabberApp:
             self._px_flag = False
             self._px_flag_page = None
             self._px_guard_busy = False
+
+    def _px_quick_suspect(self, page):
+        """Раунд 74: дешёвая предпроверка по ВСЕМ фреймам (раньше — только главный
+        фрейм и два селектора обёртки, из-за чего форма во фрейме или в другом
+        варианте вёрстки иногда не замечалась): разметка PerimeterX, заголовок
+        вкладки, адрес страницы проверки, ответы 403/429 на запросы Zillow."""
+        hits = getattr(self, "_px_net_hits", 0)
+        if hits:
+            # разовый сигнал: проверяем страницу сейчас, но не на каждом круге опроса
+            self._px_net_hits = 0
+            self.log_msg(f"[проверка] Zillow ответил 403/429 на {hits} запрос(ов) данных — проверяю, нет ли формы «Press & Hold»")
+            return True
+        try:
+            if PX_TITLE_RX.search(page.title() or ""):
+                return True
+        except Exception:
+            pass
+        try:
+            frames = list(page.frames)
+        except Exception:
+            frames = []
+        for fr in frames:
+            try:
+                u = (fr.url or "").lower()
+            except Exception:
+                u = ""
+            if any(k in u for k in ("doubleclick.net", "googletagmanager", "google.com/recaptcha")):
+                continue
+            if "/captcha" in u or "px-captcha" in u or "perimeterx" in u:
+                return True
+            try:
+                if fr.locator(PX_QUICK_SELECTOR).count():
+                    return True
+            except Exception:
+                continue
+        return False
 
     def _human_check_state(self, page):
         """Раунд 62: есть ли на экране ФОРМА «Press & Hold» — на всю страницу
@@ -3327,6 +3539,21 @@ class GrabberApp:
                     agg["chal"] = True
             except Exception:
                 continue
+        # раунд 74: страница-заглушка «Access to this page has been denied» — заголовок
+        # вкладки + разметка PerimeterX (кнопка может ещё грузиться и быть невидимой)
+        if not agg["box"]:
+            try:
+                t_ = page.title() or ""
+            except Exception:
+                t_ = ""
+            if PX_TITLE_RX.search(t_):
+                for fr in frames:
+                    try:
+                        if fr.locator(PX_QUICK_SELECTOR).count():
+                            return {"hit": True, "title": t_, "pxEl": True, "txt": False, "btn": False,
+                                    "ref": False, "modal": False, "via": "заголовок вкладки + разметка PerimeterX"}
+                    except Exception:
+                        continue
         if agg["box"] and (agg["head"] or agg["ref"] or agg["chal"]):
             try:
                 title = page.title() or ""
@@ -3464,6 +3691,7 @@ class GrabberApp:
             if time.time() - cleared_at < 1.5:
                 continue
             waited = int(time.time() - t0)
+            self._px_net_hits = 0
             self.log_msg(f"[проверка] проверка пройдена через {waited} с — продолжаю")
             self._set_status("Проверка пройдена — продолжаю", "working")
             try:
@@ -3501,9 +3729,12 @@ class GrabberApp:
 
     def _detect_and_wait(self, page, timeout_sec=DETECT_WAIT_SEC):
         deadline = time.time() + timeout_sec
+        loops = 0
         while time.time() < deadline:
-            # заглушка «Press & Hold» может появиться и чуть позже загрузки
-            if self._human_check_state(page):
+            loops += 1
+            # заглушка «Press & Hold» может появиться и чуть позже загрузки; полная
+            # (дорогая) проверка — только по быстрым признакам или раз в ~3 с
+            if (self._px_quick_suspect(page) or loops % 6 == 1) and self._human_check_state(page):
                 if not self._wait_for_human_check(page, "определение платформы"):
                     return None, None, None
                 deadline = time.time() + timeout_sec   # время ожидания человека не в счёт
@@ -4702,7 +4933,8 @@ class GrabberApp:
 
         # --- 1. вкладка «Floors»: точный текст, проникновение в Shadow DOM ---
         self.log_msg("[тур][эталон] жду вкладку «Floors» открытого тура (до 45 с, обход Shadow DOM)...")
-        time.sleep(5.0)
+        # раунд 74: вместо слепых 5 с — сразу опрос (ниже он и так ждёт до 45 с)
+        time.sleep(1.0)
         tab_info = None
         deadline = time.time() + 45.0
         wake_at = time.time() + 8.0
@@ -4751,17 +4983,17 @@ class GrabberApp:
                     break
             if tab_info:
                 break
-            time.sleep(1.5)
+            time.sleep(0.8)
         if not tab_info:
             self.log_msg("[тур][эталон] вкладку «Floors/Floor Plan» не нашёл за 45 с — "
                          "полная диагностика ниже")
             _diag("Floors")
             return saved
 
-        # --- 2. список этажей ---
-        time.sleep(1.5)
+        # --- 2. список этажей --- (опрос ниже сам ждёт появления списка)
+        time.sleep(0.5)
         floors = []
-        for _ in range(8):
+        for _ in range(12):
             for fr in self._tour_all_frames(page):
                 try:
                     res = fr.evaluate(JS_FLOORS)
@@ -4772,7 +5004,7 @@ class GrabberApp:
                     break
             if floors:
                 break
-            time.sleep(1.2)
+            time.sleep(0.8)
         if not floors:
             self.log_msg("[тур][эталон] список этажей не прочитался — снимаю полную диагностику")
             _diag("этажи")
@@ -8575,6 +8807,7 @@ class GrabberApp:
         молча: пропущенные точки попадают в лог с примером значений."""
         import math as _m
         from collections import defaultdict
+        self._clean_plans = {}
         by_png = defaultdict(list)
         for rec in links or []:
             pf = rec.get("plan_file")
@@ -8679,6 +8912,14 @@ class GrabberApp:
                     use_meters = _inside_cnt([c for c in cand_m if c[0] is not None]) >= \
                         _inside_cnt([c for c in cand_p if c[0] is not None])
                 chosen = cand_m if use_meters else cand_p
+                # копия плана БЕЗ номеров камер — для PALACE (index.html): ему не
+                # нужно искать и стирать красные кружки, камеры он рисует сам
+                try:
+                    clean_name = os.path.splitext(fname)[0] + ".clean.png"
+                    im.save(os.path.join(ARCHIVE_DIR, clean_name), optimize=False, compress_level=6)
+                    self._clean_plans[fname] = clean_name
+                except Exception as _e:
+                    self.log_msg(f"[план][чистый] {fname}: копия без камер не сохранена — {_e}")
                 self.log_msg("[план][камеры] %s: источник координат — %s" % (
                     fname, "floorplanMeters через viewBox" if use_meters
                     else "plan_px (масштаб %.3f)" % scale))
@@ -8740,6 +8981,53 @@ class GrabberApp:
 
     # ---------- общее: сохранение / архив ----------
 
+    def _palace_manifest(self, links):
+        """Раунд 74: подсказки для PALACE (index.html) — meta.json → "palace".
+        Для каждого растрового плана: размер, копия без номеров камер (clean) и
+        готовые подписи комнат в пикселях плана (labels, из SVG этажа). С ними
+        index.html не стирает кружки камер, не рендерит SVG в браузере и не
+        запускает OCR — план открывается сразу."""
+        plans = {}
+        pfiles = []
+        for rec in links or []:
+            pf = rec.get("plan_file") if isinstance(rec, dict) else None
+            if pf and pf not in pfiles:
+                pfiles.append(pf)
+        if not pfiles and os.path.exists(os.path.join(ARCHIVE_DIR, "plan.png")):
+            pfiles.append("plan.png")
+        try:
+            svgs = sorted(f for f in os.listdir(ARCHIVE_DIR) if f.lower().endswith(".svg"))
+        except Exception:
+            svgs = []
+        clean_map = getattr(self, "_clean_plans", {}) or {}
+        for pf in pfiles:
+            path = os.path.join(ARCHIVE_DIR, pf)
+            if not os.path.exists(path) or not re.search(r"\.(png|jpe?g|webp|avif)$", pf, re.I):
+                continue
+            wh = self._get_image_pixel_size(path)
+            if not wh:
+                continue
+            W, H = wh
+            info = {"width": W, "height": H}
+            cl = clean_map.get(pf)
+            info["clean"] = cl if cl and os.path.exists(os.path.join(ARCHIVE_DIR, cl)) else pf
+            stem = os.path.splitext(pf)[0]
+            suffix = stem[4:] if stem.lower().startswith("plan") else ""
+            for sv in dict.fromkeys([stem + ".svg", "plan_listing" + suffix + ".svg"] + svgs):
+                if sv not in svgs:
+                    continue
+                try:
+                    with open(os.path.join(ARCHIVE_DIR, sv), encoding="utf-8", errors="replace") as f:
+                        labels = plan_svg_labels(f.read(), W, H)
+                except Exception:
+                    labels = []
+                if labels:
+                    info["labels"] = labels
+                    info["labels_from"] = sv
+                    break
+            plans[pf] = info
+        return {"format": 1, "generator": "3D Tour Grabber " + GRABBER_VERSION_SHORT, "plans": plans}
+
     def _finalize(self, links, mapping, meta, base_name=OUTPUT_BASENAME):
         # Раунд 40 (замечание 3): сначала печатаем позиции камер на
         # итоговые планы, потом пишем json/архив.
@@ -8747,6 +9035,13 @@ class GrabberApp:
             self._burn_plan_camera_marks(links)
         except Exception as e:
             self.log_msg(f"[план][камеры] разметка не удалась: {e}")
+        try:
+            meta["palace"] = self._palace_manifest(links)
+            pl = meta["palace"]["plans"]
+            self.log_msg(f"[palace] подсказки для редактора: планов {len(pl)}, "
+                         f"подписей {sum(len(v.get('labels') or []) for v in pl.values())}")
+        except Exception as e:
+            self.log_msg(f"[palace] подсказки для редактора не собраны: {e}")
         try:
             with open(MAPPING_PATH, "w", encoding="utf-8") as f:
                 json.dump(mapping, f, ensure_ascii=False, indent=2)
@@ -8759,11 +9054,15 @@ class GrabberApp:
             self.log_msg(f"[данные] ошибка сохранения json: {e}")
 
         zip_path = next_zip_path(base_name)
-        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        # фото/планы уже сжаты (JPG/AVIF/PNG) — кладём как есть (ZIP_STORED): архив
+        # пишется в разы быстрее, а index.html читает их без распаковки deflate
+        stored_ext = (".jpg", ".jpeg", ".png", ".avif", ".webp", ".gif", ".mp4", ".webm")
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
             for fn in sorted(os.listdir(ARCHIVE_DIR)):
                 full = os.path.join(ARCHIVE_DIR, fn)
                 if os.path.isfile(full):
-                    zf.write(full, arcname=fn)
+                    ct = zipfile.ZIP_STORED if fn.lower().endswith(stored_ext) else zipfile.ZIP_DEFLATED
+                    zf.write(full, arcname=fn, compress_type=ct)
         self.log_msg(f"АРХИВ: {os.path.abspath(zip_path)}")
 
         # закрываем файловый хендл журнала перед удалением папки arhive/,
