@@ -246,7 +246,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .empty strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
 .empty-actions{display:flex;gap:8px;justify-content:center;margin-top:16px}
 .empty-actions button{display:inline-flex;align-items:center;gap:7px;padding:9px 14px}
-.viewport{position:absolute;inset:0;transform-origin:0 0}
+.viewport{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
 .plan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 10px 32px #000;user-select:none;cursor:crosshair}
 .stage.mode-view{cursor:default}
 .stage.panning,.stage.panning .plan{cursor:grabbing}
@@ -277,7 +277,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .plan-cam.hidden-cam{border:2px dashed #f0a030;color:#f0a030;background:#0d0f12b3;opacity:.85}
 .plan-cam.hidden-cam:hover{border-color:#ffc060;opacity:1}
 .plan-cam.hidden-cam.active{background:#f0a030;border-style:solid;color:#fff;opacity:1}
-.minimap-layer .mm-cam.hidden-cam{border:1.5px dashed #f0a030;background:#0d0f12a0}
 #planShowHiddenCams .badge{position:absolute;right:2px;bottom:2px;min-width:13px;height:13px;padding:0 3px;border-radius:7px;
   background:#f0a030;color:#111;font-size:9px;font-weight:700;line-height:13px;text-align:center;pointer-events:none}
 #planShowHiddenCams{position:relative}
@@ -479,27 +478,44 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   outline:none;
 }
 
-/* Миникарта — только в режиме «только 3D» (data-layout=tour) */
-.minimap{position:absolute;left:12px;bottom:12px;z-index:6;width:220px;background:#0d0f12e6;border:1px solid #ffffff2a;
-  border-radius:10px;overflow:hidden;box-shadow:0 6px 22px #000a;backdrop-filter:blur(4px);display:none;flex-direction:column}
+/* Миникарта — только в режиме «только 3D» (data-layout=tour). Без backdrop-filter: размытие
+   фона под картой пересчитывалось на каждом кадре вращения 3D и давало заметные лаги. */
+.minimap{position:absolute;left:12px;bottom:12px;z-index:6;width:340px;max-width:calc(100% - 24px);display:none;flex-direction:column;
+  background:color-mix(in srgb,var(--t-widget,#252526) 95%,transparent);border:1px solid var(--t-widget-border,#454545);border-radius:12px;
+  box-shadow:0 14px 34px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.25);overflow:hidden}
 .app[data-layout=tour] .minimap:not([hidden]){display:flex}
-.minimap.expanded{width:min(380px,46vw);height:min(340px,50vh)}
-.minimap-head{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid #ffffff1a;color:#dbe6f2;font-size:11px;font-weight:600}
-.minimap-head span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.minimap-close{background:transparent;border:0;color:#9ab;cursor:pointer;padding:2px 6px;border-radius:6px;font-size:12px;line-height:1}
-.minimap-close:hover{background:#ffffff14;color:#fff}
-.minimap-body{position:relative;flex:1;min-height:140px;background:#111;overflow:hidden}
-.minimap.expanded .minimap-body{min-height:0}
-.minimap-body img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
-.minimap-layer{position:absolute;inset:0;pointer-events:none}
-.minimap-layer .mm-cam,.minimap-layer .mm-marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer}
-.minimap-layer .mm-cam{width:14px;height:14px;border-radius:50%;background:#0d0f12cc;border:1.5px solid #fff9;box-shadow:0 1px 4px #0008}
-.minimap-layer .mm-cam.active{background:var(--blue);border-color:#fff;width:16px;height:16px;z-index:2}
-.minimap-layer .mm-cam-fov{position:absolute;left:50%;top:50%;width:28px;height:28px;transform:translate(-50%,-50%) rotate(0deg);
-  pointer-events:none;z-index:-1;opacity:.55;fill:var(--blue)}
-.minimap-layer .mm-marker{width:12px;height:12px;border-radius:50%;background:#1c4b8f;border:1.5px solid #fff;color:#fff;
-  font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px #0008}
-.minimap-layer .mm-marker.sel{outline:2px solid #4da3ff}
+.minimap.expanded{width:min(640px,calc(100% - 24px))}
+.minimap-head{display:flex;align-items:center;gap:8px;padding:7px 8px 6px 12px;font-size:11.5px;color:var(--t-fg-strong,#e6e6e6)}
+.mm-title{flex:1;min-width:0;display:flex;align-items:baseline;gap:7px;overflow:hidden;white-space:nowrap}
+.mm-title b{font-weight:600;flex:none}
+.mm-title span{color:var(--vscode-fg-dim);overflow:hidden;text-overflow:ellipsis}
+.mm-title span::before{content:'·';margin-right:7px;color:var(--vscode-fg-mute)}
+.minimap-btn{width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex:none;
+  background:transparent;border:1px solid transparent;border-radius:6px;color:var(--vscode-fg-dim);cursor:pointer}
+.minimap-btn:hover{background:var(--t-hover,rgba(255,255,255,.08));color:var(--t-fg-strong)}
+.minimap-btn .ic{width:13px;height:13px}
+.minimap-body{position:relative;height:220px;margin:0 8px 8px;border-radius:8px;overflow:hidden;background:var(--t-canvas-bg,#1e1e1e);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.minimap-body > canvas,.minimap-body > svg,.minimap-layer{position:absolute;left:0;top:0;width:100%;height:100%}
+.minimap-body > svg{pointer-events:none;overflow:visible}
+.minimap-layer{pointer-events:none}
+.minimap-layer .mm-marker{position:absolute;transform:translate(-50%,-50%);width:15px;height:15px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.55)}
+.minimap-layer .mm-marker.sel{outline:2px solid var(--t-focus);outline-offset:1px}
+.mm-link{fill:none;stroke:var(--mm-cam-border,#9aa);stroke-opacity:.5;stroke-width:1.4;stroke-dasharray:3 4;stroke-linecap:round}
+.mm-cam{pointer-events:all;cursor:pointer}
+.mm-cam .mm-hit{fill:transparent}
+.mm-cam .mm-dot{fill:var(--mm-cam-bg,#222);stroke:var(--mm-cam-border,#ccc);stroke-width:1.6}
+.mm-cam:hover .mm-dot{stroke:var(--t-focus);stroke-width:2.4}
+.mm-cam.hidden-cam .mm-dot{stroke:var(--t-orange,#f0a030);stroke-dasharray:2 2}
+.mm-cam.active .mm-dot{fill:var(--mm-cam-active,#3592c4);stroke:#fff;stroke-width:2.2}
+.mm-cam .mm-core{fill:#fff;pointer-events:none}
+.mm-cone-wrap{position:absolute;width:0;height:0;pointer-events:none;will-change:transform}
+.mm-cone-wrap svg{position:absolute;left:0;top:0;width:auto;height:auto;transform:translate(-50%,-50%);overflow:visible}
+.mm-cone{stroke:var(--mm-cam-fov,#6897bb);stroke-width:1.2;stroke-opacity:.85;stroke-linejoin:round}
+.mm-pulse{fill:none;stroke:var(--mm-cam-active,#3592c4);stroke-width:2;transform-box:fill-box;transform-origin:center;
+  animation:mmPulse 1.6s ease-out 3;opacity:0}
+@keyframes mmPulse{from{transform:scale(1);opacity:.85}to{transform:scale(2.8);opacity:0}}
 .tour-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.5}
 #tourBtn.on,#tourHere.on,#l3dPlaceCam.on{border-color:var(--blue);color:var(--blue);background:rgba(77,163,255,.16)}
 .spot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:2px dashed var(--blue);
@@ -739,19 +755,6 @@ button .ic{pointer-events:none}
 .activity #btnSplit.on{color:var(--vscode-activity-fg);background:rgba(255,255,255,.08)}
 .activity #btnSwapPanes[hidden]{display:none}
 
-/* миникарта 3D-вида: стекло — полупрозрачная, с размытием, скруглённая */
-.minimap{background:rgba(16,18,22,.52);border:1px solid rgba(255,255,255,.12);border-radius:16px;
-  box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
-  -webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25);
-  transition:width .22s ease,height .22s ease}
-.minimap-head{border-bottom:0;padding:7px 8px 4px 12px;color:#e8e8e8;font-size:11.5px;letter-spacing:.2px}
-.minimap-btn{width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#cfd3d8;cursor:pointer}
-.minimap-btn:hover{background:rgba(255,255,255,.14);color:#fff}
-.minimap-btn .ic{width:13px;height:13px}
-.minimap-body{background:transparent;margin:0 8px 8px;border-radius:10px}
-.minimap-body img{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
-.minimap-layer .mm-cam{background:rgba(13,15,18,.7);backdrop-filter:blur(2px)}
 </style>
 <style id="themeExtra">
 /* ===== курсоры (свои, не системные) ===== */
@@ -776,7 +779,8 @@ button .ic{pointer-events:none}
 #vcur[data-m="orbit"] .c-orbit,#vcur[data-m="orbiting"] .c-orbiting{display:inline}
 /* клетки холста под прозрачным фоном плана */
 .plan{box-shadow:none}
-.plan canvas.plan-keyed,.plan canvas.plan-walls{position:absolute;left:0;top:0;pointer-events:none}
+.plan canvas.plan-keyed,.plan canvas.plan-walls,.plan canvas.plan-dark{position:absolute;left:0;top:0;pointer-events:none}
+.plan img.plan-src-off{visibility:hidden}
 /* ===== полировка ===== */
 button,.abtn,.tool,.menu-item{transition:background-color .12s ease,color .12s ease,border-color .12s ease,opacity .12s ease}
 .ic{stroke-width:1.5}
@@ -1032,9 +1036,6 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 .plan.dark-floor .room-label{color:var(--t-label-ink-dark);text-shadow:0 0 2px var(--t-floor-dark),0 0 3px var(--t-floor-dark),0 0 5px var(--t-floor-dark)}
 .plan.dark-floor > img,.plan.dark-floor > canvas.plan-keyed{filter:invert(1) hue-rotate(180deg) saturate(1.15);mix-blend-mode:lighten}
 
-/* миникарта 3D — тот же стиль виджета */
-.minimap{background:color-mix(in srgb,var(--t-widget) 86%,transparent);border-color:var(--t-widget-border);border-radius:8px}
-.minimap-btn{border-radius:var(--r-sm)}
 </style>
 <script>
 /* ===== ТЕМЫ =====
@@ -1388,6 +1389,8 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
   var current = byId[DEFAULT_ID];
 
   function svgUrl(svg){ return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")'; }
+  /* сетка холста — обычный фон (без background-attachment:local: с ним браузер перерисовывал
+     всю сетку на каждом шаге сдвига и масштаба плана, потому что менялась область прокрутки) */
   function canvasCss(c){
     var imgs = [], sizes = [], s = c.size || 24;
     if(c.grid === 'lines'){
@@ -1409,7 +1412,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
     }
     if(c.extra){ imgs.push(c.extra); sizes.push('100% 100%'); }
     return '.stage{background-color:' + c.bg + ';background-image:' + (imgs.length ? imgs.join(',') : 'none') +
-           ';background-size:' + (sizes.length ? sizes.join(',') : 'auto') + ';background-attachment:local}';
+           ';background-size:' + (sizes.length ? sizes.join(',') : 'auto') + '}';
   }
   /* формы меток-локусов — SVG-символы #mk-<форма> (см. <defs>); dx/dy — сдвиг
      номера внутри фигуры (доля размера метки), fs — масштаб шрифта номера */
@@ -1465,9 +1468,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
       '.plan-cam.active{background:' + c.activeBg + ';border-color:' + c.activeBg + ';color:' + c.activeFg + '}' +
       '.plan-cam.hidden-cam{border:2px dashed var(--t-orange);color:var(--t-orange)}' +
       '.plan-cam.hidden-cam.active{background:var(--t-orange);color:' + t.ui.editor + '}' +
-      '.minimap-layer .mm-cam{border-radius:' + R + ';background:' + c.bg + ';border-color:' + (bw ? c.border : c.fg) + '}' +
-      '.minimap-layer .mm-cam.active{background:' + c.activeBg + ';border-color:' + c.activeFg + '}' +
-      '.minimap-layer .mm-cam-fov{fill:' + c.fovStroke + '}' +
+      '.minimap{--mm-cam-bg:' + c.bg + ';--mm-cam-border:' + (bw && c.border !== 'transparent' ? c.border : c.fg) + ';--mm-cam-active:' + c.activeBg + ';--mm-cam-fov:' + c.fovStroke + '}' +
       '.fov-cone{fill:' + c.fov + ';stroke:' + c.fovStroke + '}' +
       '.fov-arc{stroke:' + c.fovStroke + '}' +
       '.marker.in-fov{box-shadow:0 0 0 3px ' + c.fovStroke + ',0 2px 10px #000}' +
@@ -1516,6 +1517,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
   window.getTheme = function(){ return current.id; };
   window.getThemeDef = function(id){ return id ? byId[id] : current; };
   window.themeFloorColor = function(i){ var p = current.marker.palette; return p[((i % p.length) + p.length) % p.length]; };
+  window.themeFloorDark = function(){ return ((FLOORS[current.id] || [])[0] || current.canvas.bg).toLowerCase(); };
   window.themeCamIcon = function(){ return current.camera.icon || 'camera'; };
   window.themeMarkerShape = function(id){ var t = id ? byId[id] : current; return (t && t.marker.shape) || 'circle'; };
   /* содержимое метки / фишки маршрута: фигура темы + номер */
@@ -1584,7 +1586,6 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 <symbol id="i-arrow-right" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9.6 4.6 13 8l-3.4 3.4"/></symbol>
 <symbol id="i-turn-cw" viewBox="0 0 16 16"><path d="M3.4 8.6a4.6 4.6 0 1 0 1.4-3.4"/><path d="M4.6 2v3.2h3.2"/></symbol>
 <symbol id="i-turn-ccw" viewBox="0 0 16 16"><path d="M12.6 8.6a4.6 4.6 0 1 1-1.4-3.4"/><path d="M11.4 2v3.2H8.2"/></symbol>
-<symbol id="i-reset" viewBox="0 0 16 16"><path d="M3.3 8.6a4.8 4.8 0 1 0 1.4-4.2"/><path d="M4.4 1.9v2.8h2.8"/></symbol>
 <symbol id="i-close" viewBox="0 0 16 16"><path d="M3.6 3.6l8.8 8.8M12.4 3.6l-8.8 8.8"/></symbol>
 <symbol id="i-eye-hidden" viewBox="0 0 16 16"><path d="M1.8 8S4 4 8 4s6.2 4 6.2 4-2.2 4-6.2 4-6.2-4-6.2-4z"/><circle cx="8" cy="8" r="1.8"/><path d="M2.8 13.2 13.2 2.8"/></symbol>
 <symbol id="i-camera" viewBox="0 0 16 16"><path d="M2 6.2a1.2 1.2 0 0 1 1.2-1.2h1.6l1-1.6h4.4l1 1.6h1.6A1.2 1.2 0 0 1 14 6.2v5.6a1.2 1.2 0 0 1-1.2 1.2H3.2A1.2 1.2 0 0 1 2 11.8z"/><circle cx="8" cy="8.9" r="2.2"/></symbol>
@@ -1748,7 +1749,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
         <span class="ctl-sep"></span>
         <label for="wallColor">Стены</label>
         <input id="wallColor" type="color" value="#cc7832" title="Цвет стен в этой теме (запоминается для каждой темы)"/>
-        <button type="button" class="ctl-reset" id="wallColorReset" title="Вернуть цвет стен темы" aria-label="Вернуть цвет стен темы" hidden><svg class="ic"><use href="#i-reset"/></svg></button>
+        <button type="button" class="ctl-reset" id="wallColorReset" title="Вернуть цвет стен темы" aria-label="Вернуть цвет стен темы" hidden><svg class="ic"><use href="#i-turn-ccw"/></svg></button>
       </div>
     </section>
     <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0"
@@ -1787,12 +1788,13 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
           <div class="tov-jumps" id="l3dJumps"></div>
           <div class="minimap" id="minimap" hidden>
             <div class="minimap-head">
-              <span id="minimapTitle">План</span>
+              <span class="mm-title" id="minimapTitle">План</span>
               <button type="button" class="minimap-btn" id="minimapExpand" title="Развернуть" aria-label="Развернуть миникарту"><svg class="ic"><use href="#i-expand"/></svg></button>
             </div>
             <div class="minimap-body" id="minimapBody">
-              <img id="minimapImg" alt=""/>
+              <canvas id="minimapCanvas" aria-hidden="true"></canvas>
               <div class="minimap-layer" id="minimapLayer"></div>
+              <svg id="minimapSvg" aria-label="Камеры на плане этажа"></svg>
             </div>
           </div>
         </div>
@@ -2157,6 +2159,8 @@ let routeDrag = null;
 let suppressCamClick = false;
 /* Какая локальная панорама сейчас показана в 3D-панели — вид, не сохраняется в файл. */
 let activeLocalPano = null;
+/* вписать план в окно при следующей отрисовке (см. fitPlanView) */
+let planFitPending = true;
 /* Сквозной номер локуса — тот же, что виден на фишке и на плане */
 function routeNum(li, i){
   return state.levels.slice(0, li).reduce((n, f) => n + ((f && f.markers) ? f.markers.length : 0), 0) + i + 1;
@@ -2173,11 +2177,7 @@ function centerOnMarker(li, idx, animate){
   const dx = (sr.left + sr.width / 2) - (mr.left + mr.width / 2);
   const dy = (sr.top + sr.height / 2) - (mr.top + mr.height / 2);
   if(Math.abs(dx) < 1 && Math.abs(dy) < 1) return true;
-  let tx = 0, ty = 0;
-  const cur = getComputedStyle(v).transform;
-  if(cur && cur !== 'none' && window.DOMMatrix){
-    try{ const q = new DOMMatrix(cur); tx = q.e; ty = q.f; }catch(err){}
-  }
+  const q = viewTranslate(v), tx = q.x, ty = q.y;
   if(animate) v.style.transition = 'transform .25s ease-out';
   v.style.transform = 'translate(' + (tx + dx) + 'px,' + (ty + dy) + 'px) scale(' + (state.zoom || 1) + ')';
   if(animate) setTimeout(() => { v.style.transition = ''; }, 300);
@@ -2683,7 +2683,8 @@ function detectWallColor(entry){
    отдельной кнопки больше нет, стены находятся тихо, без участия пользователя. */
 function autoDetectWallsIfNeeded(l, entry){
   if(!l || l.autoWalls || !entry) return;
-  const color = detectWallColor(entry);
+  /* не нашлось «линейчатого» цвета — берём самый частый насыщенный тёмный (им же красятся стены, planInkColor) */
+  const color = detectWallColor(entry) || planInkColor(entry.data, entry.w * entry.h);
   if(!color) return;
   l.autoWalls = { color: color, tol: 44 };
   touch();
@@ -2734,7 +2735,6 @@ function drawPlan(){
   const onReady = () => {
     if(token !== planRenderToken || l !== level()) return;
     l.w = im.naturalWidth; l.h = im.naturalHeight;
-    p.innerHTML = '';
     p.style.width = im.naturalWidth + 'px';
     p.style.height = im.naturalHeight + 'px';
     const rot = Number(state.rotation) || 0;
@@ -2743,33 +2743,47 @@ function drawPlan(){
     im.draggable = false;
     im.setAttribute('draggable', 'false');
     im.ondragstart = e => e.preventDefault();
-    p.appendChild(im);
-    im.style.opacity = '';
     /* цвет «чернил» стен нужен и слою стен ниже, и режиму повторения */
     if(!floorPixelCache.has(l) || floorPixelCache.get(l).src !== l.src){
       const entry = cacheFloorPixelsFromImage(l, im);
       if(entry) autoDetectWallsIfNeeded(l, entry);
     }
+    /* Подложка плана — несколько готовых слоёв (кэшируются по изображению):
+       без красных номеров камер граббера и без исходных подписей комнат (подписи рисуются
+       заново шрифтом темы — planCleanCanvas, renderRoomLabels, ocrPlanLabels), стены — в цвет
+       темы (planWallLayer), тёмный план — уже «запечён» в пиксели (planDarkCanvas). */
+    const dark = floorMode() === 'dark';
+    const labels = Array.isArray(l.labels) && l.labels.length ? l.labels : null;
+    const bases = [];
+    let labelsOk = false;
     try{
-      const kc = planKeyedCanvas(l.src, im);
-      if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
-      /* и светлый (исходный), и тёмный план — без красных номеров камер (их
-         дорисовывает граббер) и без исходных подписей комнат: подписи рисуются
-         заново шрифтом темы (см. planCleanCanvas, renderRoomLabels, ocrPlanLabels) */
-      const dark = floorMode() === 'dark';
       if(needsOcrLabels(l)) scheduleOcrLabels(l);
-      const labels = Array.isArray(l.labels) && l.labels.length ? l.labels : null;
+      const kc = planKeyedCanvas(l.src, im);
       const cc = planCleanCanvas(l.src, kc || im, !!kc, labels);
-      if(cc){ if(kc) kc.remove(); p.insertBefore(cc, im); im.style.opacity = '0'; }
-      /* стены — в цвет темы (или выбранный пользователем): подложка без стен + слой стен */
+      labelsOk = !!(labels && cc && cc.dataset.labels === '1');
+      let base = cc || kc || null, walls = null;
       const wl = planWallLayer(l, cc || kc || im);
-      if(wl){
-        if(cc) cc.remove(); else if(kc) kc.remove();
-        p.insertBefore(wl.base, im); p.insertBefore(tintWallLayer(wl, themeWallColor()), im); im.style.opacity = '0';
-      }
-      if(labels && cc && cc.dataset.labels === '1') renderRoomLabels(p, labels);
-      p.classList.toggle('dark-floor', dark);
+      if(wl){ base = wl.base; walls = tintWallLayer(wl, themeWallColor()); }
+      if(dark){ const dc = planDarkCanvas(base || im, window.themeFloorDark ? themeFloorDark() : ''); if(dc) base = dc; }
+      if(base) bases.push(base);
+      if(walls) bases.push(walls);
     }catch(err){ console.warn('plan overlay', err); }
+    im.style.opacity = '';
+    im.classList.toggle('plan-src-off', bases.length > 0);
+    bases.push(im);
+    /* те же слои, что уже на экране, — не пересоздаём (иначе весь план растеризуется заново
+       на каждый клик); убираем только метки, камеры и прочие наложения поверх них */
+    const kids = p.children;
+    if(kids.length >= bases.length && bases.every((n, i) => kids[i] === n)){
+      while(p.childElementCount > bases.length) p.lastElementChild.remove();
+    }else{
+      p.textContent = '';
+      bases.forEach(n => p.appendChild(n));
+    }
+    if(labelsOk) renderRoomLabels(p, labels);
+    p.classList.toggle('dark-floor', dark);
+    planLayersFor.set(l, { src:l.src, layers:bases.length > 1 ? bases.slice(0, -1) : [im], w:im.naturalWidth, h:im.naturalHeight, labelsOk });
+    if(state.layout === 'tour') try{ renderMinimap(); }catch(err){}
     /* окна — одинаковым «стеклом» во всех темах, см. detectPlanWindows */
     renderPlanWindows(p, detectPlanWindows(l, im));
     const size = markerSize(), off = floorOffset();
@@ -2822,6 +2836,7 @@ function drawPlan(){
     });
     renderPlanCameras(p, l);
     reviewDrawGuessOverlay(p, im.naturalWidth, im.naturalHeight);
+    if(planFitPending && fitPlanView()) planFitPending = false;
   };
   if(imReady){ onReady(); return; }
   im.onload = onReady;
@@ -3118,7 +3133,7 @@ function deleteActiveLevel(){
 function selectLevel(i){
   if(!state.levels[i]) return;
   state.active = i;
-  state.zoom = 1;
+  state.zoom = 1; planFitPending = true;
   const v = $('#viewport'); if(v) v.style.transform = '';
   render();
 }
@@ -3187,7 +3202,7 @@ function deleteLevel(i){
     else if(state.active === i) state.active = Math.min(i, state.levels.length - 1);
     const cur = state.levels[state.active];
     if(cur) cur.selected = null;
-    state.zoom = 1;
+    state.zoom = 1; planFitPending = true;
     const v = $('#viewport'); if(v) v.style.transform = '';
     touch(); render();
     status('Этаж удалён: ' + name + ' · осталось этажей: ' + state.levels.length);
@@ -3882,6 +3897,44 @@ function planInkColor(px, N){
   let ek = -1, en = 0; exact.forEach((n, k) => { if(n > en){ en = n; ek = k; } });
   return ek < 0 ? { r:cr, g:cg, b:cb } : { r:(ek >> 16) & 255, g:(ek >> 8) & 255, b:ek & 255 };
 }
+/* Тёмный план, «запечённый» в пиксели: тот же расчёт, что у CSS-фильтра
+   invert(1) hue-rotate(180deg) saturate(1.15) + mix-blend-mode:lighten на пол темы, но один
+   раз. Фильтр и смешивание на весь план заставляли браузер перерисовывать его на каждом шаге
+   масштаба и сдвига. Не вышло (слишком большой план) — остаётся CSS-фильтр. */
+const planDarkCache = new WeakMap();   /* подложка -> { color, canvas } */
+function planDarkCanvas(src, floor){
+  if(!src || !/^#[0-9a-f]{6}$/i.test(floor || '')) return null;
+  const hit = planDarkCache.get(src);
+  if(hit && hit.color === floor) return hit.canvas;
+  const w = src.naturalWidth || src.width, h = src.naturalHeight || src.height;
+  if(!w || !h || w * h > 24e6) return null;
+  const c = (hit && hit.canvas) || document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently:true });
+  g.drawImage(src, 0, 0);
+  let id; try{ id = g.getImageData(0, 0, w, h); }catch(err){ return null; }
+  const px = id.data, Fr = parseInt(floor.slice(1, 3), 16), Fg = parseInt(floor.slice(3, 5), 16), Fb = parseInt(floor.slice(5, 7), 16);
+  const cl = v => v < 0 ? 0 : (v > 255 ? 255 : v);
+  for(let o = 0; o < px.length; o += 4){
+    const a = px[o+3] / 255;
+    if(a === 0){ px[o] = Fr; px[o+1] = Fg; px[o+2] = Fb; px[o+3] = 255; continue; }
+    const r1 = 255 - px[o], g1 = 255 - px[o+1], b1 = 255 - px[o+2];
+    /* hue-rotate(180deg) */
+    const r2 = cl(-0.574 * r1 + 1.430 * g1 + 0.144 * b1), g2 = cl(0.426 * r1 + 0.430 * g1 + 0.144 * b1), b2 = cl(0.426 * r1 + 1.430 * g1 - 0.856 * b1);
+    /* saturate(1.15) */
+    const r3 = cl(1.11805 * r2 - 0.10725 * g2 - 0.0108 * b2), g3 = cl(-0.03195 * r2 + 1.04275 * g2 - 0.0108 * b2), b3 = cl(-0.03195 * r2 - 0.10725 * g2 + 1.1392 * b2);
+    /* lighten поверх пола */
+    px[o]   = Fr + a * ((r3 > Fr ? r3 : Fr) - Fr);
+    px[o+1] = Fg + a * ((g3 > Fg ? g3 : Fg) - Fg);
+    px[o+2] = Fb + a * ((b3 > Fb ? b3 : Fb) - Fb);
+    px[o+3] = 255;
+  }
+  g.putImageData(id, 0, 0);
+  c.className = 'plan-dark';
+  c.style.width = w + 'px'; c.style.height = h + 'px';
+  planDarkCache.set(src, { color:floor, canvas:c });
+  return c;
+}
 /* серые «чернила»: оставить в маске только толстые (≥3 px) протяжённые (≥24 px) линии и их
    сглаженный край — буквы подписей и тонкие линии мебели того же цвета не перекрашиваются */
 function wallThickOnly(A, w, h){
@@ -4410,7 +4463,7 @@ async function loadMplaceBuffer(buffer){
     active: Math.max(0, Math.min(Number(data.active) || 0, Math.max(0, levels.length - 1))),
     dirty: false
   });
-  state.zoom = 1;
+  state.zoom = 1; planFitPending = true;
   activeLocalPano = null;
   if(Object.keys(state.panoramas || {}).length && state.layout === 'plan') state.layout = 'split';
   const v = $('#viewport'); if(v) v.style.transform = '';
@@ -6192,6 +6245,7 @@ const localViewer = {
       this.canvas = canvas;
       this.renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias:false, alpha:false, preserveDrawingBuffer:false, powerPreference:'high-performance' });
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.viewW = this.viewH = this.viewDpr = 0;   /* новый renderer — resize() должен выставить размер заново */
       this.scene = new THREE.Scene();
       this.camera = new THREE.PerspectiveCamera(this.fov, 1, 0.1, 1100);
       this.camera.rotation.order = 'YXZ';
@@ -6244,10 +6298,7 @@ const localViewer = {
        clientWidth/clientHeight ещё 0 — ResizeObserver подхватит реальный размер
        сам, не полагаясь на то, что кто-то вручную вызовет resize() в нужный момент. */
     if(window.ResizeObserver){
-      this.ro = new ResizeObserver(() => {
-        l3dLog('info', 'ResizeObserver сработал: clientWidth=' + canvas.clientWidth + ', clientHeight=' + canvas.clientHeight);
-        this.resize();
-      });
+      this.ro = new ResizeObserver(() => { this.resize(); });
       this.ro.observe(canvas);
     }else{
       l3dLog('warn', 'window.ResizeObserver отсутствует в этом браузере — размер канваса не будет обновляться автоматически');
@@ -6526,10 +6577,18 @@ const localViewer = {
   resize(){
     if(!this.renderer || !this.canvas){ l3dLog('warn', 'resize() вызван без активного renderer/canvas — пропускаем'); return; }
     const w = this.canvas.clientWidth || 1, h = this.canvas.clientHeight || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    /* размер тот же — буфер не трогаем (setSize его очищает) */
+    if(w === this.viewW && h === this.viewH && dpr === this.viewDpr) return;
     this.viewW = w; this.viewH = h;
+    if(dpr !== this.viewDpr){ this.viewDpr = dpr; this.renderer.setPixelRatio(dpr); }
     this.renderer.setSize(w, h, false);
     if(this.camera){ this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
-    l3dLog('info', 'resize(): установлен размер рендера ' + w + 'x' + h + (w === 1 || h === 1 ? ' (подозрительно мало — возможно, реальный размер контейнера ещё 0)' : ''));
+    /* setSize очищает кадр WebGL (preserveDrawingBuffer:false): без немедленной перерисовки
+       3D-вид после смены ширины панели оставался чёрным, пока не повернёшь камеру.
+       ResizeObserver вызывает нас до отрисовки кадра — рисуем сразу, без мигания. */
+    try{ if(this.scene && this.camera){ this.renderer.render(this.scene, this.camera); this.updateNavLabels(); } }catch(err){}
+    if(w === 1 || h === 1) l3dLog('info', 'resize(): размер рендера ' + w + 'x' + h + ' (подозрительно мало — возможно, реальный размер контейнера ещё 0)');
   },
   isAnimating(){
     return (!this.dragging && (this.velYaw !== 0 || this.velPitch !== 0)) ||
@@ -7188,7 +7247,7 @@ function setActiveLocalPano(panoId, focusPanel){
   if(pn.floorId != null){
     const li = state.levels.findIndex(x => x && x.floorId === pn.floorId);
     if(li >= 0 && li !== state.active){
-      state.active = li; state.zoom = 1;
+      state.active = li; state.zoom = 1; planFitPending = true;
       const v = $('#viewport'); if(v) v.style.transform = '';
       render();
       status('Этаж: ' + (state.levels[li].name || ('Этаж ' + (li + 1))));
@@ -7455,91 +7514,112 @@ function applyLayout(){
   if(show3d && hasLocalPanos() && localViewer.renderer) requestAnimationFrame(() => localViewer.resize());
   renderMinimap();
 }
-/* Миникарта этажа в режиме «только 3D»: план + локусы + камеры.
-   Клик по камере переключает панораму; активная камера с конусом обзора. */
+/* ---------- миникарта 3D-вида ----------
+   План этажа в тех же слоях, что и на холсте (стены в цвет темы, тёмный план — как выбран),
+   поверх — SVG: пунктир переходов между камерами, камеры в цветах темы, у активной — пульс и
+   конус обзора, который поворачивается вместе с 3D-камерой (tick → updateMinimapCamHeading).
+   План на миникарте перерисовывается только при смене плана, темы, цвета стен или размера;
+   камеры и локусы — лёгкий SVG/DOM из пары десятков элементов. */
+const planLayersFor = new WeakMap();   /* этаж -> { src, layers:[canvas|img], w, h } — заполняет drawPlan */
+let mmSeq = 0;
+const mm = { planKey:'', coneRot:null, conePath:null, coneR:40, az:null, fov:null, calibFor:null, calib:0, ro:null, geo:null };
 function renderMinimap(){
   const box = $('#minimap');
   if(!box) return;
   const show = (state.layout === 'tour') && hasLocalPanos();
   box.hidden = !show;
-  if(!show) return;
-  const l = level();
-  const title = $('#minimapTitle');
-  if(title) title.textContent = (l && l.name) ? l.name : ('Этаж ' + ((state.active || 0) + 1));
-  const img = $('#minimapImg');
-  const layer = $('#minimapLayer');
-  if(!img || !layer) return;
-  if(!l || !l.src){
-    img.removeAttribute('src');
-    layer.innerHTML = '';
-    return;
+  if(!show){ mm.coneRot = null; return; }
+  const body = $('#minimapBody');
+  if(body && !mm.ro && window.ResizeObserver){
+    let lastW = 0;
+    mm.ro = new ResizeObserver(() => { const w = body.clientWidth; if(w !== lastW){ lastW = w; if(!box.hidden) layoutMinimap(); } });
+    mm.ro.observe(body);
   }
-  const want = minimapKeyedUrl(l) || l.src;
-  if(img.getAttribute('src') !== want){
-    img.onload = () => layoutMinimapMarkers(l, img, layer);
-    /* если прозрачная версия почему-то не открылась — показываем исходный план */
-    img.onerror = () => { if(want !== l.src){ minimapKeyedUrls.set(l.src, null); img.onerror = null; img.src = l.src; } };
-    img.src = want;
-  }else{
-    layoutMinimapMarkers(l, img, layer);
-  }
+  layoutMinimap();
 }
-/* версия плана с прозрачным фоном для миникарты (тот же вырез, что и на холсте) */
-const minimapKeyedUrls = new Map();   /* src -> objectURL | null (нет тёмного фона) | 'pending' */
-function minimapKeyedUrl(l){
-  const src = l && l.src; if(!src) return null;
-  const v = minimapKeyedUrls.get(src);
-  if(v === 'pending') return null;
-  if(v !== undefined) return v;
-  minimapKeyedUrls.set(src, 'pending');
-  const go = im => {
-    let kc = null;
-    try{ kc = planKeyedCanvas(src, im); }catch(err){}
-    if(!kc){ minimapKeyedUrls.set(src, null); return; }
-    /* data:URL, а не blob: — Safari не показывает blob-картинки на страницах,
-       открытых как локальный файл (file://). Уменьшенная копия — миникарте
-       полный размер не нужен, и кодируется в разы быстрее. */
-    setTimeout(() => {
-      let url = null;
-      try{
-        const k = Math.min(1, 900 / Math.max(kc.width, kc.height));
-        const c = document.createElement('canvas');
-        c.width = Math.max(1, Math.round(kc.width * k)); c.height = Math.max(1, Math.round(kc.height * k));
-        c.getContext('2d').drawImage(kc, 0, 0, c.width, c.height);
-        url = c.toDataURL('image/png');
-      }catch(err){ url = null; }
-      minimapKeyedUrls.set(src, url);
-      if(url) try{ renderMinimap(); }catch(err){}
-    }, 0);
-  };
-  let im = planImageCache.get(src);
-  if(im && im.complete && im.naturalWidth){ go(im); return null; }
-  const im2 = new Image();
-  im2.onload = () => go(im2);
-  im2.onerror = () => minimapKeyedUrls.set(src, null);
-  im2.src = src;
+function minimapSource(l){
+  const rec = planLayersFor.get(l);
+  if(rec && rec.src === l.src && rec.layers.length) return rec;
+  const im = planImageCache.get(l.src);
+  if(im && im.complete && im.naturalWidth) return { src:l.src, layers:[im], w:im.naturalWidth, h:im.naturalHeight };
   return null;
 }
-function layoutMinimapMarkers(l, img, layer){
-  const body = $('#minimapBody');
-  if(!body || !img.naturalWidth || !img.naturalHeight) return;
-  const bw = body.clientWidth || 1, bh = body.clientHeight || 1;
-  const nw = img.naturalWidth, nh = img.naturalHeight;
-  const scale = Math.min(bw / nw, bh / nh);
-  const dw = nw * scale, dh = nh * scale;
+function minimapConePath(half, R){
+  const a = half * Math.PI / 180, x = R * Math.sin(a), y = -R * Math.cos(a);
+  return 'M0 0L' + (-x).toFixed(1) + ' ' + y.toFixed(1) + 'A' + R + ' ' + R + ' 0 0 1 ' + x.toFixed(1) + ' ' + y.toFixed(1) + 'Z';
+}
+function layoutMinimap(){
+  const box = $('#minimap'), body = $('#minimapBody'), cv = $('#minimapCanvas'), svg = $('#minimapSvg'), layer = $('#minimapLayer');
+  if(!box || !body || !cv || !svg || !layer) return;
+  const l = level();
+  const pano = activeLocalPano && state.panoramas && state.panoramas[activeLocalPano];
+  const title = $('#minimapTitle');
+  if(title) title.innerHTML = '<b>' + esc(l && l.name ? l.name : ('Этаж ' + ((state.active || 0) + 1))) + '</b>' + (pano && pano.room ? '<span>' + esc(pano.room) + '</span>' : '');
+  const src = l && l.src ? minimapSource(l) : null;
+  if(box.hidden || !src){
+    /* план ещё не декодирован — drawPlan вызовет нас снова, когда слои будут готовы */
+    cv.width = cv.width; svg.innerHTML = ''; layer.innerHTML = ''; mm.coneRot = null; mm.planKey = '';
+    return;
+  }
+  const nw = src.w, nh = src.h;
+  const bw = body.clientWidth || 1;
+  const maxH = box.classList.contains('expanded') ? Math.min(560, Math.round(innerHeight * 0.62)) : 300;
+  const bh = Math.max(150, Math.min(maxH, Math.round(bw * nh / nw)));
+  if(Math.abs(body.clientHeight - bh) > 1) body.style.height = bh + 'px';
+  const scale = Math.min(bw / nw, bh / nh), dw = nw * scale, dh = nh * scale;
   const ox = (bw - dw) / 2, oy = (bh - dh) / 2;
   const planW = l.w || nw, planH = l.h || nh;
-  const toX = x => ox + (x / planW) * dw;
-  const toY = y => oy + (y / planH) * dh;
+  const toX = x => ox + (x / planW) * dw, toY = y => oy + (y / planH) * dh;
+  mm.geo = { ox, oy, dw, dh, planW, planH };
+  /* план */
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const ids = src.layers.map(x => x._mmId || (x._mmId = ++mmSeq)).join('.');
+  const key = [l.src.length, l.src.slice(-40), ids, bw, bh, dpr, window.getTheme ? getTheme() : '', window.themeWallColor ? themeWallColor() : '', floorMode(),
+               Array.isArray(l.labels) ? l.labels.length : -1].join('|');
+  if(mm.planKey !== key){
+    mm.planKey = key;
+    cv.width = Math.round(bw * dpr); cv.height = Math.round(bh * dpr);
+    const g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    src.layers.forEach(x => { try{ g.drawImage(x, ox, oy, dw, dh); }catch(err){} });
+    /* названия комнат — шрифтом темы, если на этом масштабе их можно прочесть */
+    /* только если исходные подписи на подложке стёрты (как и на холсте) — иначе задвоятся */
+    const labs = src.labelsOk && Array.isArray(l.labels) ? l.labels.filter(lb => lb && lb.kind !== 'dim' && lb.text) : [];
+    if(labs.length){
+      const k = dw / planW, cs = getComputedStyle(document.documentElement);
+      const font = cs.getPropertyValue('--t-label-font').trim() || 'sans-serif';
+      const dark = floorMode() === 'dark';
+      const ink = (dark ? cs.getPropertyValue('--t-label-ink-dark') : cs.getPropertyValue('--t-label-ink-light')).trim() || (dark ? '#eee' : '#222');
+      const halo = dark ? (cs.getPropertyValue('--t-floor-dark').trim() || '#111') : '#fff';
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+      labs.forEach(lb => {
+        const fs = Math.max(7.5, Math.min(12, (lb.size || 12) * k * 1.05));
+        if((lb.size || 12) * k < 4.2) return;
+        g.save();
+        g.translate(toX(lb.x), toY(lb.y));
+        if(lb.angle) g.rotate(lb.angle * Math.PI / 180);
+        g.font = '700 ' + fs.toFixed(1) + 'px ' + font;
+        g.lineWidth = 2.6; g.strokeStyle = halo; g.strokeText(lb.text, 0, 0);
+        g.fillStyle = ink; g.fillText(lb.text, 0, 0);
+        g.restore();
+      });
+      /* шрифт темы ещё грузится — перерисовать, когда будет готов */
+      if(document.fonts && document.fonts.status !== 'loaded' && !mm.fontWait){
+        mm.fontWait = true;
+        document.fonts.ready.then(() => { mm.fontWait = false; mm.planKey = ''; if(!box.hidden) layoutMinimap(); });
+      }
+    }
+  }
+  /* локусы */
   let html = '';
-  /* Локусы */
   (l.markers || []).forEach((m, i) => {
     if(!m || m.x == null || m.y == null) return;
-    const sel = l.selected === i ? ' sel' : '';
-    html += '<div class="mm-marker' + sel + '" style="--fc:' + floorColor(state.active) + ';left:' + toX(m.x) + 'px;top:' + toY(m.y) + 'px" title="Локус ' + (i + 1) + '">' + (i + 1) + '</div>';
+    html += '<div class="mm-marker' + (l.selected === i ? ' sel' : '') + '" style="--fc:' + floorColor(state.active) + ';left:' + toX(m.x).toFixed(1) + 'px;top:' + toY(m.y).toFixed(1) + 'px" title="Локус ' + (i + 1) + '">' + (i + 1) + '</div>';
   });
-  /* Камеры панорам этого этажа */
-  const floorId = l.floorId;
+  layer.innerHTML = html;
+  /* камеры этого этажа и переходы между ними */
+  const floorId = l.floorId, cams = [];
   Object.keys(state.panoramas || {}).forEach(id => {
     const p = state.panoramas[id];
     if(!p) return;
@@ -7547,48 +7627,106 @@ function layoutMinimapMarkers(l, img, layer){
     if(!camVisibleOnPlan(id, p)) return;
     const px = p.planPx;
     if(!px || !isFinite(px.x) || !isFinite(px.y)) return;
-    const active = activeLocalPano === id;
-    html += '<div class="mm-cam' + (active ? ' active' : '') + (p.hidden ? ' hidden-cam' : '') + '" data-pano="' + esc(String(id)) +
-      '" style="left:' + toX(px.x) + 'px;top:' + toY(px.y) + 'px" title="' + esc(p.room || id) + '"></div>';
+    cams.push({ id, p, x:toX(px.x), y:toY(px.y) });
   });
-  layer.innerHTML = html;
-  layer.querySelectorAll('.mm-cam').forEach(el => {
-    el.addEventListener('click', e => {
+  const at = {}; cams.forEach(c => { at[c.id] = c; });
+  let links = '';
+  const seen = new Set();
+  cams.forEach(c => (Array.isArray(c.p.destinations) ? c.p.destinations : []).forEach(d => {
+    const t = d && at[d.panoId];
+    if(!t || t === c) return;
+    const k = c.id < t.id ? c.id + '|' + t.id : t.id + '|' + c.id;
+    if(seen.has(k)) return; seen.add(k);
+    links += '<line class="mm-link" x1="' + c.x.toFixed(1) + '" y1="' + c.y.toFixed(1) + '" x2="' + t.x.toFixed(1) + '" y2="' + t.y.toFixed(1) + '"/>';
+  }));
+  const R = mm.coneR = Math.round(Math.max(30, Math.min(72, Math.min(dw, dh) * 0.16)));
+  let camsHtml = '', activeHtml = '', coneAt = null;
+  cams.forEach(c => {
+    const active = c.id === activeLocalPano;
+    const t = '<title>' + esc(c.p.room || c.id) + (active ? ' — вы здесь' : ' — перейти') + '</title>';
+    const cls = 'mm-cam' + (active ? ' active' : '') + (c.p.hidden ? ' hidden-cam' : '');
+    const g = '<g class="' + cls + '" data-pano="' + esc(String(c.id)) + '" transform="translate(' + c.x.toFixed(1) + ' ' + c.y.toFixed(1) + ')">';
+    if(active){
+      activeHtml = g + '<circle class="mm-pulse" r="7"/><circle class="mm-hit" r="14"/><circle class="mm-dot" r="7"/><circle class="mm-core" r="2.2"/>' + t + '</g>';
+      coneAt = c;
+    }else camsHtml += g + '<circle class="mm-hit" r="11"/><circle class="mm-dot" r="4.6"/>' + t + '</g>';
+  });
+  svg.setAttribute('viewBox', '0 0 ' + bw + ' ' + bh);
+  svg.innerHTML = links + camsHtml + activeHtml;
+  /* конус обзора — отдельный элемент поверх плана: поворачивается CSS-трансформацией
+     на GPU, без перерисовки карты на каждом кадре вращения 3D */
+  let cone = $('#minimapCone');
+  if(coneAt){
+    if(!cone){
+      cone = document.createElement('div'); cone.id = 'minimapCone'; cone.className = 'mm-cone-wrap';
+      cone.innerHTML = '<svg aria-hidden="true"><defs><radialGradient id="mmConeGrad" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="40">' +
+        '<stop offset="0" stop-opacity=".7"/><stop offset="1" stop-opacity=".06"/></radialGradient></defs><path class="mm-cone" fill="url(#mmConeGrad)"/></svg>';
+      body.insertBefore(cone, svg);
+    }
+    const fovCol = getComputedStyle(box).getPropertyValue('--mm-cam-fov').trim() || '#6897bb';
+    cone.querySelectorAll('stop').forEach(st => st.setAttribute('stop-color', fovCol));
+    cone.querySelector('radialGradient').setAttribute('r', String(R));
+    const csv = cone.querySelector('svg');
+    csv.setAttribute('width', String(2 * R + 4)); csv.setAttribute('height', String(2 * R + 4));
+    csv.setAttribute('viewBox', (-R - 2) + ' ' + (-R - 2) + ' ' + (2 * R + 4) + ' ' + (2 * R + 4));
+    cone.style.left = coneAt.x.toFixed(1) + 'px'; cone.style.top = coneAt.y.toFixed(1) + 'px';
+    cone.hidden = false;
+    mm.coneRot = cone; mm.conePath = cone.querySelector('.mm-cone');
+  }else{
+    if(cone) cone.hidden = true;
+    mm.coneRot = null; mm.conePath = null;
+  }
+  mm.az = mm.fov = null;
+  updateMinimapCamHeading();
+  /* клик по камере — переход к её панораме (один обработчик на всю карту) */
+  svg.onclick = null;
+  body.onclick = e => {
+    const camEl = e.target && e.target.closest && e.target.closest('.mm-cam');
+    if(camEl && !placingCam){
       e.preventDefault(); e.stopPropagation();
-      const id = el.getAttribute('data-pano');
-      if(!id) return;
+      const id = camEl.getAttribute('data-pano');
+      if(!id || id === activeLocalPano) return;
       syncMarkerFromLocalPano(id);
       setActiveLocalPano(id, false);
       renderMinimap();
-    });
-  });
-  /* Расстановка камеры кликом ПО МИНИКАРТЕ (п.1 запроса — «миникарту 3D-вида»):
-     миникарта видна только в режиме «только 3D» (см. renderMinimap(), show =
-     layout==='tour'), где сама панель плана (#stage) скрыта — то есть кнопка
-     «На план» (см. setPlacingCam/on('#l3dPlaceCam')) в этом режиме нечем
-     ловить клик, если ловить только по #stage. Обратное преобразование
-     координат — ровно инверсия toX/toY выше. Переобъявляется при каждом
-     рендере миникарты (см. layoutMinimapMarkers) — назначение через
-     .onclick, а не addEventListener, само заменяет предыдущий обработчик. */
-  body.onclick = e => {
+      return;
+    }
+    /* Расстановка камеры кликом по миникарте: в режиме «только 3D» панель плана скрыта,
+       поэтому кнопка «На план» ловит клик здесь (обратное преобразование к toX/toY). */
     if(!placingCam) return;
-    if(e.target && e.target.closest && e.target.closest('.mm-cam, .mm-marker, button')) return;
     if(state.mode !== 'edit'){ notify('Переключитесь в режим редактирования, чтобы поставить камеру на план.'); return; }
+    const gm = mm.geo; if(!gm) return;
     const rect = body.getBoundingClientRect();
     const bx = e.clientX - rect.left, by = e.clientY - rect.top;
-    if(bx < ox || by < oy || bx > ox + dw || by > oy + dh) return; /* клик мимо самой картинки плана */
-    const px = (bx - ox) * planW / dw, py = (by - oy) * planH / dh;
+    if(bx < gm.ox || by < gm.oy || bx > gm.ox + gm.dw || by > gm.oy + gm.dh) return; /* клик мимо самой картинки плана */
     const p = activeLocalPano && state.panoramas[activeLocalPano];
     if(!p){ setPlacingCam(false); return; }
     const old = p.planPx;
-    p.planPx = { x: Math.round(px), y: Math.round(py) };
+    p.planPx = { x: Math.round((bx - gm.ox) * gm.planW / gm.dw), y: Math.round((by - gm.oy) * gm.planH / gm.dh) };
     cleanupMovedCamera(p, old);
     setPlacingCam(false);
     touch(); renderMinimap();
     status('Камера «' + (p.room || activeLocalPano) + '» поставлена на план — значок появился на миникарте');
   };
 }
-function updateMinimapCamHeading(){ /* область видимости на мини-карте отключена */ }
+/* Конус обзора активной камеры: куда смотрит 3D-камера — туда он и повёрнут на плане.
+   Та же связь «yaw кадра ↔ направление на плане», по которой стоят кольца переходов
+   (navYawOffsetDeg + калибровка по переходам, см. l3dCarryYaw): кольцо к соседней камере
+   в центре экрана ⇔ конус смотрит на эту камеру на миникарте. Вызывается из tick() —
+   только запись одного transform, когда угол реально изменился. */
+function updateMinimapCamHeading(){
+  const rot = mm.coneRot;
+  if(!rot || rot.hidden || !rot.isConnected || !localViewer || !localViewer.camera) return;
+  const id = activeLocalPano, p = id && state.panoramas && state.panoramas[id];
+  if(!p) return;
+  if(mm.calibFor !== id){ mm.calibFor = id; mm.calib = l3dPanoCalibDeg(id) || 0; }
+  const off = isFinite(p.navYawOffsetDeg) ? p.navYawOffsetDeg : 90;
+  const az = (((off + mm.calib - localViewer.yaw) % 360) + 360) % 360;
+  if(mm.az == null || Math.abs(az - mm.az) > 0.2){ rot.style.transform = 'rotate(' + az.toFixed(1) + 'deg)'; mm.az = az; }
+  const cam = localViewer.camera;
+  const hf = 2 * Math.atan(Math.tan((cam.fov || 75) * Math.PI / 360) * (cam.aspect || 1.6)) * 180 / Math.PI;
+  if(mm.conePath && (mm.fov == null || Math.abs(hf - mm.fov) > 0.3)){ mm.conePath.setAttribute('d', minimapConePath(Math.min(160, hf) / 2, mm.coneR)); mm.fov = hf; }
+}
 function setUiMode(mode, silent){
   if(mode === 'welcome') mode = 'plan';   /* стартовый экран убран */
   if(mode === 'split'){
@@ -7771,7 +7909,7 @@ on('#applyPlans', 'click', () => {
     state.active = Math.min(start, Math.max(0, state.levels.length - 1));
   }
   pending = [];
-  state.zoom = 1; state.rotation = 0;
+  state.zoom = 1; state.rotation = 0; planFitPending = true;
   const v = $('#viewport'); if(v) v.style.transform = '';
   const m = $('#modal'); if(m) m.classList.remove('show');
   renderPending();
@@ -7866,10 +8004,8 @@ on('#stage', 'contextmenu', e => {
   }
 });
 function startPan(e){
-  pan = { x:e.clientX, y:e.clientY, tx:0, ty:0 };
-  const v = $('#viewport');
-  const m = v ? getComputedStyle(v).transform : 'none';
-  if(m && m !== 'none' && window.DOMMatrix){ const q = new DOMMatrix(m); pan.tx = q.e; pan.ty = q.f; }
+  const q = viewTranslate($('#viewport'));
+  pan = { x:e.clientX, y:e.clientY, tx:q.x, ty:q.y, cx:e.clientX, cy:e.clientY, raf:0 };
   const st = $('#stage'); if(st) st.classList.add('panning');
 }
 on('#stage', 'mousedown', e => {
@@ -7890,7 +8026,20 @@ on('#stage', 'mousedown', e => {
   startPan(e);
   e.preventDefault();
 });
-on('#stage', 'wheel', e => { e.preventDefault(); applyZoom(state.zoom * (e.deltaY < 0 ? 1.12 : 0.89), e.clientX, e.clientY); });
+/* колесо: события за кадр складываются и применяются один раз; шаг пропорционален прокрутке —
+   тачпад и щипок масштабируют плавно, щелчок колеса мыши — примерно на 12% */
+let wheelAcc = 0, wheelX = 0, wheelY = 0, wheelRaf = 0;
+on('#stage', 'wheel', e => {
+  e.preventDefault();
+  let dy = e.deltaY * (e.deltaMode === 1 ? 33 : (e.deltaMode === 2 ? 400 : 1));
+  if(e.ctrlKey) dy *= 5;   /* щипок на тачпаде даёт маленькие шаги */
+  wheelAcc += dy; wheelX = e.clientX; wheelY = e.clientY;
+  if(!wheelRaf) wheelRaf = requestAnimationFrame(() => {
+    wheelRaf = 0;
+    const d = Math.max(-500, Math.min(500, wheelAcc)); wheelAcc = 0;
+    applyZoom(state.zoom * Math.exp(-d * 0.0012), wheelX, wheelY);
+  });
+});
 
 /* Если выделение всё же успело начаться (например, быстрый рывок мышью),
    снимаем его, пока идёт перетаскивание по холсту. */
@@ -7908,8 +8057,15 @@ window.onmousemove = e => {
     clearSelection();
   }
   if(pan){
-    const v = $('#viewport'); if(!v) return;
-    v.style.transform = 'translate(' + (pan.tx + e.clientX - pan.x) + 'px,' + (pan.ty + e.clientY - pan.y) + 'px) scale(' + state.zoom + ')';
+    pan.cx = e.clientX; pan.cy = e.clientY;
+    if(!pan.raf){
+      const pp = pan;
+      pp.raf = requestAnimationFrame(() => {
+        pp.raf = 0;
+        const v = $('#viewport'); if(!v) return;
+        v.style.transform = 'translate(' + (pp.tx + pp.cx - pp.x) + 'px,' + (pp.ty + pp.cy - pp.y) + 'px) scale(' + state.zoom + ')';
+      });
+    }
     return;
   }
   if(!drag) return;
@@ -7921,7 +8077,11 @@ window.onmousemove = e => {
   if(drag.target){ drag.target.style.left = drag.m.x + 'px'; drag.target.style.top = drag.m.y + 'px'; }
 };
 window.onmouseup = () => {
-  if(pan){ const st = $('#stage'); if(st) st.classList.remove('panning'); }
+  if(pan){
+    const st = $('#stage'); if(st) st.classList.remove('panning');
+    /* последнее положение — сразу, не дожидаясь кадра */
+    if(pan.raf){ cancelAnimationFrame(pan.raf); const v = $('#viewport'); if(v) v.style.transform = 'translate(' + (pan.tx + pan.cx - pan.x) + 'px,' + (pan.ty + pan.cy - pan.y) + 'px) scale(' + state.zoom + ')'; }
+  }
   if(drag){
     const moved = drag.moved;
     drag.m.dragging = false;
@@ -8201,16 +8361,36 @@ on('#abHotkeys', 'click', openHotkeys);
 on('#hotkeysHint', 'click', openHotkeys);
 hkSyncTitles();
 
+/* Сдвиг холста читается из inline-стиля (его пишем только мы), а не из getComputedStyle —
+   тот пересчитывал стили страницы на каждом шаге колеса и перетаскивания. */
+function viewTranslate(v){
+  const m = /translate\((-?[\d.]+(?:e[-+]?\d+)?)px,\s*(-?[\d.]+(?:e[-+]?\d+)?)px\)/.exec((v && v.style.transform) || '');
+  return m ? { x:+m[1], y:+m[2] } : { x:0, y:0 };
+}
+/* Холст живёт на своём GPU-слое (will-change:transform): при сдвиге и масштабе браузер двигает
+   и растягивает уже готовую картинку, а не рисует план заново на каждом кадре. Когда масштаб
+   перестал меняться, слой пересоздаётся — план один раз растеризуется чётко в новом масштабе. */
+let viewSharpTimer = 0;
+function sharpenViewLater(){
+  clearTimeout(viewSharpTimer);
+  viewSharpTimer = setTimeout(() => {
+    const v = $('#viewport'); if(!v) return;
+    v.style.willChange = 'auto';
+    requestAnimationFrame(() => requestAnimationFrame(() => { v.style.willChange = ''; }));
+  }, 240);
+}
 function applyZoom(z, cx, cy){
-  const v = $('#viewport'); if(!v) return;
-  if(cx == null) cx = innerWidth/2;
-  if(cy == null) cy = innerHeight/2;
-  const m = getComputedStyle(v).transform;
-  const q = (m && m !== 'none' && window.DOMMatrix) ? new DOMMatrix(m) : { e:0, f:0 };
+  const v = $('#viewport'), st = $('#stage'); if(!v || !st) return;
+  const r = st.getBoundingClientRect();
+  /* точка под курсором остаётся на месте (координаты — относительно холста) */
+  const px = (cx == null ? r.left + r.width / 2 : cx) - r.left, py = (cy == null ? r.top + r.height / 2 : cy) - r.top;
+  const q = viewTranslate(v);
   const old = state.zoom || 1;
-  state.zoom = Math.max(0.25, Math.min(4, z));
-  const k = state.zoom/old;
-  v.style.transform = 'translate(' + (cx - (cx - q.e)*k) + 'px,' + (cy - (cy - q.f)*k) + 'px) scale(' + state.zoom + ')';
+  state.zoom = Math.max(0.1, Math.min(4, z));
+  const k = state.zoom / old;
+  if(k === 1) return;
+  v.style.transform = 'translate(' + (px - (px - q.x) * k) + 'px,' + (py - (py - q.y) * k) + 'px) scale(' + state.zoom + ')';
+  sharpenViewLater();
 }
 on('#zoomIn', 'click', () => applyZoom(state.zoom*1.2));
 on('#zoomOut', 'click', () => applyZoom(state.zoom/1.2));
@@ -8229,9 +8409,25 @@ on('#planShowHiddenCams', 'click', () => {
 });
 /* сброс масштаба и поворота плана — кнопки в панели больше нет, только горячая клавиша (0) */
 function resetPlanView(){
-  state.zoom = 1; state.rotation = 0;
+  state.zoom = 1; state.rotation = 0; planFitPending = true;
   const v = $('#viewport'); if(v) v.style.transform = '';
   render();
+}
+/* План целиком в окне: при открытии этажа, после загрузки дворца и по клавише 0.
+   Большие планы (2000+ px) раньше открывались 1:1 — видно было лишь кусок, и каждый раз
+   приходилось уменьшать вручную. Мелкие планы не увеличиваются (максимум 1:1). */
+function fitPlanView(){
+  const st = $('#stage'), v = $('#viewport'), l = level();
+  if(!st || !v || !l || !l.w || !l.h) return false;
+  const W = st.clientWidth, H = st.clientHeight;
+  if(W < 40 || H < 40) return false;
+  const a = (Number(state.rotation) || 0) * Math.PI / 180, c = Math.abs(Math.cos(a)), sn = Math.abs(Math.sin(a));
+  const bw = l.w * c + l.h * sn, bh = l.w * sn + l.h * c;
+  const z = Math.max(0.1, Math.min(1, Math.min((W - 48) / bw, (H - 48) / bh)));
+  state.zoom = z;
+  v.style.transform = z >= 0.999 ? '' : 'translate(' + (W / 2 * (1 - z)).toFixed(1) + 'px,' + (H / 2 * (1 - z)).toFixed(1) + 'px) scale(' + z + ')';
+  sharpenViewLater();
+  return true;
 }
 /* ---------- компас поворота плана ---------- */
 function normDeg(d){ d = Number(d) || 0; d %= 360; return d < 0 ? d + 360 : d; }
@@ -8441,9 +8637,7 @@ on('#minimapExpand', 'click', () => {
     b.setAttribute('aria-label', on ? 'Свернуть миникарту' : 'Развернуть миникарту');
     const u = b.querySelector('use'); if(u) u.setAttribute('href', on ? '#i-collapse' : '#i-expand');
   }
-  /* маркеры пересчитываем после анимации размера */
   renderMinimap();
-  setTimeout(renderMinimap, 240);
 });
 (function initL3dDebugPanel(){
   /* Панель диагностики убрана из UI — инициализация больше не нужна. */
@@ -9224,7 +9418,7 @@ function startRound(){
   if(state.active !== li){
     selectLevel(li);
   }else{
-    state.zoom = 1;
+    state.zoom = 1; planFitPending = true;
     const v = $('#viewport'); if(v) v.style.transform = '';
     drawPlan();
     renderRoute();
