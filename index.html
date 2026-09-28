@@ -1004,7 +1004,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 .plan.dark-floor{background:var(--t-floor-dark)}
 /* подписи комнат, перерисованные шрифтом темы */
 .room-label{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;z-index:2;line-height:1;
-  font-family:var(--t-label-font);font-weight:700;color:#0a0a14;letter-spacing:.01em;
+  font-family:var(--t-label-font);font-weight:700;color:var(--t-label-ink-light,#0a0a14);letter-spacing:.01em;
   text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 4px #fff}
 .room-label.dim{font-weight:500;opacity:.9}
 .plan.dark-floor .room-label{color:var(--t-label-ink-dark);text-shadow:0 0 2px var(--t-floor-dark),0 0 3px var(--t-floor-dark),0 0 5px var(--t-floor-dark)}
@@ -1436,7 +1436,7 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
         <span class="tool-sep"></span>
         <button class="tool" id="planShowHiddenCams" title="Показать скрытые камеры" aria-label="Показать скрытые камеры" aria-pressed="false"><svg class="ic"><use href="#i-eye-hidden"/></svg></button>
         <button class="tool" id="planTransparentBg" title="Убрать белый фон плана и сделать его прозрачным" aria-label="Прозрачный фон плана"><svg class="ic"><use href="#i-transparent"/></svg></button>
-        <button class="tool" id="planDarkFloor" title="Тёмный план / исходный план Zillow" aria-label="Тёмный план" aria-pressed="false"><svg class="ic"><use href="#i-moon"/></svg></button>
+        <button class="tool" id="planDarkFloor" title="Тёмный / светлый план" aria-label="Тёмный план" aria-pressed="false"><svg class="ic"><use href="#i-moon"/></svg></button>
       </aside>
       <div class="floor-overlay" id="floorOverlay"></div>
       <div class="review-bar" id="reviewBar" hidden>
@@ -1843,9 +1843,9 @@ const planKeyCanvasCache = new Map(); /* src -> готовый canvas с про�
    оттенок), а mix-blend-mode:lighten заменяет получившийся чёрный на цвет
    холста темы. Пиксели не читаются — работает с любым планом (SVG, огромные
    PNG из .3dview), мгновенно. Меняется только отображение, не сам план. */
-/* Пол плана: 'off' — исходный план Zillow (без подмен, убраны только красные
-   номера камер граббера); 'dark' — тёмный план: инверсия + lighten на тёмный пол
-   темы (--t-floor-dark), подписи комнат — шрифтом темы. Выбор — в localStorage. */
+/* Пол плана: 'off' — светлый, исходный план Zillow; 'dark' — тёмный план: инверсия
+   + lighten на тёмный пол темы (--t-floor-dark). В обоих режимах убраны красные
+   номера камер граббера, а подписи комнат нарисованы шрифтом темы. Выбор — в localStorage. */
 const FLOOR_MODE_KEY = 'palace.floorMode';
 const FLOOR_MODES = ['off', 'dark'];
 let floorModeState = (() => {
@@ -1860,7 +1860,7 @@ function syncFloorButton(){
   const b = $('#planDarkFloor'); if(!b) return;
   const m = floorModeState;
   b.setAttribute('aria-pressed', m === 'off' ? 'false' : 'true');
-  const t = (m === 'dark' ? 'Тёмный план: включён' : 'Тёмный план: выключен — исходный план Zillow') + ' · нажмите, чтобы переключить';
+  const t = (m === 'dark' ? 'Тёмный план: включён' : 'Тёмный план: выключен — светлый план Zillow') + ' · нажмите, чтобы переключить';
   b.dataset.baseTitle = t;
   const k = window.hotkeyText ? hotkeyText('plan.dark') : '';
   b.title = t + (k ? ' (' + k + ')' : '');
@@ -1870,7 +1870,7 @@ function setFloorMode(m){
   try{ localStorage.setItem(FLOOR_MODE_KEY, floorModeState); }catch(e){}
   syncFloorButton();
   drawPlan();
-  status(floorModeState === 'dark' ? 'Тёмный план: план на тёмном фоне темы, подписи — шрифтом темы' : 'Исходный план Zillow');
+  status(floorModeState === 'dark' ? 'Тёмный план: план на тёмном фоне темы, подписи — шрифтом темы' : 'Светлый план Zillow, подписи — шрифтом темы');
 }
 function floorColor(i){
   /* палитра этажей берётся из текущей темы (PALACE_THEMES → marker.palette) */
@@ -2487,12 +2487,12 @@ function drawPlan(){
     try{
       const kc = planKeyedCanvas(l.src, im);
       if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
-      /* исходный план — без красных номеров камер (их дорисовывает граббер);
-         тёмный план — ещё и без исходных подписей комнат: они рисуются заново
-         шрифтом темы (см. planCleanCanvas, renderRoomLabels, ocrPlanLabels) */
+      /* и светлый (исходный), и тёмный план — без красных номеров камер (их
+         дорисовывает граббер) и без исходных подписей комнат: подписи рисуются
+         заново шрифтом темы (см. planCleanCanvas, renderRoomLabels, ocrPlanLabels) */
       const dark = floorMode() === 'dark';
-      if(dark && needsOcrLabels(l)) scheduleOcrLabels(l);
-      const labels = dark && Array.isArray(l.labels) && l.labels.length ? l.labels : null;
+      if(needsOcrLabels(l)) scheduleOcrLabels(l);
+      const labels = Array.isArray(l.labels) && l.labels.length ? l.labels : null;
       const cc = planCleanCanvas(l.src, kc || im, !!kc, labels);
       if(cc){ if(kc) kc.remove(); p.insertBefore(cc, im); im.style.opacity = '0'; }
       if(labels && cc && cc.dataset.labels === '1') renderRoomLabels(p, labels);
@@ -7545,7 +7545,7 @@ const HOTKEYS = [
   { group:'Инструменты', id:'tool.select', label:'Выбор', def:'KeyV', run:() => hkTool('select') },
   { group:'Инструменты', id:'tool.marker', label:'Маркер', def:'KeyM', run:() => hkTool('marker') },
   { group:'Инструменты', id:'tool.camera', label:'Перемещать камеры', def:'KeyC', run:() => hkTool('camera') },
-  { group:'Инструменты', id:'plan.dark', label:'Тёмный план / исходный план Zillow', def:'KeyD', run:() => hkClick('#planDarkFloor') },
+  { group:'Инструменты', id:'plan.dark', label:'Тёмный / светлый план', def:'KeyD', run:() => hkClick('#planDarkFloor') },
   { group:'Инструменты', id:'plan.hiddenCams', label:'Показать скрытые камеры', def:'KeyH', run:() => hkClick('#planShowHiddenCams') },
   { group:'Вид', id:'zoom.in', label:'Увеличить план', def:'Equal', run:() => hkClick('#zoomIn') },
   { group:'Вид', id:'zoom.out', label:'Уменьшить план', def:'Minus', run:() => hkClick('#zoomOut') },
