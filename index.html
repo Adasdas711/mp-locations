@@ -2448,6 +2448,13 @@ function drawPlan(){
     try{
       const kc = planKeyedCanvas(l.src, im);
       if(kc){ p.insertBefore(kc, im); im.style.opacity = '0'; }
+      /* режим «только план»: без запечённых номеров камер (см. planCleanCanvas) */
+      const wantClean = state.layout === 'plan';
+      p.dataset.clean = wantClean ? '1' : '0';
+      if(wantClean){
+        const cc = planCleanCanvas(l.src, kc || im, !!kc);
+        if(cc){ if(kc) kc.remove(); p.insertBefore(cc, im); im.style.opacity = '0'; }
+      }
       /* у планов из .3dview фон вокруг дома чёрный и вырезается в прозрачность
          (canvas.plan-keyed), но пол внутри всё равно светлый — тёмный пол нужен и им */
       p.classList.toggle('dark-floor', planDarkOn());
@@ -3065,6 +3072,71 @@ async function pageEdit(i, kind, value){
    находится (связная красная область рядом с прежней точкой) и закрашивается
    цветом пола вокруг неё. Правится само изображение этажа, один раз на камеру. */
 function isBadgeRed(px, o){ const r = px[o], g = px[o+1], b = px[o+2]; return px[o+3] > 128 && r > 140 && r - g > 60 && r - b > 60; }
+/* Копия плана для режима «только план» без всех запечённых номеров камер:
+   ищутся связные красные области размером с метку (почти круглые, не больше
+   ~90px) и закрашиваются медианным цветом кольца вокруг. Исходник не меняется;
+   результат кэшируется по изображению. Класс plan-keyed — чтобы на копию
+   действовал и «тёмный пол». */
+const planCleanCache = new Map();
+function planCleanCanvas(src, source, keyed){
+  const key = (keyed ? 'k:' : 'i:') + src.length + ':' + src.slice(-64);
+  if(planCleanCache.has(key)) return planCleanCache.get(key);
+  const w = source.naturalWidth || source.width, h = source.naturalHeight || source.height;
+  let out = null;
+  if(w && h && w * h <= 40e6){
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.className = 'plan-keyed plan-clean';
+    c.style.width = w + 'px'; c.style.height = h + 'px';
+    const g = c.getContext('2d', { willReadFrequently:true });
+    g.drawImage(source, 0, 0);
+    let id = null; try{ id = g.getImageData(0, 0, w, h); }catch(err){}
+    if(id){
+      const px = id.data, seen = new Uint8Array(w * h), stack = [];
+      let erased = 0;
+      for(let s0 = 0; s0 < w * h; s0++){
+        if(seen[s0] || !isBadgeRed(px, s0 * 4)) continue;
+        let minX = w, minY = h, maxX = -1, maxY = -1, n = 0;
+        seen[s0] = 1; stack.push(s0);
+        while(stack.length){
+          const i = stack.pop(), x = i % w, y = (i / w) | 0;
+          n++;
+          if(x < minX) minX = x; if(x > maxX) maxX = x; if(y < minY) minY = y; if(y > maxY) maxY = y;
+          if(x > 0 && !seen[i-1] && isBadgeRed(px, (i-1) * 4)){ seen[i-1] = 1; stack.push(i-1); }
+          if(x < w-1 && !seen[i+1] && isBadgeRed(px, (i+1) * 4)){ seen[i+1] = 1; stack.push(i+1); }
+          if(y > 0 && !seen[i-w] && isBadgeRed(px, (i-w) * 4)){ seen[i-w] = 1; stack.push(i-w); }
+          if(y < h-1 && !seen[i+w] && isBadgeRed(px, (i+w) * 4)){ seen[i+w] = 1; stack.push(i+w); }
+        }
+        const bw = maxX - minX + 1, bh = maxY - minY + 1;
+        /* метка: не мелкая точка, не длинная линия, примерно круглая, заполнена */
+        if(n < 25 || bw > 90 || bh > 90 || bw / bh > 1.6 || bh / bw > 1.6 || n < bw * bh * 0.35) continue;
+        const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, rad = Math.max(bw, bh) / 2 + 2;
+        const ring = [[], [], [], []];
+        const x0 = Math.max(0, Math.floor(cx - rad - 8)), x1 = Math.min(w - 1, Math.ceil(cx + rad + 8));
+        const y0 = Math.max(0, Math.floor(cy - rad - 8)), y1 = Math.min(h - 1, Math.ceil(cy + rad + 8));
+        for(let y = y0; y <= y1; y++) for(let x = x0; x <= x1; x++){
+          const d = Math.hypot(x - cx, y - cy);
+          if(d < rad + 2 || d > rad + 7) continue;
+          const o = (y * w + x) * 4;
+          ring[0].push(px[o]); ring[1].push(px[o+1]); ring[2].push(px[o+2]); ring[3].push(px[o+3]);
+        }
+        if(!ring[0].length) continue;
+        const med = a => { a.sort((u, v) => u - v); return a[a.length >> 1]; };
+        const fill = ring.map(med);
+        for(let y = y0; y <= y1; y++) for(let x = x0; x <= x1; x++){
+          const d = Math.hypot(x - cx, y - cy);
+          if(d > rad) continue;
+          const o = (y * w + x) * 4, a = d > rad - 1.5 ? (rad - d) / 1.5 : 1;
+          for(let k = 0; k < 4; k++) px[o+k] = Math.round(px[o+k] * (1 - a) + fill[k] * a);
+          seen[y * w + x] = 1;
+        }
+        erased++;
+      }
+      if(erased){ g.putImageData(id, 0, 0); out = c; }
+    }
+  }
+  if(planCleanCache.size > 6) planCleanCache.delete(planCleanCache.keys().next().value);
+  planCleanCache.set(key, out);
+  return out;
+}
 async function eraseBakedCamMark(l, pos){
   if(!l || !l.src || !pos || !isFinite(pos.x) || !isFinite(pos.y)) return false;
   let im; try{ im = await loadImage(l.src); }catch(e){ return false; }
@@ -6515,6 +6587,8 @@ function applyLayout(){
   if(!root) return;
   const layout = state.layout || 'plan';
   root.setAttribute('data-layout', layout);
+  /* переход в «только план» и обратно: план без номеров камер / с ними */
+  { const pl = $('#plan'); if(pl && level() && pl.dataset.clean && pl.dataset.clean !== (layout === 'plan' ? '1' : '0')) drawPlan(); }
   /* Стартового экрана больше нет: приложение всегда открывается на холсте плана. */
   state.uiMode = 'editor';
   root.setAttribute('data-ui', 'editor');
