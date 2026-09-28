@@ -992,7 +992,14 @@ button.hk-key:hover{border-color:var(--t-widget-border);background:var(--t-btn2)
 .status .status-hint{margin-left:auto;cursor:pointer;flex:none}
 /* инструмент «Перемещать камеры» */
 .app.tool-camera .plan-cam{cursor:grab!important;box-shadow:0 0 0 2px var(--t-focus),0 2px 8px rgba(0,0,0,.5)}
-.app.tool-camera .plan-cam.dragging{cursor:grabbing!important;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.12);z-index:20}
+.app.tool-camera .plan-cam{touch-action:none}
+.app.tool-camera .plan-cam.dragging{cursor:grabbing!important;transform:translate(-50%,-50%) rotate(var(--mrot,0deg)) scale(1.1);z-index:20;
+  transition:none;will-change:left,top;box-shadow:0 0 0 2px var(--t-focus),0 10px 24px rgba(0,0,0,.55)}
+/* прежнее место камеры, пока её тянут */
+.plan-cam-ghost{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:2px dashed var(--t-focus);
+  background:color-mix(in srgb,var(--t-focus) 12%,transparent);pointer-events:none;z-index:1;opacity:.8}
+/* граница плана с холстом — плотная тень, чтобы план не сливался с фоном (особенно с тёмным полом) */
+.plan{box-shadow:0 0 0 1px rgba(0,0,0,.7),0 0 0 2px rgba(255,255,255,.09),0 22px 64px 18px rgba(0,0,0,.85),0 6px 18px 2px rgba(0,0,0,.7)!important}
 #planDarkFloor[aria-pressed="true"]{background:var(--t-sel);color:var(--t-sel-fg);box-shadow:inset 0 0 0 1px var(--vscode-focus)}
 .plan.dark-floor{background:var(--t-canvas-bg)}
 .plan.dark-floor > img,.plan.dark-floor > canvas.plan-keyed{filter:invert(1) hue-rotate(180deg) saturate(1.15);mix-blend-mode:lighten}
@@ -2594,25 +2601,57 @@ function renderPlanCameras(p, l){
        того же места» (синхронизация локусов, п.3 запроса). */
     const go = () => { syncMarkerFromLocalPano(id); setActiveLocalPano(id, true); };
     d.onclick = e => { e.stopPropagation(); if(suppressCamClick){ suppressCamClick = false; return; } go(); };
-    /* инструмент «Перемещать камеры»: значок тянется мышью, позиция пишется в planPx */
-    d.onmousedown = e => {
+    /* инструмент «Перемещать камеры»: значок тянется мышью, позиция пишется в planPx.
+       Своя обработка на pointer-событиях с захватом указателя: движение не теряется
+       над 3D-панелью, позиция обновляется раз в кадр (requestAnimationFrame), а после
+       отпускания не перерисовывается весь план — меняются только сам значок и миникарта.
+       Порог 3px отличает перетаскивание от клика (клик по-прежнему открывает 3D). */
+    d.onpointerdown = e => {
       if(state.tool !== 'camera' || state.mode !== 'edit' || e.button !== 0) return;
       e.stopPropagation(); e.preventDefault();
-      const pt = planPoint(e.clientX, e.clientY);
-      const pos = { x:pano.planPx.x, y:pano.planPx.y };
-      drag = { m:pos, target:d, sx:e.clientX, sy:e.clientY, ox:pt.x - pos.x, oy:pt.y - pos.y, moved:false,
-               onEnd:moved => {
-                 suppressMarkerClick = false;
-                 if(!moved) return;
-                 suppressCamClick = true;
-                 const old = pano.planPx;
-                 pano.planPx = { x:Math.round(pos.x), y:Math.round(pos.y) };
-                 cleanupMovedCamera(pano, old, l);
-                 renderMinimap();
-                 status('Камера «' + (pano.room || id) + '» перемещена');
-               } };
-      d.classList.add('dragging');
+      const start = planPoint(e.clientX, e.clientY);
+      const orig = { x:pano.planPx.x, y:pano.planPx.y };
+      const off = { x:start.x - orig.x, y:start.y - orig.y };
+      const pw = p.offsetWidth, ph = p.offsetHeight;
+      let cur = { x:orig.x, y:orig.y }, moved = false, raf = 0, ghost = null;
+      try{ d.setPointerCapture(e.pointerId); }catch(err){}
+      const paint = () => { raf = 0; d.style.left = cur.x + 'px'; d.style.top = cur.y + 'px'; };
+      const move = ev => {
+        if(!moved){
+          if(Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) < 3) return;
+          moved = true;
+          d.classList.add('dragging');
+          ghost = document.createElement('div');
+          ghost.className = 'plan-cam-ghost';
+          ghost.style.left = orig.x + 'px'; ghost.style.top = orig.y + 'px';
+          ghost.style.width = d.style.width; ghost.style.height = d.style.height;
+          p.appendChild(ghost);
+        }
+        const pt = planPoint(ev.clientX, ev.clientY);
+        cur = { x:Math.max(0, Math.min(pw, pt.x - off.x)), y:Math.max(0, Math.min(ph, pt.y - off.y)) };
+        if(!raf) raf = requestAnimationFrame(paint);
+      };
+      const up = () => {
+        d.removeEventListener('pointermove', move);
+        d.removeEventListener('pointerup', up);
+        d.removeEventListener('pointercancel', up);
+        if(raf){ cancelAnimationFrame(raf); raf = 0; }
+        if(ghost) ghost.remove();
+        d.classList.remove('dragging');
+        if(!moved) return;
+        suppressCamClick = true;
+        paint();
+        pano.planPx = { x:Math.round(cur.x), y:Math.round(cur.y) };
+        touch();
+        renderMinimap();
+        status('Камера «' + (pano.room || id) + '» перемещена');
+        cleanupMovedCamera(pano, orig, l);
+      };
+      d.addEventListener('pointermove', move);
+      d.addEventListener('pointerup', up);
+      d.addEventListener('pointercancel', up);
     };
+    d.onmousedown = e => { if(state.tool === 'camera') e.stopPropagation(); };
     d.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); go(); } };
     p.appendChild(d);
   });
