@@ -85,3 +85,5 @@ PALACE_TEST_FILES=addons.cjs npm test
 `workspace-system-addons.cjs` checks both native system addons across desktop, Android, iPhone and iPad: palette search and no-results state, keyboard navigation, native/plugin command execution, shortcut rebinding, disable/enable lifecycle, preset save/apply/rename/delete, JSON export/import, reload persistence, malformed-file rejection, and preservation of palace content during workspace changes.
 
 `plugin-action-menu.cjs` verifies system-addon gears, unchanged toggle state, community overflow-menu visibility, keyboard opening, Escape/focus return, outside-click closing, settings access, removal, and viewport bounds on desktop, Android, iPhone and iPad. Existing plugin-management tests now open actions through the overflow menu.
+
+`visual-controls.cjs` checks themed file-selector buttons and matching typography, native file chooser behavior, styled history selectors, shared styles in isolated plugin panels, dark/light theme updates, and persisted hosts after reload on desktop, Android, iPhone and iPad. The visual audit also covers the settings sections and export dialog for viewport bounds and horizontal overflow.

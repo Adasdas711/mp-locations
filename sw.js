@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-598e22ebbd4e455d';
+const CACHE = 'palace-offline-eb3906bf21967740';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -29,6 +29,7 @@ const ASSETS = [
   "theme-picker.js",
   "themes.js",
   "transitions.js",
+  "ui-controls.js",
   "vendor/README.md",
   "vendor/eng-LICENSE",
   "vendor/eng.traineddata.gz",

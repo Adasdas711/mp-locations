@@ -52,7 +52,7 @@ async function readAddon(file){
 }
 function addonHostDocument(record,channel){
  const payload=JSON.stringify({files:record.files,main:record.manifest.main,channel}).replace(/</g,'\\u003c');
- return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{margin:0;padding:14px;background:#1f1f1f;color:#ccc;font:14px/1.5 system-ui}button,input{font:inherit}button{padding:6px 12px}</style></head><body><div id="panel"></div><script>
+ const source = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{margin:0;padding:14px;background:#1f1f1f;color:#ccc;font:14px/1.5 system-ui}button,input{font:inherit}button{padding:6px 12px}</style></head><body><div id="panel"></div><script>
 const data=${payload};const handlers=new Map(),pending=new Map(),listeners=new Set();let seq=0,extension;
 const send=(type,body)=>parent.postMessage({channel:data.channel,type,...body},'*');
 window.addEventListener('error',event=>{event.preventDefault();send('error',{message:event.message})});
@@ -83,6 +83,7 @@ const modules=new Map();function load(file){if(modules.has(file))return modules.
 (async()=>{try{const theme=await api.theme.read();document.body.style.background=theme.background;document.body.style.color=theme.foreground;extension=load(data.main);if(typeof extension.activate!=='function')throw new Error('Export activate(api)');await extension.activate(api);send('ready',{})}catch(error){send('error',{message:error.message})}})();
 window.addEventListener('unload',()=>{try{extension?.deactivate?.()}catch{}});
 <\/script></body></html>`;
+ return typeof styleAddonHostDocument==='function'?styleAddonHostDocument(source):source;
 }
 function stopAddon(id){const host=addonHosts.get(id);if(!host)return;addonHosts.delete(id);clearTimeout(host.activationTimer);host.frame.remove();for(const pending of host.pending.values()){clearTimeout(pending.timer);pending.reject(new Error("Plugin disabled."))}host.pending.clear();}
 function startAddon(record){
