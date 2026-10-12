@@ -14,7 +14,7 @@ for (const title of ['Options', 'Core plugins', 'Community plugins']) {
 function arrangeSettingsNavigation(){
  const order=['app','appearance','tools','editor','files','hotkeys','security','core','addons'];
  for(const id of order){const page=settingsPages.get(id);if(page)settingsSections.get('Options').append(page.button)}
- for(const id of ['canvas','cameras','viewer','minimap']){const page=settingsPages.get(id);if(page)settingsSections.get('Core plugins').append(page.button)}
+ for(const id of ['canvas','cameras','viewer','minimap','history']){const page=settingsPages.get(id);if(page)settingsSections.get('Core plugins').append(page.button)}
 }
 
 function settingsPage(id,title,icon,element,button){

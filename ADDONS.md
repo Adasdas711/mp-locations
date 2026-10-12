@@ -199,3 +199,36 @@ exports.activate = async api => {
 ```
 
 ID привязки начинается с ID аддона и точки; команда должна быть объявлена в manifest и зарегистрирована до привязки. До 30 сочетаний на аддон. Формат клавиш использует `KeyboardEvent.code`: `KeyU`, `Digit1`, `F8` и т. п.; порядок модификаторов — `Ctrl+Alt+Shift+`. На macOS `Ctrl` соответствует также Cmd, как в штатных сочетаниях PALACE. Занятые сочетания и фиксированные системные действия отклоняются. Привязки видны в штатных настройках горячих клавиш; пользователь может их переназначить. Аддон регистрирует сочетания в `activate`, чтобы восстановить их после перезагрузки. Отключение, удаление и ошибка активации снимают их. Они работают в основном окне приложения, вне модальных окон и текстовых полей; собственная панель в iframe может обрабатывать свои клавиши локально.
+
+## API 1.4: compatibility and plugin settings
+
+Packages continue to use `apiVersion: 1`. Optional `engines.palace` specifies the sandbox SDK version required by the plugin. Supported expressions use full `major.minor.patch` versions: exact versions, `^`, `~`, `>=`, `<=`, `>`, `<`, or whitespace-separated comparisons (all must match). Omit the field or use `*` for compatibility with the existing package API.
+
+```json
+{
+  "engines": {"palace": ">=1.4.0 <2.0.0"},
+  "contributes": {
+    "settings": [
+      {"key": "showLabels", "title": "Show labels", "type": "boolean", "default": true},
+      {"key": "title", "title": "Panel title", "type": "string", "default": "My panel"},
+      {"key": "limit", "title": "Item limit", "type": "number", "min": 1, "max": 100, "default": 10}
+    ]
+  }
+}
+```
+
+A plugin can declare up to 30 settings. Keys are unique and scoped to its own plugin; values are validated against the declarations. Optional `description` supplies helper text in the manager. Strings are limited to 2,000 characters. Settings are persisted in the installed package record, independently from `api.storage`.
+
+```js
+exports.activate = async api => {
+  const values = await api.settings.read();
+  await api.settings.update({showLabels: false});
+  const subscription = api.onSettingsChanged(next => {
+    // Apply changes without restarting the plugin.
+  });
+};
+```
+
+**Settings & log** exposes these settings and the current-session activity/error log. Updating a ZIP or `.palace-addon` preserves compatible setting values, storage, and disabled state. New permissions are displayed in the confirmation preview. Updates and downgrades require selecting and confirming a package; there is no remote plugin registry or automatic network update service.
+
+Built-in system addons are a separate, trusted application module with `registerSystemAddon({id, title, description, activate, deactivate})` lifecycle hooks. They appear under **Core plugins** and are independent of the community modular-mode switch. The bundled `system.history` addon records local project versions; community packages retain their isolated sandbox and cannot register native system addons.

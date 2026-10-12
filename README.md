@@ -80,3 +80,13 @@ npx playwright-core install --with-deps chromium
 The **Settings** window opens from the sidebar gear. Its vertical navigation groups are **Options**, **Core plugins**, and **Community plugins**, with installed plugins listed separately. Appearance uses grouped rows with descriptions and controls for themes, accent color, icon sets, interface size, and font. Editor controls change marker size, plan background, and wall color. **Files and links** opens file operations, archive metadata, and local snapshots. Interface text, dialogs, tooltips, built-in plugin packages, and error messages are in English; project names and notes keep their original language. Appearance and tool preferences are saved in this browser.
 
 **Установка на телефон (PWA):** откройте **Settings → General**. В Chrome на Android появится кнопка установки, когда браузер подготовит приложение; также доступна установка через меню браузера. На iPhone/iPad откройте сайт в Safari и выберите **Поделиться → На экран «Домой» → Добавить**. Первый запуск выполняется онлайн через HTTPS; после загрузки приложение поддерживает офлайн-работу. Дворец можно перенести в установленное приложение через файл `.mpalace`.
+
+### Plugin management
+
+**Settings → Community plugins → Settings & log** shows permissions, declared plugin settings, and the last 100 activity/error messages from the current session. Plugins can be restarted or updated with **Update from file**. Update confirmation shows the old/new version and any new permissions. Updates retain compatible settings, private storage, and the enabled/disabled preference; incompatible API ranges are rejected before installation. PALACE API is now **1.4.0**, with the existing `apiVersion: 1` package format retained.
+
+### Change history (system addon)
+
+**Settings → Core plugins → Change history** enables or disables the built-in addon. Open **Change history** under the Core plugins navigation group to inspect versions, save a checkpoint, and restore a version after confirmation. History captures committed project edits and Undo/Redo, including floor plans, loci and notes, cameras and transitions, archive metadata/files, and imported model assets. Restoring saves a **Before restoring a version** backup first.
+
+Up to **50 versions per palace** are stored locally in IndexedDB, with shared images and archive bytes stored once. Reopening the same archive keeps its history; exported palace files carry a history identity, not the history itself. The palace selector also exposes saved histories after a reload. Versions stay available when recording is disabled. History does not open automatically and does not replace Undo or autosaves. Clearing browser site data deletes local history; export important palace files separately.
