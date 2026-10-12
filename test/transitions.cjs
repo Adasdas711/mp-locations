@@ -11,17 +11,15 @@ for(const [profile,options]of profiles)test(`${profile}: camera editor selection
  await page.waitForFunction(()=>!!activeLocalPano);
  await page.locator('#tourSettingsBtn').click();
  await page.locator('#cameraTransitionsOpen').click();
- await page.waitForFunction(()=>state.layout==='plan'&&state.tool==='camera'&&cameraLinkSource==='a');
+ await page.waitForFunction(()=>state.layout==='plan'&&state.tool==='camera'&&editedCameraId==='a');
  assert.equal(await page.locator('#cameraTransitions').count(),0);
- await page.locator('#cameraEditorLink').click(); // cancel pending link
  await page.locator('#plan .plan-cam[data-pano="a"]').click();
- assert.equal(await page.locator('#cameraEditorSelect').inputValue(),'a');
+ assert.equal(await page.evaluate(()=>editedCameraId),'a');
  assert.equal(await page.evaluate(()=>state.layout),'plan');
  await page.locator('#plan .plan-cam[data-pano="a"]').click({button:'right'});
  await page.locator('.ctx-item').filter({hasText:'Добавить переход на плане'}).click();
- await page.waitForFunction(()=>cameraLinkSource==='a');
+ await page.waitForFunction(()=>editedCameraId==='a');
  assert.equal(await page.locator('.modal.show').count(),0);
- await page.locator('#cameraEditorLink').click();
  const old=await page.evaluate(()=>({...state.panoramas.a.planPx}));
  const box=await page.locator('#plan .plan-cam[data-pano="a"]').boundingBox();
  const x=box.x+box.width/2,y=box.y+box.height/2;
@@ -34,13 +32,12 @@ for(const [profile,options]of profiles)test(`${profile}: camera editor selection
  }else {await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+25,y-20,{steps:5});await page.mouse.up()}
  await page.waitForFunction(old=>Math.hypot(state.panoramas.a.planPx.x-old.x,state.panoramas.a.planPx.y-old.y)>3,old);
  await page.keyboard.press('Control+z');await page.waitForFunction(old=>state.panoramas.a.planPx.x===old.x&&state.panoramas.a.planPx.y===old.y,old);
- // Select through the accessible list after undo; no panorama navigation.
- await page.locator('#cameraEditorSelect').selectOption('a');
+ // Select the camera marker after undo; no panorama navigation.
+ await page.locator('#plan .plan-cam[data-pano="a"]').click();
 
  await page.locator('#plan .plan-cam[data-pano="b"] .camera-action[data-action="remove-link"]').click();
  assert.deepEqual(await page.evaluate(()=>[state.panoramas.a.destinations,state.panoramas.b.destinations]),[[],[]]);
- await page.locator('#cameraEditorLink').click();
- await page.locator('#plan .plan-cam[data-pano="b"]').click();
+ await page.locator('#plan .plan-cam[data-pano="b"] .camera-action[data-action="add-link"]').click();
  assert.deepEqual(await page.evaluate(()=>[state.panoramas.a.destinations.map(d=>d.panoId),state.panoramas.b.destinations.map(d=>d.panoId)]),[['b'],['a']]);
  assert.equal(await page.locator('#plan .camera-link-lines line').count(),1);
  await page.locator('#cameraEditorStart').click();
@@ -61,7 +58,8 @@ for(const [profile,options]of profiles)test(`${profile}: camera editor selection
  await page.locator('#fileOpen').setInputFiles({name:'saved.mpalace',mimeType:'application/zip',buffer:saved});await page.waitForFunction(()=>archiveContext?.name==='saved.mpalace');
  assert.equal(await page.evaluate(()=>state.panoramas.b.destinations[0].panoId),'a');
  await page.locator('#modeBtn').click();await page.waitForFunction(()=>state.mode==='view');
- assert.equal(await page.locator('#cameraEditor').isVisible(),false);
+ assert.equal(await page.locator('#cameraEditor').count(),0);
+ assert.equal(await page.locator('#plan .camera-action').count(),0);
  assert.equal(await page.evaluate(()=>removeEditedCamera('a')),false);
  assert.equal(await page.evaluate(()=>changeCameraTransition('a','b',false)),false);
 });

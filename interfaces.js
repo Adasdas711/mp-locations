@@ -11,7 +11,7 @@ function registerPalaceTool(key,label,element,owner='system'){
  element.dataset.palaceTool=key;palaceTools.set(key,{key,label,element,owner});element.dataset.palaceHidden=String(toolPreferences[key]===false);
 }
 function refreshSystemTools(){
- for(const el of document.querySelectorAll('.activity button,#planTools button,.top-actions button,.menubar button,.tour-toolbar button,#tourToolbarLocal button,#cameraEditor button,#cameraEditorDelete,#tourSettingsBtn,#l3dStartFlag,#minimap button')){
+ for(const el of document.querySelectorAll('.activity button,#planTools button,.top-actions button,.menubar button,.tour-toolbar button,#tourToolbarLocal button,#cameraEditorStart,#cameraEditorDelete,#tourSettingsBtn,#l3dStartFlag,#minimap button')){
   if(el===settingsButton||el.dataset.addonOwner)continue;
   const key=el.id?'system.'+el.id:el.dataset.tool?'system.tool.'+el.dataset.tool:null;if(!key)continue;
   registerPalaceTool(key,el.getAttribute('aria-label')||el.title||el.textContent.trim()||key,el);

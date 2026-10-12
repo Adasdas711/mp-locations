@@ -1,7 +1,7 @@
 const {test,before,after}=require('node:test'),assert=require('node:assert/strict');
 const {profiles,openSession}=require('./support/fixtures.cjs'),{launchBrowser}=require('./support/browser.cjs');let browser;
 before(async()=>browser=await launchBrowser());after(async()=>browser?.close());
-for(const [name,options]of profiles)test(`${name}: compact camera panel, full dashed graph, selection, collapse and floor filtering`,async t=>{
+for(const [name,options]of profiles)test(`${name}: marker controls, full dashed graph, selection and floor filtering`,async t=>{
  const {page}=await openSession(browser,t,options);
  await page.locator('[data-tool="camera"]').click();
  assert.equal(await page.locator('.camera-link-lines line').count(),1,'Each bidirectional transition is drawn once, before selecting a camera');
@@ -11,24 +11,22 @@ for(const [name,options]of profiles)test(`${name}: compact camera panel, full da
   state.panoramas.upstairs={...state.panoramas.b,room:'Другой этаж',floorId:2,planPx:{x:50,y:50},destinations:[{panoId:'a'}]};
   state.panoramas.a.destinations.push({panoId:'upstairs'},{panoId:'missing'});drawPlan();resetHistory();
  });
- await page.locator('#cameraEditorSelect').selectOption('a');
+ await page.evaluate(()=>selectCameraForEditing('a'));
  assert.equal(await page.locator('.camera-link-lines line').count(),14);
  assert.equal(await page.locator('.camera-link-lines line.selected').count(),13,'Other cameras’ connections are visible without selection');
  assert.equal(await page.locator('.camera-link-lines line[data-to="upstairs"]').count(),0);
  assert.equal(await page.locator('.camera-link-lines line[data-to="missing"]').count(),0);
- const layout=await page.locator('#cameraEditor').evaluate(el=>{const panel=el.getBoundingClientRect(),stage=document.querySelector('#stage').getBoundingClientRect();return {width:panel.width,height:panel.height,stageWidth:stage.width,stageHeight:stage.height,within:panel.left>=stage.left&&panel.right<=stage.right&&panel.top>=stage.top&&panel.bottom<=stage.bottom,direction:getComputedStyle(el).flexDirection,overflow:el.scrollWidth>el.clientWidth}});
- assert.equal(await page.locator('#cameraEditorLinks').count(),0);
- assert.equal(layout.direction,'column');assert.equal(layout.within,true);assert.equal(layout.overflow,false);assert.ok(layout.width<=Math.min(400,layout.stageWidth));assert.ok(layout.height<layout.stageHeight*.55);
+ assert.equal(await page.locator('#cameraEditor').count(),0);
+ assert.equal(await page.locator('.camera-edit-selected .camera-action').count(),2);
+ assert.equal(await page.locator('.camera-edit-connected .camera-action[data-action="remove-link"]').count(),13);
  const dash=await page.locator('.camera-link-lines line').first().evaluate(el=>({dash:getComputedStyle(el).strokeDasharray,pointer:getComputedStyle(el.parentElement).pointerEvents,z:getComputedStyle(el.parentElement).zIndex}));
  assert.notEqual(dash.dash,'none');assert.equal(dash.pointer,'none');assert.equal(dash.z,'1');
- await page.locator('#cameraEditorCollapse').click();assert.equal(await page.locator('#cameraEditorContent').isVisible(),false);assert.equal(await page.locator('#cameraEditorCollapse').getAttribute('aria-expanded'),'false');assert.equal(await page.locator('#cameraEditorCollapse').getAttribute('aria-label'),'Развернуть панель');
- await page.locator('#cameraEditorCollapse').click();assert.equal(await page.locator('#cameraEditorContent').isVisible(),true);
- await page.locator('#cameraEditorLink').click();await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>cameraLinkSource),null);
  await page.evaluate(()=>{changeCameraTransition('a','b',false)});
  await page.keyboard.press('Control+z');assert.equal(await page.locator('.camera-link-lines line').count(),14);
  await page.locator('#floorOverlay button[data-li="1"]').click();assert.equal(await page.locator('.camera-link-lines line').count(),0);
- await page.locator('#cameraEditorSelect').selectOption('b');assert.equal(await page.locator('#cameraEditorSelect').inputValue(),'b');assert.equal(await page.evaluate(()=>state.active),0);
- await page.locator('#cameraEditorClose').click();assert.equal(await page.locator('#cameraEditor').isVisible(),false);assert.equal(await page.evaluate(()=>state.tool),'select');
+ await page.locator('#floorOverlay button[data-li="0"]').click();await page.evaluate(()=>selectCameraForEditing('b'));assert.equal(await page.evaluate(()=>editedCameraId),'b');
+ await page.locator('[data-tool="select"]').click();assert.equal(await page.locator('#plan .camera-action').count(),0);assert.equal(await page.locator('.camera-edit-selected,.camera-edit-connected').count(),0);
+
 });
 
 test('connection follows camera during a drag and stays below clickable camera markers',async t=>{
