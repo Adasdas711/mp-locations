@@ -2,7 +2,8 @@
 let editedCameraId = null, cameraLinkSource = null;
 const cameraStyle = document.createElement('style');
 cameraStyle.textContent = `
-.tool-camera #plan .camera-edit-selected .cam-start{display:none}
+#plan .plan-cam .cam-start{inset:auto auto -12% -12%;width:34%;height:34%;min-width:0;min-height:0}
+.tool-camera #plan .cam-start{display:none}
 .camera-action:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .tool-camera #plan .plan-cam{cursor:grab}.tool-camera #plan .plan-cam.dragging{cursor:grabbing}
 .tool-camera #plan .plan-cam.camera-edit-selected{outline:3px solid var(--blue)!important;outline-offset:4px;background:var(--vscode-button-bg)!important;color:#fff!important;z-index:5}
@@ -52,6 +53,7 @@ function refreshCameraEditor() {
     node.style.setProperty('--camera-marker-size',base+'px');
     node.querySelectorAll('.camera-action').forEach(button=>button.remove());
     if(!editing)return;
+    node.querySelectorAll('.cam-start').forEach(flag=>flag.remove());
     node.title='Камера: '+(panos[id]?.room||id);
     if(!editedCameraId)return;
     const button=document.createElement('button');button.type='button';button.className='camera-action';button.dataset.target=id;

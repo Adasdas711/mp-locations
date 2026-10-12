@@ -43,3 +43,18 @@ for(const [name,options]of profiles)test(`${name}: cone exits with 3D; camera to
  await page.locator('#cameraEditorDelete').click();await page.locator('#askNo').click();assert.equal(await page.evaluate(()=>!!state.panoramas.a),true);
  await page.locator('#cameraEditorDelete').click();await page.locator('#askYes').click();await page.keyboard.press('Control+z');await page.waitForFunction(()=>!!state.panoramas.a&&state.startPano==='a');
 });
+
+test('existing initial-camera badge cannot overlap +/- when entering editing without a redraw',async t=>{
+ const {page}=await openSession(browser,t,profiles[0][1]);
+ await page.evaluate(()=>{state.layout='split';state.tool='select';setStartPano('b');applyLayout();drawPlan()});
+ await page.waitForFunction(()=>document.querySelector('[data-pano="b"] .cam-start'));
+ const normal=await page.locator('#plan .plan-cam[data-pano="b"]').evaluate(el=>{const cam=el.getBoundingClientRect(),flag=el.querySelector('.cam-start').getBoundingClientRect();return {left:flag.x+flag.width/2<cam.x+cam.width/2,bottom:flag.y+flag.height/2>cam.y+cam.height/2}});
+ assert.deepEqual(normal,{left:true,bottom:true});
+ await page.evaluate(()=>{state.tool='camera';syncTools();selectCameraForEditing('a')});
+ assert.equal(await page.locator('#plan .cam-start').count(),0);
+ assert.equal(await page.locator('[data-pano="b"] [data-action="remove-link"]').count(),1);
+ assert.equal(await page.locator('#plan [data-action="set-start"]').count(),1);
+ await page.evaluate(()=>selectCameraForEditing('b'));
+ assert.equal(await page.locator('#plan .cam-start').count(),0);
+ assert.equal(await page.locator('[data-pano="b"] [data-action="set-start"]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(245, 179, 1)');
+});
