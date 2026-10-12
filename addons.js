@@ -22,13 +22,16 @@ function validateAddon(manifest,files){
  if(!/^\d+\.\d+\.\d+$/.test(manifest.version||''))throw new Error('Укажите version в формате 1.0.0.');
  if(manifest.apiVersion!==1)throw new Error('Поддерживается apiVersion: 1.');
  if(!safeAddonPath(manifest.main)||!manifest.main.endsWith('.js')||typeof files[manifest.main]!=='string')throw new Error('Главный JS-файл не найден.');
- if(!Array.isArray(manifest.permissions)||manifest.permissions.some(p=>!['project.read','markers.write','metadata.write'].includes(p)))throw new Error('Неизвестное разрешение.');
- const commands=manifest.contributes?.commands||[],panels=manifest.contributes?.panels||[];
+ if(!Array.isArray(manifest.permissions)||manifest.permissions.some(p=>!['project.read','markers.write','metadata.write','plan.read','plan.write','tour.read','tour.write','view.control','ui.control','ui.contribute'].includes(p)))throw new Error('Неизвестное разрешение.');
+ const c=manifest.contributes||{},commands=c.commands||[],panels=c.panels||[],activity=c.activityBar||[],toolbars=c.toolbars||[];
+ if([commands,panels,activity,toolbars].some(items=>!Array.isArray(items))||commands.length+panels.length+activity.length+toolbars.length>60)throw new Error('Не более 60 элементов интерфейса.');
  const ids=new Set();
- for(const item of [...commands,...panels]){
-  if(!item||typeof item.id!=='string'||!item.id.startsWith(manifest.id+'.')||ids.has(item.id)||typeof item.title!=='string'||!item.title||item.title.length>120)throw new Error('Некорректная или повторяющаяся команда/панель.');ids.add(item.id);
+ for(const item of [...commands,...panels,...activity,...toolbars]){
+  if(!item||typeof item.id!=='string'||!item.id.startsWith(manifest.id+'.')||ids.has(item.id)||typeof item.title!=='string'||!item.title||item.title.length>120)throw new Error('Некорректный или повторяющийся элемент интерфейса.');ids.add(item.id);
  }
- if(!Array.isArray(commands)||!Array.isArray(panels)||commands.length+panels.length>30)throw new Error('Не более 30 команд и панелей.');
+ for(const item of [...activity,...toolbars])if(!commands.some(command=>command.id===item.command))throw new Error('Инструмент ссылается на необъявленную команду.');
+ for(const item of toolbars)if(!['plan','tour','header','status'].includes(item.location))throw new Error('Неизвестная панель инструментов.');
+ if((activity.length||toolbars.length)&&!manifest.permissions.includes('ui.contribute'))throw new Error('Для инструментов нужно разрешение ui.contribute.');
  return manifest;
 }
 async function readAddon(file){
@@ -40,7 +43,7 @@ async function readAddon(file){
   if(!safeAddonPath(entry.name)||entry.unsafeOriginalName&&entry.unsafeOriginalName!==entry.name)throw new Error('Недопустимый путь в архиве.');
   if(entry._data?.uncompressedSize>ADDON_LIMIT)throw new Error('Распакованный файл слишком большой.');
   const data=await entry.async('uint8array');total+=data.length;if(total>ADDON_LIMIT)throw new Error('Распакованный аддон больше 8 МБ.');
-  files[entry.name]=new TextDecoder('utf-8',{fatal:true}).decode(data);
+  files[entry.name]=/\.(png|jpe?g|webp|avif)$/i.test(entry.name)?bufferToDataURL(data,mimeByExt(entry.name)):new TextDecoder('utf-8',{fatal:true}).decode(data);
  }
  if(!files['manifest.json'])throw new Error('В корне ZIP нужен manifest.json.');
  const manifest=validateAddon(JSON.parse(files['manifest.json']),files);
@@ -55,11 +58,14 @@ window.addEventListener('error',event=>{event.preventDefault();send('error',{mes
 window.addEventListener('unhandledrejection',event=>{event.preventDefault();send('error',{message:String(event.reason?.message||event.reason)})});
 function rpc(method,args){return new Promise((resolve,reject)=>{const id=++seq;const timeout=setTimeout(()=>{pending.delete(id);reject(new Error('API timeout'))},10000);pending.set(id,{resolve,reject,timeout});send('rpc',{id,method,args})})}
 const api=Object.freeze({
- version:'1.0.0',
- commands:{register(id,handler){if(typeof handler!=='function')throw new Error('Command requires a handler');handlers.set(id,handler);send('register',{id});return {dispose(){handlers.delete(id)}}}},
+ version:'1.1.0',
+ commands:{register(id,handler){if(typeof handler!=='function')throw new Error('Command requires a handler');handlers.set(id,handler);send('register',{id});return {dispose(){handlers.delete(id);send('unregister',{id})}}}},
  project:{read:()=>rpc('project.read'),updateMetadata:patch=>rpc('metadata.write',patch)},
- markers:{add:input=>rpc('markers.add',input),remove:input=>rpc('markers.remove',input)},
- ui:{showMessage:text=>rpc('ui.message',text),async showPanel(id,html){await rpc('ui.panel',{id,html});document.getElementById('panel').innerHTML=html}},
+ markers:{add:input=>rpc('markers.add',input),remove:input=>rpc('markers.remove',input),update:input=>rpc('markers.update',input)},
+ plan:{read:level=>rpc('plan.read',level),add:input=>rpc('plan.add',input),remove:level=>rpc('plan.remove',level),rename:input=>rpc('plan.rename',input),select:level=>rpc('plan.select',level),move:input=>rpc('plan.move',input),merge:input=>rpc('plan.merge',input),split:level=>rpc('plan.split',level),transform:input=>rpc('plan.transform',input),walls:{add:input=>rpc('plan.wallAdd',input),remove:input=>rpc('plan.wallRemove',input)}},
+ view:{read:()=>rpc('view.read'),set:input=>rpc('view.set',input)},
+ tour:{read:()=>rpc('tour.read'),select:id=>rpc('tour.select',id),pose:input=>rpc('tour.pose',input),update:input=>rpc('tour.update',input),connect:input=>rpc('tour.connect',input),setStart:id=>rpc('tour.start',id)},
+ ui:{tools:()=>rpc('ui.tools'),setToolVisible:(id,visible)=>rpc('ui.visibility',{id,visible}),themes:()=>rpc('ui.themes'),commands:()=>rpc('ui.commands'),execute:id=>rpc('ui.execute',id),theme:id=>rpc('ui.theme',id),scale:size=>rpc('ui.scale',size),overlay:input=>rpc('ui.overlay',input),showMessage:text=>rpc('ui.message',text),async showPanel(id,html){await rpc('ui.panel',{id,html});document.getElementById('panel').innerHTML=html}},
  theme:{read:()=>rpc('theme.read')},
  storage:{get:key=>rpc('storage.get',key),set:(key,value)=>rpc('storage.set',{key,value})},
  assets:{read(path){if(!(path in data.files))throw new Error('Asset not found');return data.files[path]}},
@@ -89,8 +95,15 @@ async function executeAddon(id,command){
 }
 async function addonRPC(host,method,args){
  const permissions=host.record.manifest.permissions;
- const permission=method==='project.read'?'project.read':method.startsWith('markers.')?'markers.write':method==='metadata.write'?'metadata.write':null;
+ if(typeof method!=='string')throw new Error('Некорректный метод.');
+ const permission=method.startsWith('plan.')?(method==='plan.read'?'plan.read':method==='plan.select'?'view.control':'plan.write'):method.startsWith('tour.')?(method==='tour.read'?'tour.read':['tour.select','tour.pose'].includes(method)?'view.control':'tour.write'):method.startsWith('view.')?'view.control':method==='ui.overlay'?'ui.contribute':['ui.execute','ui.theme','ui.scale','ui.visibility'].includes(method)?'ui.control':method==='project.read'?'project.read':method.startsWith('markers.')?'markers.write':method==='metadata.write'?'metadata.write':null;
  if(permission&&!permissions.includes(permission))throw new Error('Нет разрешения: '+permission);
+ const interfaces={
+  'plan.read':'planRead','plan.add':'planAdd','plan.remove':'planRemove','plan.rename':'planRename','plan.select':'planSelect','plan.move':'planMove','plan.merge':'planMerge','plan.split':'planSplit','plan.transform':'planTransform','plan.wallAdd':'wallAdd','plan.wallRemove':'wallRemove',
+  'markers.update':'markerUpdate','view.read':'viewRead','view.set':'viewSet','tour.read':'tourRead','tour.select':'tourSelect','tour.pose':'tourPose','tour.update':'tourUpdate','tour.connect':'tourConnect','tour.start':'tourStart','ui.tools':'uiTools','ui.themes':'uiThemes','ui.visibility':'uiVisibility','ui.commands':'uiCommands','ui.execute':'uiExecute','ui.theme':'uiTheme','ui.scale':'uiScale'
+ };
+ if(interfaces[method])return PalaceAPI[interfaces[method]](args);
+ if(method==='ui.overlay')return addonOverlay(host,args);
  if(method==='project.read')return PalaceAPI.readProject();
  if(method==='metadata.write')return PalaceAPI.updateMetadata(args);
  if(method==='markers.add')return PalaceAPI.addMarker(args);
@@ -115,7 +128,8 @@ window.addEventListener('message',async event=>{
  const host=[...addonHosts.values()].find(h=>h.frame.contentWindow===event.source&&h.channel===event.data?.channel);if(!host)return;const msg=event.data;
  if(msg.type==='ready'){host.ready=true;clearTimeout(host.activationTimer);renderAddons();return}
  if(msg.type==='error'){host.error=String(msg.message).slice(0,1000);host.ready=false;clearTimeout(host.activationTimer);renderAddons();return}
- if(msg.type==='register'){if(host.record.manifest.contributes?.commands?.some(c=>c.id===msg.id))host.commands.add(msg.id);return}
+ if(msg.type==='register'){if(host.record.manifest.contributes?.commands?.some(c=>c.id===msg.id))host.commands.add(msg.id);renderAddons();return}
+ if(msg.type==='unregister'){host.commands.delete(msg.id);renderAddons();return}
  if(msg.type==='executed'){const p=host.pending.get(msg.id);if(p){clearTimeout(p.timer);host.pending.delete(msg.id);msg.error?p.reject(new Error(msg.error)):p.resolve(msg.result)}return}
  if(msg.type==='rpc'){
   try{if(host.error)throw new Error('Аддон остановлен после ошибки.');const result=await addonRPC(host,msg.method,msg.args);if(addonHosts.get(host.record.id)===host)host.frame.contentWindow.postMessage({channel:host.channel,type:'response',id:msg.id,result},'*')}
@@ -137,7 +151,7 @@ function renderAddons(){
   const remove=document.createElement('button');remove.textContent='Удалить';remove.dataset.action='remove';remove.onclick=async()=>{try{await storeAddon(record,true);stopAddon(record.id);addonPackages.delete(record.id);renderAddons()}catch(error){addonMessage(error.message)}};
   actions.append(toggle,remove);
   const commands=document.createElement('div');commands.className='addon-commands';
-  for(const command of record.manifest.contributes?.commands||[]){const button=document.createElement('button');button.textContent=command.title;button.dataset.command=command.id;button.disabled=!host?.ready||!host.commands.has(command.id)||!!host.error;button.onclick=async()=>{button.disabled=true;try{await executeAddon(record.id,command.id);addonMessage('Команда выполнена: '+command.title)}catch(error){addonMessage('Ошибка команды: '+error.message)}finally{renderAddons()}};commands.appendChild(button)}
+  for(const command of record.manifest.contributes?.commands||[]){const button=document.createElement('button');button.textContent=command.title;button.dataset.command=command.id;button.disabled=!host?.ready||!host.commands.has(command.id)||!!host.error;button.onclick=async()=>{button.disabled=true;try{await executeAddon(record.id,command.id);addonMessage('Команда выполнена: '+command.title)}catch(error){addonMessage('Ошибка команды: '+error.message)}finally{renderAddons()}};commands.appendChild(button);if(typeof registerPalaceTool==='function')registerPalaceTool('addon.command.'+command.id,command.title,button,record.id)}
   card.append(title,description,stateLabel,actions,commands);list.appendChild(card);
  }
  if(addonPackages.size&&!list.childElementCount)list.textContent='Ничего не найдено.';

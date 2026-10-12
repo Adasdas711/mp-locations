@@ -10,7 +10,7 @@ test('all inline and standalone application scripts parse',()=>{
   let index=0;
   for(const [,source]of html.matchAll(/<script>(.*?)<\/script>/gs))new vm.Script(source,{filename:`index.html inline ${++index}`});
   assert.ok(index>0);
-  for(const file of ['app.js','themes.js','theme-picker.js','mobile.js','mobile-controls.js','app-api.js','addons.js','persistence.js','transitions.js','sw.js'])new vm.Script(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
+  for(const file of ['app.js','themes.js','theme-picker.js','mobile.js','mobile-controls.js','app-api.js','addons.js','interfaces.js','persistence.js','transitions.js','sw.js'])new vm.Script(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 });
 test('offline cache covers existing app assets and has a matching version',()=>{
   const worker=fs.readFileSync(path.join(root,'sw.js'),'utf8');

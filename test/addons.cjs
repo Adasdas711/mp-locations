@@ -6,7 +6,7 @@ async function packageData(manifest,main){const zip=new JSZip();zip.file('manife
 async function install(page,buffer){await page.locator('#addonsOpen').click();await page.locator('#addonFile').setInputFiles({name:'example.palace-addon',mimeType:'application/zip',buffer});await page.locator('#addonInstall').click()}
 for(const [name,options]of profiles)test(`${name}: addon install, module import, command, panel, toggle, persistence and uninstall`,async t=>{
  const {page}=await openSession(browser,t,options,{offlineCache:true});
- const zip=new JSZip();for(const file of ['manifest.json','main.js','utils.js'])zip.file(file,fs.readFileSync(path.join(__dirname,'../addons/example',file)));
+ const zip=new JSZip();for(const file of ['manifest.json','main.js','utils.js','icon.svg'])zip.file(file,fs.readFileSync(path.join(__dirname,'../addons/example',file)));
  await install(page,await zip.generateAsync({type:'nodebuffer'}));const card=page.locator('[data-addon="palace.example"]');await page.waitForFunction(()=>addonHosts.get('palace.example')?.ready);
  await page.locator('#addonSearch').fill('несуществующий аддон');assert.equal(await card.count(),0);await page.locator('#addonSearch').fill('Сводка');assert.equal(await card.count(),1);await page.locator('#addonSearch').fill('');
  const count=await page.evaluate(()=>state.levels[0].markers.length);await card.locator('[data-command="palace.example.center"]').click();await page.waitForFunction(n=>state.levels[0].markers.length===n+1,count);
