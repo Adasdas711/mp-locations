@@ -15,6 +15,19 @@ let addonMode=true,pendingAddon=null,addonReadSequence=0;
 function addonMessage(message){document.querySelector('#addonStatus').textContent=message;}
 function addonStorage(){return new Promise((resolve,reject)=>{const r=indexedDB.open('palace-addons',1);r.onupgradeneeded=()=>r.result.createObjectStore('packages',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(new Error("Storage is busy in another tab."))})}
 async function storeAddon(record,remove=false){const db=await addonStorage();try{const tx=db.transaction('packages','readwrite');const complete=idbComplete(tx);if(remove)tx.objectStore('packages').delete(record.id);else tx.objectStore('packages').put(record);await complete}finally{db.close()}}
+// Serialize changes to a package so settings, storage and lifecycle writes cannot
+// overwrite each other. Commit the in-memory record only after IndexedDB succeeds.
+const addonWriteQueues=new Map();
+function queueAddonWrite(id,run){
+ const task=(addonWriteQueues.get(id)||Promise.resolve()).then(run),settled=task.catch(()=>{});
+ addonWriteQueues.set(id,settled);settled.then(()=>{if(addonWriteQueues.get(id)===settled)addonWriteQueues.delete(id)});return task;
+}
+function updateAddonRecord(record,patch){
+ return queueAddonWrite(record.id,async()=>{
+  if(addonPackages.get(record.id)!==record)throw new Error('Plugin changed. Try again.');
+  const candidate={...record,...patch(record)};await storeAddon(candidate);Object.assign(record,candidate);return record;
+ });
+}
 function safeAddonPath(name){return typeof name==='string'&&name.length<200&&!name.startsWith('/')&&!name.includes('\\')&&!name.split('/').some(p=>!p||p==='.'||p==='..')}
 function validateAddon(manifest,files){
  if(!manifest||typeof manifest!=='object'||Array.isArray(manifest))throw new Error("Invalid manifest.json.");
@@ -124,7 +137,7 @@ async function addonRPC(host,method,args){
   const key=method==='storage.get'?args:args?.key;if(typeof key!=='string'||key.length>100||['__proto__','constructor','prototype'].includes(key))throw new Error("Invalid key.");
   if(method==='storage.get')return host.record.storage?.[key]??null;
   if(JSON.stringify(args.value)?.length>100000)throw new Error("Value is too large.");
-  host.record.storage={...host.record.storage,[key]:args.value};await storeAddon(host.record);return true;
+  await updateAddonRecord(host.record,current=>({storage:{...current.storage,[key]:args.value}}));return true;
  }
  throw new Error("Unknown API method.");
 }
@@ -152,7 +165,7 @@ function renderAddons(){
   const stateLabel=document.createElement('p');stateLabel.className='addon-state';stateLabel.dataset.state=host?.error?'error':host?.ready&&record.enabled&&addonMode?'active':'inactive';stateLabel.textContent=host?.error?"Error: "+host.error:!addonMode?"Plugins are disabled":!record.enabled?"Disabled":host?.ready?"Active":"Activating…";
   const actions=document.createElement('div');actions.className='persistence-actions';
   const toggle=document.createElement('button');toggle.textContent=record.enabled?"Disable":"Enable";toggle.dataset.action='toggle';toggle.setAttribute('aria-pressed',String(record.enabled));toggle.setAttribute('aria-label',(record.enabled?"Disable ":"Enable ")+record.manifest.name);toggle.onclick=async()=>{try{record.enabled=!record.enabled;await storeAddon(record);record.enabled?startAddon(record):stopAddon(record.id);renderAddons()}catch(error){addonMessage(error.message)}};
-  const remove=document.createElement('button');remove.textContent="Remove";remove.dataset.action='remove';remove.onclick=async()=>{try{await storeAddon(record,true);stopAddon(record.id);addonPackages.delete(record.id);renderAddons()}catch(error){addonMessage(error.message)}};
+  const remove=document.createElement('button');remove.textContent="Remove";remove.dataset.action='remove';remove.onclick=async()=>{remove.disabled=true;try{await queueAddonWrite(record.id,async()=>{if(addonPackages.get(record.id)!==record)throw new Error('Plugin changed. Try again.');await storeAddon(record,true);stopAddon(record.id);addonPackages.delete(record.id)});renderAddons()}catch(error){addonMessage(error.message)}finally{remove.disabled=false}};
   actions.append(toggle,remove);
   const commands=document.createElement('div');commands.className='addon-commands';
   for(const command of record.manifest.contributes?.commands||[]){const button=document.createElement('button');button.textContent=command.title;button.dataset.command=command.id;button.disabled=!host?.ready||!host.commands.has(command.id)||!!host.error;button.onclick=async()=>{button.disabled=true;try{await executeAddon(record.id,command.id);addonMessage("Command completed: "+command.title)}catch(error){addonMessage("Command error: "+error.message)}finally{renderAddons()}};commands.appendChild(button);if(typeof registerPalaceTool==='function')registerPalaceTool('addon.command.'+command.id,command.title,button,record.id)}
@@ -160,10 +173,12 @@ function renderAddons(){
  }
  if(addonPackages.size&&!list.childElementCount)list.textContent="No results found.";
 }
-async function installPendingAddon(){
- if(!pendingAddon)return;
- const record=pendingAddon;const old=addonPackages.get(record.id);record.storage=old?.storage||{};
- await storeAddon(record);addonPackages.set(record.id,record);startAddon(record);pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;showAddonUploader(false);document.querySelector('#addonFile').value='';document.querySelector('#addonFileName').textContent="No file selected";renderAddons();addonMessage("Plugin installed: "+record.manifest.name);
+async function installPendingAddon(record=pendingAddon){
+ if(!record)return;
+ const old=addonPackages.get(record.id);record.storage=old?.storage||{};
+ await storeAddon(record);addonPackages.set(record.id,record);startAddon(record);
+ if(pendingAddon===record){pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;showAddonUploader(false);document.querySelector('#addonFile').value='';document.querySelector('#addonFileName').textContent="No file selected";}
+ renderAddons();addonMessage("Plugin installed: "+record.manifest.name);
 }
 addonsButton.onclick=()=>{renderAddons();showPersistenceModal(addonModal)};
 document.querySelector('#addonsClose').onclick=()=>closePersistenceModal(addonModal);
@@ -177,7 +192,7 @@ document.querySelector('#addonFile').onchange=async event=>{
  try{
   const record=await readAddon(file);if(sequence!==addonReadSequence)return;pendingAddon=record;const preview=document.querySelector('#addonInstallPreview');preview.replaceChildren();preview.hidden=false;
   const text=document.createElement('p');text.textContent=pendingAddon.manifest.name+' '+pendingAddon.manifest.version+" · permissions: "+(pendingAddon.manifest.permissions.join(', ')||"none")+(addonPackages.has(pendingAddon.id)?" · replaces the installed version":'');
-  const accept=document.createElement('button');accept.id='addonInstall';accept.textContent="Install";accept.onclick=()=>installPendingAddon().catch(error=>addonMessage(error.message));
+  const accept=document.createElement('button');accept.id='addonInstall';accept.textContent="Install";accept.onclick=async()=>{accept.disabled=true;try{await installPendingAddon()}catch(error){addonMessage(error.message)}finally{accept.disabled=false}};
   const cancel=document.createElement('button');cancel.textContent="Cancel";cancel.onclick=()=>{pendingAddon=null;preview.hidden=true};preview.append(text,accept,cancel);addonMessage("Package verified. Install the plugin to activate it.");
  }catch(error){if(sequence!==addonReadSequence)return;pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;addonMessage("Unable to load: "+error.message)}
 };

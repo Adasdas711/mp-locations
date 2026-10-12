@@ -96,15 +96,24 @@ document.querySelector('#commandPaletteOpen').onclick = openCommandPalette;
 document.querySelector('#commandPaletteOpen').disabled = true;
 document.querySelector('#commandPaletteSettingsStatus').textContent = 'Enable Command Palette in Core plugins.';
 window.addEventListener('keydown', event => {
-  if (!commandPaletteEnabled || event.isComposing || hkRecording) return;
+  if (!commandPaletteEnabled || event.isComposing || hkRecording || event.repeat) return;
   const binding = hkBinding('system.command-palette.open');
-  if (binding && hkFromEvent(event) === binding) { event.preventDefault(); event.stopImmediatePropagation(); openCommandPalette(); }
+  if (!binding || hkFromEvent(event) !== binding) return;
+  if (hkTypingTarget(event.target) && !event.ctrlKey && !event.metaKey && !event.altKey) return;
+  // Settings may open the palette; other dialogs retain their input and focus.
+  if ([...document.querySelectorAll('.modal.show')].some(el => el !== settingsModal && el !== commandPaletteModal)) {
+    event.preventDefault(); return;
+  }
+  event.preventDefault(); event.stopImmediatePropagation(); openCommandPalette();
 }, true);
 registerSystemAddon({id:'system.command-palette',title:'Command Palette',description:'Find and run built-in actions and active plugin commands.',
   activate() {
     commandPaletteEnabled = true;
     if (!HOTKEYS.some(command => command.id === 'system.command-palette.open')) HOTKEYS.push({id:'system.command-palette.open',label:'Open command palette',group:'System addons',def:HOTKEYS.some(c=>hkBinding(c.id)==='Ctrl+KeyP')?'':'Ctrl+KeyP',run:openCommandPalette});
-    document.querySelector('#commandPaletteOpen').disabled = false; document.querySelector('#commandPaletteSettingsStatus').textContent = '';
+    const binding=hkBinding('system.command-palette.open'),conflict=HOTKEYS.find(c=>c.id!=='system.command-palette.open'&&binding&&hkBinding(c.id)===binding);
+    if(conflict){hkOverrides['system.command-palette.open']='';hkSave();}
+    document.querySelector('#commandPaletteOpen').disabled = false;
+    document.querySelector('#commandPaletteSettingsStatus').textContent = conflict?'Shortcut already used by '+conflict.label+'. Assign another in Hotkeys.':'';
   },
   deactivate() {
     commandPaletteEnabled = false; closePersistenceModal(commandPaletteModal);
