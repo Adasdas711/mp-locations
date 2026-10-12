@@ -10,18 +10,19 @@ after(async()=>{await browser?.close()});
 async function fit(page,w,h){
   await page.waitForFunction(()=>mm.geo&&document.querySelector('#minimapBody').clientHeight>0);
   // ResizeObserver and image decoding update asynchronously; wait for the actual containment invariant.
-  await page.waitForFunction(()=>{
+  const sample=await page.waitForFunction(()=>{
     const map=document.querySelector('#minimap'),body=document.querySelector('#minimapBody'),panel=map.parentElement;
     const m=map.getBoundingClientRect(),b=body.getBoundingClientRect(),p=panel.getBoundingClientRect(),g=mm.geo;
     const cameras=[...document.querySelectorAll("#minimapSvg .mm-dot")];
     const camerasFit=cameras.length===2&&cameras.every(el=>{const r=el.getBoundingClientRect();return r.left>=b.left&&r.right<=b.right&&r.top>=b.top&&r.bottom<=b.bottom});
-    return camerasFit&&g&&g.ox>=1&&g.oy>=1&&g.ox+g.dw<body.clientWidth-1&&g.oy+g.dh<body.clientHeight-1&&m.top>=p.top-1&&m.bottom<=p.bottom+1&&b.bottom<=m.bottom;
+    if (!(camerasFit&&g&&g.ox>=1&&g.oy>=1&&g.ox+g.dw<body.clientWidth-1&&g.oy+g.dh<body.clientHeight-1&&m.top>=p.top-1&&m.bottom<=p.bottom+1&&b.bottom<=m.bottom)) return false;
+    // Capture one rendered frame: ResizeObserver may replace the SVG before a second evaluation.
+    return {geo:{...g},w:body.clientWidth,h:body.clientHeight,svg:document.querySelector('#minimapSvg').viewBox.baseVal.height,camerasFit};
   },null,{timeout:10000});
-  const info=await page.evaluate(()=>({geo:mm.geo,w:document.querySelector('#minimapBody').clientWidth,h:document.querySelector('#minimapBody').clientHeight,svg:document.querySelector('#minimapSvg').viewBox.baseVal.height,canvasHeight:document.querySelector('#minimapCanvas').height/Math.min(window.devicePixelRatio||1,2)}));
+  const info=await sample.jsonValue();await sample.dispose();
   assert.ok(Math.abs(info.geo.dw/info.geo.dh-w/h)<.001,'Full source aspect ratio is preserved');
   assert.equal(info.svg,info.h,'Overlay matches the actual body height');
-  const cameras=await page.locator('#minimapSvg .mm-cam').evaluateAll(elements=>elements.map(el=>{const r=el.querySelector('.mm-dot').getBoundingClientRect(),b=document.querySelector('#minimapBody').getBoundingClientRect();return r.left>=b.left&&r.right<=b.right&&r.top>=b.top&&r.bottom<=b.bottom}));
-  assert.ok(cameras.length===2&&cameras.every(Boolean),'Cameras on both extreme corners remain visible');
+  assert.equal(info.camerasFit,true,'Cameras on both extreme corners remain visible');
 }
 for(const [viewportName,options]of [['desktop',{viewport:{width:1280,height:800}}],['phone',{viewport:{width:390,height:844},isMobile:true,hasTouch:true}],['landscape phone',{viewport:{width:844,height:390},isMobile:true,hasTouch:true}]]){
   for(const [planName,w,h]of [['wide',1800,200],['tall',200,1800],['standard',600,400]]){

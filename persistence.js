@@ -276,7 +276,6 @@ window.addEventListener('pagehide', saveRecovery);
   try {
     const versions = await recoveryVersions();
     if (!recoveryEnabled) recoveryStatus.textContent = versions.length ? 'Доступно восстановление предыдущего дворца' : 'Автосохранение включено · изменения сохраняются в этом браузере';
-    if (versions.length && !recoveryEnabled) await showRecovery();
   } catch (error) { recoveryStatus.textContent = 'Автосохранение недоступно: ' + error.message; }
 })();
 

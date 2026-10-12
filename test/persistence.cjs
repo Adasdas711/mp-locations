@@ -48,6 +48,8 @@ for(const [profile,options]of profiles)test(`${profile}: recovery, archive metad
     await page.locator('#palaceName').fill('Recovered palace'); await page.locator('#palaceName').press('Tab');
     await page.waitForFunction(() => document.querySelector('#recoveryStatus').textContent.startsWith('Автосохранено'), {timeout:15000});
     await page.reload({waitUntil:'networkidle'});
+    assert.equal(await page.locator('#recoveryModal').isVisible(), false, 'Recovery picker must stay closed on startup');
+    await page.locator('#abSave').click(); await page.locator('#recoveryOpen').click();
     await page.locator('#recoveryModal.show').waitFor();
     await page.locator('#recoveryList button').first().click();
     await page.waitForFunction(() => state.name === 'Recovered palace');
@@ -110,6 +112,8 @@ for(const [profile,options]of profiles)test(`${profile}: recovery, archive metad
     await page.evaluate(() => saveRecovery());
     await context.setOffline(true);
     await page.reload({waitUntil:'networkidle'});
+    assert.equal(await page.locator('#recoveryModal').isVisible(), false, 'Recovery picker must stay closed on startup');
+    await page.locator('#abSave').click(); await page.locator('#recoveryOpen').click();
     await page.locator('#recoveryModal.show').waitFor(); await page.locator('#recoveryList button').first().click();
     await page.waitForFunction(() => archiveContext?.name === 'nested.3dview');
     assert.equal(await page.evaluate(async () => { await ensureThreeLoaded(); return !!THREE; }), true);

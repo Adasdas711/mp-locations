@@ -1,39 +1,55 @@
-const {profiles}=require('./support/fixtures.cjs');
+const {profiles,openSession}=require('./support/fixtures.cjs');
 const {launchBrowser}=require('./support/browser.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict'),fs=require('node:fs');
-const {chromium}=require('playwright-core');
 const JSZip=require('../vendor/jszip.min.js');
-for(const [profile,options]of profiles)test(`${profile}: camera transitions, undo, archive roundtrip and view protection`,async()=>{
-  const browser=await launchBrowser();
-  try{
-    const context=await browser.newContext({...options,serviceWorkers:'block'});const page=await context.newPage();page.setDefaultTimeout(10000);
-    const errors=[];page.on('pageerror',e=>errors.push(e.message));
-    await page.goto(process.env.PALACE_TEST_URL||'http://127.0.0.1:8000',{waitUntil:'networkidle'});
-    const image=fs.readFileSync(require('node:path').join(__dirname,'../icons/icon-192.png'));
-    const zip=new JSZip();zip.file('images/level-1.png',image);zip.file('panoramas/p.png',image);
-    zip.file('palace.json',JSON.stringify({name:'Transitions',levels:[{floorId:1,image:'images/level-1.png',w:192,h:192,markers:[]}],panoramas:{a:{mode:'equirect',file:'panoramas/p.png',room:'Camera A',floorId:1,planPx:{x:50,y:50},destinations:[]},b:{mode:'equirect',file:'panoramas/p.png',room:'Camera B',floorId:1,planPx:{x:140,y:140},destinations:[]}}}));
-    await page.locator('#fileOpen').setInputFiles({name:'transitions.mpalace',mimeType:'application/zip',buffer:await zip.generateAsync({type:'nodebuffer'})});
-    await page.waitForFunction(()=>archiveContext?.name==='transitions.mpalace');
-    await page.locator('#plan .plan-cam').first().click({button:'right'});
-    await page.locator('.ctx-item').filter({hasText:'Переходы камеры'}).click();
-    await page.locator('#transitionTarget').selectOption('b');await page.locator('#transitionAdd').click();
-    assert.deepEqual(await page.evaluate(()=>[state.panoramas.a.destinations.map(x=>x.panoId),state.panoramas.b.destinations.map(x=>x.panoId)]),[['b'],['a']]);
-    assert.equal(await page.locator('#transitionAdd').isDisabled(),true);
-    await page.locator('#transitionList button').click();
-    assert.deepEqual(await page.evaluate(()=>[state.panoramas.a.destinations,state.panoramas.b.destinations]),[[],[]]);
-    await page.locator('#transitionClose').click();await page.keyboard.press('Control+z');
-    await page.waitForFunction(()=>state.panoramas.a.destinations.length===1&&state.panoramas.b.destinations.length===1);
-    await page.locator('#abSave').click();const waiting=page.waitForEvent('download');await page.locator('#saveMpalaceBtn').click();const d=await waiting;
-    const saved=fs.readFileSync(await d.path());const savedZip=await JSZip.loadAsync(saved);const palace=JSON.parse(await savedZip.file('palace.json').async('string'));
-    assert.equal(palace.panoramas.a.destinations[0].panoId,'b');
-    await page.locator('#fileOpen').setInputFiles({name:'saved.mpalace',mimeType:'application/zip',buffer:saved});await page.waitForFunction(()=>archiveContext?.name==='saved.mpalace');
-    assert.equal(await page.evaluate(()=>state.panoramas.b.destinations[0].panoId),'a');
-    await page.evaluate(()=>openCameraTransitions('a'));await page.locator('#transitionList button').click();await page.locator('#transitionClose').click();
-    await page.locator('#abSave').click();const waiting2=page.waitForEvent('download');await page.locator('#saveMpalaceBtn').click();const d2=await waiting2;
-    await page.locator('#fileOpen').setInputFiles({name:'deleted.mpalace',mimeType:'application/zip',buffer:fs.readFileSync(await d2.path())});await page.waitForFunction(()=>archiveContext?.name==='deleted.mpalace');
-    assert.deepEqual(await page.evaluate(()=>[state.panoramas.a.destinations,state.panoramas.b.destinations]),[[],[]]);
-    await page.locator('#modeBtn').click();assert.equal(await page.evaluate(()=>changeCameraTransition('a','b',true)),false);
-    assert.deepEqual(errors,[]);
-  }finally{await browser.close()}
+for(const [profile,options]of profiles)test(`${profile}: camera editor selection, links, start, delete, undo and archive`,async t=>{
+ const browser=await launchBrowser();t.after(()=>browser.close());
+ const {page,context}=await openSession(browser,t,options);
+ await page.locator('[data-tool="camera"]').click();
+ await page.locator('#plan .plan-cam[data-pano="a"]').click();
+ assert.equal(await page.locator('#cameraEditorSelect').inputValue(),'a');
+ assert.equal(await page.evaluate(()=>state.layout),'plan');
+ const old=await page.evaluate(()=>({...state.panoramas.a.planPx}));
+ const box=await page.locator('#plan .plan-cam[data-pano="a"]').boundingBox();
+ const x=box.x+box.width/2,y=box.y+box.height/2;
+ if(options.hasTouch && (process.env.PALACE_BROWSER||'chromium')==='chromium'){
+   const session=await context.newCDPSession(page);
+   await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:0}]});
+   await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+25,y:y-20,id:0}]});
+   await page.evaluate(()=>new Promise(requestAnimationFrame));
+   await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await session.detach();
+ }else {await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+25,y-20,{steps:5});await page.mouse.up()}
+ await page.waitForFunction(old=>Math.hypot(state.panoramas.a.planPx.x-old.x,state.panoramas.a.planPx.y-old.y)>3,old);
+ await page.keyboard.press('Control+z');await page.waitForFunction(old=>state.panoramas.a.planPx.x===old.x&&state.panoramas.a.planPx.y===old.y,old);
+ // Select through the accessible list after undo; no panorama navigation.
+ await page.locator('#cameraEditorSelect').selectOption('a');
+
+ await page.locator('#cameraEditorLinks button[data-target="b"]').click();
+ assert.deepEqual(await page.evaluate(()=>[state.panoramas.a.destinations,state.panoramas.b.destinations]),[[],[]]);
+ await page.locator('#cameraEditorLink').click();
+ await page.locator('#plan .plan-cam[data-pano="b"]').click();
+ assert.deepEqual(await page.evaluate(()=>[state.panoramas.a.destinations.map(d=>d.panoId),state.panoramas.b.destinations.map(d=>d.panoId)]),[['b'],['a']]);
+ assert.equal(await page.locator('#plan .camera-link-lines line').count(),1);
+ await page.locator('#cameraEditorStart').click();
+ assert.equal(await page.evaluate(()=>state.startPano),'a');
+ await page.locator('#cameraEditorDelete').click();await page.locator('#askNo').click();
+ assert.equal(await page.evaluate(()=>!!state.panoramas.a),true);
+ await page.locator('#cameraEditorDelete').click();await page.locator('#askYes').click();
+ assert.deepEqual(await page.evaluate(()=>[!!state.panoramas.a,state.startPano,state.panoramas.b.destinations.length,state.levels[0].markers[0].localPano||null]),[false,null,0,null]);
+ await page.keyboard.press('Control+z');
+ await page.waitForFunction(()=>!!state.panoramas.a&&state.startPano==='a');
+ assert.equal(await page.evaluate(()=>state.levels[0].markers[0].localPano),'a');
+ assert.equal(await page.evaluate(()=>state.panoramas.b.destinations[0].panoId),'a');
+ await page.keyboard.press('Control+Shift+z');await page.waitForFunction(()=>!state.panoramas.a);
+ await page.keyboard.press('Control+z');await page.waitForFunction(()=>!!state.panoramas.a&&state.startPano==='a');
+ await page.locator('#abSave').click();const waiting=page.waitForEvent('download');await page.locator('#saveMpalaceBtn').click();const download=await waiting;
+ const saved=fs.readFileSync(await download.path());const zip=await JSZip.loadAsync(saved);const data=JSON.parse(await zip.file('palace.json').async('string'));
+ assert.equal(data.startPano,'a');assert.equal(data.panoramas.b.destinations[0].panoId,'a');
+ await page.locator('#fileOpen').setInputFiles({name:'saved.mpalace',mimeType:'application/zip',buffer:saved});await page.waitForFunction(()=>archiveContext?.name==='saved.mpalace');
+ assert.equal(await page.evaluate(()=>state.panoramas.b.destinations[0].panoId),'a');
+ await page.locator('#modeBtn').click();await page.waitForFunction(()=>state.mode==='view');
+ assert.equal(await page.locator('#cameraEditor').isVisible(),false);
+ assert.equal(await page.evaluate(()=>removeEditedCamera('a')),false);
+ assert.equal(await page.evaluate(()=>changeCameraTransition('a','b',false)),false);
 });
