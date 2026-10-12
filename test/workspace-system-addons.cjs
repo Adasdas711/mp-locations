@@ -1,0 +1,35 @@
+const {test,before,after}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
+const {profiles,openSession}=require('./support/fixtures.cjs'),{launchBrowser}=require('./support/browser.cjs');let browser;
+before(async()=>browser=await launchBrowser());after(async()=>browser?.close());
+async function presets(page){await page.locator('#toolsSettingsOpen').click();await page.locator('.settings-nav-item[data-settings-page="workspace-presets"]').click();}
+for(const [name,options]of profiles){
+ test(`${name}: system command palette searches, navigates, executes native/plugin actions and disables`,async t=>{
+  const {page}=await openSession(browser,t,options,{offlineCache:true});
+  await page.keyboard.press('Control+p');await page.locator('#commandPaletteSearch').fill('save');await page.keyboard.press('Enter');await page.locator('#saveModal.show').waitFor();await page.locator('#closeSaveModal').click();
+  await page.keyboard.press('Control+p');await page.locator('#commandPaletteSearch').fill('no-match-xyz987');assert.equal(await page.locator('#commandPaletteStatus').innerText(),'No matching commands.');await page.locator('#commandPaletteSearch').fill('layout');await page.keyboard.press('ArrowDown');assert.equal(await page.locator('.palette-command[aria-selected=true]').count(),1);await page.keyboard.press('Escape');assert.equal(await page.locator('#commandPalette').isVisible(),false);
+  await page.locator('#toolsSettingsOpen').click();await page.locator('#addonsOpen').click();await page.locator('#addonFile').setInputFiles(require('node:path').join(__dirname,'../addons/example.palace-addon'));await page.locator('#addonInstall').click();await page.waitForFunction(()=>addonHosts.get('palace.example')?.ready);await page.locator('#addonsClose').click();
+  const count=await page.evaluate(()=>state.levels[0].markers.length);await page.keyboard.press('Control+p');await page.locator('#commandPaletteSearch').fill('Add locus at center');await page.keyboard.press('Enter');await page.waitForFunction(count=>state.levels[0].markers.length===count+1,count);
+  await page.locator('#toolsSettingsOpen').click();await page.locator('.settings-nav-item[data-settings-page=core]').click();await page.locator('[data-system-addon="system.command-palette"]').uncheck();await page.keyboard.press('Control+p');assert.equal(await page.locator('#commandPalette').isVisible(),false);assert.equal(await page.evaluate(()=>HOTKEYS.some(c=>c.id==='system.command-palette.open')),false);
+  await page.reload({waitUntil:'networkidle'});await page.locator('#toolsSettingsOpen').click();await page.locator('.settings-nav-item[data-settings-page="command-palette"]').click();assert.equal(await page.locator('#commandPaletteOpen').isDisabled(),true);await page.locator('.settings-nav-item[data-settings-page=core]').click();await page.locator('[data-system-addon="system.command-palette"]').check();await page.keyboard.press('Control+p');await page.locator('#commandPaletteSearch').fill('workspace presets');await page.keyboard.press('Enter');assert.equal(await page.locator('#settingsModal').getAttribute('data-page'),'workspace-presets');
+ });
+ test(`${name}: workspace presets save/apply/rename/export/import/delete and preserve palace data`,async t=>{
+  const {page}=await openSession(browser,t,options);
+  const before=await page.evaluate(()=>({levels:JSON.stringify(state.levels),cameras:JSON.stringify(state.panoramas),meta:archiveContext.metaText}));
+  await page.evaluate(()=>{applyTheme('borealis');PALACE_UI.setSize(0);setToolVisibility('system.compass',false);state.layout='tour';applyLayout();});
+  await presets(page);await page.locator('#workspacePresetName').fill('Study');await page.locator('#workspacePresetSave').click();await page.locator('#workspacePresetStatus').filter({hasText:'Preset saved.'}).waitFor();
+  await page.evaluate(()=>{applyTheme('darcula');PALACE_UI.setSize(2);setToolVisibility('system.compass',true);state.layout='plan';applyLayout();});
+  await page.locator('.workspace-preset [data-action=apply]').click();await page.locator('#workspacePresetStatus').filter({hasText:'Applied “Study”'}).waitFor();assert.deepEqual(await page.evaluate(()=>({theme:getTheme(),size:PALACE_UI.size,compass:toolPreferences['system.compass'],layout:state.layout})),{theme:'borealis',size:0,compass:false,layout:'tour'});
+  assert.deepEqual(await page.evaluate(()=>({levels:JSON.stringify(state.levels),cameras:JSON.stringify(state.panoramas),meta:archiveContext.metaText})),before);
+  await page.locator('.workspace-preset>input').fill('Reading');await page.locator('[data-action=rename]').click();await page.locator('#workspacePresetStatus').filter({hasText:'renamed'}).waitFor();
+  const download=page.waitForEvent('download');await page.locator('#workspacePresetExport').click();const file=await download,bytes=fs.readFileSync(await file.path());assert.equal(JSON.parse(bytes).presets[0].name,'Reading');
+  await page.locator('.workspace-preset [data-action=delete]').click();await page.locator('.workspace-preset [data-action=delete]').click();assert.equal(await page.locator('.workspace-preset').count(),0);
+  await page.locator('#workspacePresetImport').setInputFiles({name:'presets.json',mimeType:'application/json',buffer:bytes});await page.locator('#workspacePresetStatus').filter({hasText:'Presets imported.'}).waitFor();assert.equal(await page.locator('.workspace-preset>input').inputValue(),'Reading');
+  await page.locator('#settingsClose').click();await page.reload({waitUntil:'networkidle'});await presets(page);assert.equal(await page.locator('.workspace-preset>input').inputValue(),'Reading');
+  await page.locator('.settings-nav-item[data-settings-page=core]').click();await page.locator('[data-system-addon="system.workspace-presets"]').uncheck();await page.locator('.settings-nav-item[data-settings-page="workspace-presets"]').click();assert.equal(await page.locator('#workspacePresetSave').isDisabled(),true);assert.equal(await page.evaluate(()=>workspacePresets.length),1);
+ });
+}
+test('workspace validation rejects malformed imports and palette shortcut honors rebinding',async t=>{
+ const {page}=await openSession(browser,t,profiles[0][1]);await presets(page);
+ await page.locator('#workspacePresetImport').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({format:'palace-workspace-presets',version:1,presets:[{id:'valid-id-123',name:'Bad',config:{theme:'darcula'}}]}))});await page.locator('#workspacePresetStatus').filter({hasText:'Unable to import'}).waitFor();assert.equal(await page.evaluate(()=>workspacePresets.length),0);
+ await page.evaluate(()=>{hkOverrides['system.command-palette.open']='Ctrl+Alt+KeyP';hkSave()});await page.locator('#settingsClose').click();await page.keyboard.press('Control+p');assert.equal(await page.locator('#commandPalette').isVisible(),false);await page.keyboard.press('Control+Alt+p');assert.equal(await page.locator('#commandPalette').isVisible(),true);await page.keyboard.press('Escape');
+});

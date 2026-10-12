@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-5b77f205c4fa5a09';
+const CACHE = 'palace-offline-1c7508bc59554e1d';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -11,6 +11,7 @@ const ASSETS = [
   "app.js",
   "appearance.js",
   "camera-editor.js",
+  "command-palette.js",
   "extension-operations.js",
   "history-addon.js",
   "icons/apple-touch-icon.png",
@@ -52,7 +53,8 @@ const ASSETS = [
   "vendor/tesseract.min.js",
   "vendor/three-LICENSE",
   "vendor/three.min.js",
-  "vendor/worker.min.js"
+  "vendor/worker.min.js",
+  "workspace-presets.js"
 ];
 const assetURLs = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
 self.addEventListener('install', event => {
