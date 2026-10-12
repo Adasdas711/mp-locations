@@ -41,6 +41,6 @@ for(const [name,options]of profiles){
   assert.deepEqual(await page.evaluate(()=>({floor:state.levels[0].name,note:state.levels[0].markers[0].note,camera:state.panoramas.a.room})),{floor:'Русский этаж',note:'Моя заметка',camera:'Моя камера'});
   await page.locator('#toolsSettingsOpen').click();await section(page)('addons');await page.locator('#addonFile').setInputFiles(path.join(__dirname,'../addons/example.palace-addon'));await page.locator('#addonInstall').click();await page.waitForFunction(()=>addonHosts.get('palace.example')?.ready);
   const plugin=page.locator('.settings-plugin-item[data-plugin-id="palace.example"]');assert.equal(await plugin.innerText(),'Palace overview');await plugin.click();assert.equal(await page.locator('#addonSearch').inputValue(),'palace.example');
-  await page.locator('[data-addon="palace.example"] [data-action="remove"]').click();await page.waitForFunction(()=>!addonPackages.has('palace.example'));assert.equal(await plugin.count(),0);
+  await page.locator('[data-addon="palace.example"] summary').click();await page.locator('[data-addon="palace.example"] [data-action="remove"]').click();await page.waitForFunction(()=>!addonPackages.has('palace.example'));assert.equal(await plugin.count(),0);
  });
 }

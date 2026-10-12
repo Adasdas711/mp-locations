@@ -35,7 +35,7 @@ for(const [name,options]of profiles)test(`${name}: separate appearance addon ins
  await afterReload.locator('#appearanceRemoveCustom').click();await afterReload.locator('#appearanceMessage').filter({hasText:"collections removed"}).waitFor();
  assert.equal(await page.evaluate(()=>getTheme()),'darcula');assert.equal(await page.locator('#i-camera').innerHTML(),original);
  await afterReload.locator('#appearanceReset').click();await page.locator('#addonPanelClose').click();await page.locator('#toolsSettingsOpen').click();await page.locator('#addonsOpen').click();
- await page.locator('[data-addon="palace.appearance"] [data-action="remove"]').click();await page.waitForFunction(()=>!addonPackages.has('palace.appearance'));
+ await page.locator('[data-addon="palace.appearance"] summary').click();await page.locator('[data-addon="palace.appearance"] [data-action="remove"]').click();await page.waitForFunction(()=>!addonPackages.has('palace.appearance'));
  assert.equal(await page.locator('[data-addon-owner="palace.appearance"]').count(),0);
  assert.equal(await page.evaluate(()=>PALACE_THEMES.some(t=>t.id.startsWith('palace.appearance.'))),false);
 });
