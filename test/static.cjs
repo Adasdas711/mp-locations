@@ -20,3 +20,10 @@ test('offline cache covers existing app assets and has a matching version',()=>{
   for(const file of assets)if(file!=='./')hash.update(fs.readFileSync(path.join(root,file)));
   assert.equal(worker.match(/const CACHE = 'palace-offline-([^']+)';/)[1],hash.digest('hex').slice(0,16),'Run npm run update:offline after changing application assets');
 });
+test('index.html is the reproducible minified build of index.max.html',async()=>{
+ const {buildHTML}=require('../scripts/build-html.cjs');
+ const source=fs.readFileSync(path.join(root,'index.max.html'),'utf8'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.equal(html,await buildHTML()+'\n','Run npm run build after editing index.max.html');
+ assert.ok(html.length<source.length);
+ let count=0;for(const [,script]of source.matchAll(/<script>(.*?)<\/script>/gs)){new vm.Script(script);count++}assert.ok(count>0);
+});

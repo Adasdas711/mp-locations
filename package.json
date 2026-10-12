@@ -5,9 +5,13 @@
   "scripts": {
     "test": "node scripts/test.cjs",
     "update:offline": "node scripts/update-offline.cjs",
-    "package:addon": "node scripts/package-addon.cjs"
+    "package:addon": "node scripts/package-addon.cjs",
+    "build:html": "node scripts/build-html.cjs",
+    "build": "npm run build:html && npm run update:offline"
   },
   "devDependencies": {
-    "playwright-core": "1.61.1"
+    "html-minifier-terser": "^7.2.0",
+    "playwright-core": "1.61.1",
+    "prettier": "^3.9.10"
   }
 }
