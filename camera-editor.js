@@ -2,6 +2,7 @@
 let editedCameraId = null, cameraLinkSource = null;
 const cameraStyle = document.createElement('style');
 cameraStyle.textContent = `
+.tool-camera #plan .camera-edit-selected .cam-start{display:none}
 .camera-action:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .tool-camera #plan .plan-cam{cursor:grab}.tool-camera #plan .plan-cam.dragging{cursor:grabbing}
 .tool-camera #plan .plan-cam.camera-edit-selected{outline:3px solid var(--blue)!important;outline-offset:4px;background:var(--vscode-button-bg)!important;color:#fff!important;z-index:5}
@@ -9,7 +10,7 @@ cameraStyle.textContent = `
 #plan .plan-cam .camera-action{box-sizing:border-box;position:absolute;right:-12%;top:-12%;display:flex;align-items:center;justify-content:center;width:34%;height:34%;min-width:0;min-height:0;padding:0;border:calc(var(--camera-marker-size,68px)*.022) solid var(--panel);border-radius:50%;background:var(--vscode-button-bg);color:#fff;font:700 calc(var(--camera-marker-size,68px)*.24)/1 system-ui;cursor:pointer;z-index:8;transform:rotate(var(--mrot,0deg));transform-origin:center}
 #plan .plan-cam .camera-action[data-action=remove-link],#plan .plan-cam .camera-action[data-action=delete-camera]{background:var(--red);color:#fff}
 #plan .plan-cam .camera-action[data-action=set-start]{right:auto;top:auto;left:-12%;bottom:-12%}
-#plan .plan-cam .camera-action[data-action=set-start][aria-pressed=true]{background:var(--yellow);color:var(--panel)}
+#plan .plan-cam .camera-action[data-action=set-start][aria-pressed=true]{background:var(--vscode-editorWarning-foreground,#f5b301);color:var(--panel)}
 #plan .plan-cam .camera-action .ic{width:60%;height:60%}
 .camera-link-lines{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;overflow:visible;pointer-events:none;z-index:1}
 .camera-link-lines line{stroke:var(--blue);stroke-width:2;stroke-dasharray:6 5;opacity:.5;vector-effect:non-scaling-stroke}

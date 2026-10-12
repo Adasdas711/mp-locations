@@ -18,6 +18,28 @@ for(const [name,options]of profiles)test(`${name}: zoom on 200 cameras retains c
  });
  assert.equal(result.mutations,0,'Zoom must not mutate the camera DOM, styles or graph');assert.equal(result.buttonsRetained,true);assert.equal(result.graphRetained,true);assert.equal(result.lines,200);
  t.diagnostic(`120 zoom updates with 200 cameras: ${result.duration.toFixed(1)} ms`);
+ const layerStable=await page.evaluate(async()=>{
+  const viewport=document.querySelector('#viewport');let changes=0;
+  const observer=new MutationObserver(records=>changes+=records.length);observer.observe(viewport,{attributes:true,attributeFilter:['style']});
+  await new Promise(resolve=>setTimeout(resolve,450));observer.disconnect();
+  return {changes,willChange:getComputedStyle(viewport).willChange};
+ });
+ assert.equal(layerStable.changes,0,'Idle zoom must not demote and rebuild the plan layer');assert.equal(layerStable.willChange,'transform');
+ const combined=await page.evaluate(async()=>{
+  const viewport=document.querySelector('#viewport'),before=viewTranslate(viewport),stage=document.querySelector('#stage').getBoundingClientRect();let writes=0;
+  const observer=new MutationObserver(records=>writes+=records.length);observer.observe(viewport,{attributes:true,attributeFilter:['style']});
+  applyZoom(state.zoom,stage.left+stage.width/2,stage.top+stage.height/2,{x:25,y:-12});await Promise.resolve();observer.disconnect();
+  const after=viewTranslate(viewport);return {writes,dx:after.x-before.x,dy:after.y-before.y};
+ });
+ assert.equal(combined.writes,1,'Two-finger movement is applied with one viewport transform');assert.ok(Math.abs(combined.dx-25)<.001&&Math.abs(combined.dy+12)<.001);
+ const gesture=await page.evaluate(async()=>{
+  const viewport=document.querySelector('#viewport'),stage=document.querySelector('#stage'),before=viewTranslate(viewport),graph=document.querySelector('.camera-link-lines'),buttons=[...document.querySelectorAll('.camera-action')];
+  const rect=stage.getBoundingClientRect();startPan({clientX:rect.left+30,clientY:rect.top+40});
+  for(let i=1;i<=20;i++){window.onmousemove({clientX:rect.left+30+i*2,clientY:rect.top+40+i});await new Promise(requestAnimationFrame)}
+  window.onmouseup();const after=viewTranslate(viewport);
+  return {dx:after.x-before.x,dy:after.y-before.y,graphRetained:graph===document.querySelector('.camera-link-lines'),buttonsRetained:buttons.every(button=>button.isConnected)};
+ });
+ assert.ok(Math.abs(gesture.dx-40)<.001&&Math.abs(gesture.dy-20)<.001);assert.equal(gesture.graphRetained,true);assert.equal(gesture.buttonsRetained,true);
  const proportions=await page.evaluate(()=>{
   const marker=document.querySelector('[data-pano="cam1"]'),button=marker.querySelector('.camera-action');
   const measure=()=>({marker:marker.getBoundingClientRect().width,button:button.getBoundingClientRect().width,font:parseFloat(getComputedStyle(button).fontSize)});
