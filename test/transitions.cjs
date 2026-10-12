@@ -37,6 +37,7 @@ for(const [profile,options]of profiles)test(`${profile}: camera editor selection
  // Select through the accessible list after undo; no panorama navigation.
  await page.locator('#cameraEditorSelect').selectOption('a');
 
+ if(!await page.locator('#cameraEditorConnections').evaluate(el=>el.open))await page.locator('#cameraEditorConnections summary').click();
  await page.locator('#cameraEditorLinks button[data-target="b"]').click();
  assert.deepEqual(await page.evaluate(()=>[state.panoramas.a.destinations,state.panoramas.b.destinations]),[[],[]]);
  await page.locator('#cameraEditorLink').click();
