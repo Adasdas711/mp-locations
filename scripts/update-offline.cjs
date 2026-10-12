@@ -1,0 +1,13 @@
+const fs=require('node:fs');
+const path=require('node:path');
+const {createHash}=require('node:crypto');
+const root=path.resolve(__dirname,'..');
+const assets=['./','index.html','persistence.js','manifest.webmanifest',...['vendor','icons'].flatMap(dir=>fs.readdirSync(path.join(root,dir)).filter(file=>fs.statSync(path.join(root,dir,file)).isFile()).map(file=>dir+'/'+file))].sort();
+const hash=createHash('sha256');
+for(const file of assets)if(file!=='./')hash.update(fs.readFileSync(path.join(root,file)));
+const version=hash.digest('hex').slice(0,16);
+const worker=path.join(root,'sw.js');
+let source=fs.readFileSync(worker,'utf8');
+source=source.replace(/const CACHE = '[^']+';/,`const CACHE = 'palace-offline-${version}';`).replace(/const ASSETS = \[.*?\];/s,'const ASSETS = '+JSON.stringify(assets,null,2)+';');
+fs.writeFileSync(worker,source);
+console.log('Offline cache updated:',version);

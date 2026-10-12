@@ -1,0 +1,12 @@
+{
+  "name": "palace-memory-mapper",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/test.cjs",
+    "update:offline": "node scripts/update-offline.cjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.61.1"
+  }
+}
