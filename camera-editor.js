@@ -13,6 +13,21 @@ document.querySelector('#stage').append(cameraEditor);
 const cameraStyle = document.createElement('style');
 cameraStyle.textContent = `#cameraEditor{position:absolute;left:12px;right:12px;bottom:12px;z-index:35;max-width:480px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel,#fff);color:var(--text);box-shadow:0 4px 20px #0002;max-height:40%;overflow:auto}#cameraEditor[hidden]{display:none}#cameraEditor p{margin:8px 0;font-size:13px}#cameraEditor label{display:flex;gap:8px;align-items:center}#cameraEditor select{min-width:0;flex:1}#cameraEditor button{padding:8px;border-radius:8px;cursor:pointer}.camera-editor-actions{display:flex;gap:6px;flex-wrap:wrap}#cameraEditorLinks{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.camera-edit-selected{outline:3px solid var(--accent,#4878e8);outline-offset:3px}.camera-link-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.tool-camera #markerCtl{display:none}@media(max-width:600px){#cameraEditor{padding:8px;max-height:35%;bottom:8px;left:8px;right:8px}#cameraEditor button{font-size:12px}}`;
 document.head.append(cameraStyle);
+async function openCameraEditor(id, link = false) {
+  if (!canEditPlan() || !state.panoramas[id]) return false;
+  cameraLinkSource = null;
+  state.tool = 'camera';
+  const floor = state.panoramas[id].floorId;
+  const index = state.levels.findIndex(l => String(l.floorId) === String(floor));
+  if (index >= 0 && index !== state.active) selectLevel(index);
+  state.layout = 'plan';
+  await setPlanView('2d');
+  applyLayout();syncTools();drawPlan();
+  selectCameraForEditing(String(id));
+  if (link) cameraLinkSource = String(id);
+  refreshCameraEditor();
+  return true;
+}
 function selectCameraForEditing(id) {
   if (!canEditPlan() || state.tool !== 'camera' || !state.panoramas[id]) return;
   if (cameraLinkSource && id !== cameraLinkSource) {
@@ -34,7 +49,7 @@ function refreshCameraEditor() {
   select.value = editedCameraId || '';
   document.querySelector('#cameraEditorHint').textContent = cameraLinkSource
     ? 'Нажмите другую камеру на плане или выберите её в списке. Повторное нажатие кнопки отменит связывание.'
-    : editedCameraId ? 'Перетащите выбранную камеру по плану. Переходы работают в обе стороны.' : 'Нажмите камеру на плане или выберите её в списке.';
+    : editedCameraId ? 'Перетащите камеру. Для перехода нажмите «Связать» и другую камеру на плане.' : 'Нажмите камеру на плане или выберите её в списке.';
   ['Link','Start','Delete'].forEach(name => document.querySelector('#cameraEditor'+name).disabled = !editedCameraId);
   document.querySelector('#cameraEditorLink').textContent = cameraLinkSource ? 'Отменить связывание' : 'Связать с другой камерой';
   document.querySelector('#cameraEditorStart').textContent = state.startPano === editedCameraId && editedCameraId ? 'Убрать начальную' : 'Сделать начальной';
@@ -51,7 +66,7 @@ function refreshCameraEditor() {
   });
   document.querySelector('#plan .camera-link-lines')?.remove();
   const plan=document.querySelector('#plan');
-  if (!plan || !editedCameraId || !panos[editedCameraId]?.planPx) return;
+  if (!plan || !editedCameraId || !panos[editedCameraId]?.planPx || String(panos[editedCameraId].floorId) !== String(level()?.floorId)) return;
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('camera-link-lines');
   const from=panos[editedCameraId];
   Object.entries(panos).forEach(([id,p])=>{

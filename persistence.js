@@ -13,6 +13,7 @@ const RECOVERY_LIMIT = 5;
 
 const persistenceStyle = document.createElement('style');
 persistenceStyle.textContent = `
+.modal[hidden]{display:none!important}
 .persistence-actions{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
 .persistence-status{font-size:12px;color:var(--muted);margin:8px 0}
 .persistence-dialog{width:min(850px,94vw)!important;max-height:90vh;overflow:auto}
@@ -37,6 +38,7 @@ function persistenceModal(id, title, body) {
   const el = document.createElement('div');
   el.id = id;
   el.className = 'modal';
+  el.hidden = true;
   el.innerHTML = `<div class="dialog persistence-dialog" role="dialog" aria-modal="true" aria-labelledby="${id}Title"><h2 id="${id}Title">${title}</h2>${body}</div>`;
   document.body.appendChild(el);
   el.addEventListener('mousedown', event => { if (event.target === el) closePersistenceModal(el); });
@@ -55,11 +57,13 @@ function persistenceModal(id, title, body) {
 let persistenceReturnFocus;
 function showPersistenceModal(el) {
   persistenceReturnFocus = document.activeElement;
+  el.hidden = false;
   el.classList.add('show');
   el.querySelector('textarea,button')?.focus();
 }
 function closePersistenceModal(el) {
   el.classList.remove('show');
+  el.hidden = true;
   persistenceReturnFocus?.focus();
 }
 const recoveryModal = persistenceModal('recoveryModal', 'Локальные автосохранения', `
@@ -244,7 +248,8 @@ async function restoreRecovery(record) {
   scheduleRecovery();
   status('Восстановлено автосохранение от ' + new Date(record.saved).toLocaleString());
 }
-async function showRecovery() {
+async function showRecovery(manual = false) {
+  if (manual !== true) return;
   const list = document.querySelector('#recoveryList');
   list.textContent = 'Загрузка…';
   showPersistenceModal(recoveryModal);
@@ -269,7 +274,7 @@ async function showRecovery() {
     }
   } catch (error) { list.textContent = 'Хранилище недоступно: ' + error.message; }
 }
-document.querySelector('#recoveryOpen').addEventListener('click', showRecovery);
+document.querySelector('#recoveryOpen').addEventListener('click', () => showRecovery(true));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveRecovery(); });
 window.addEventListener('pagehide', saveRecovery);
 (async () => {
@@ -281,7 +286,13 @@ window.addEventListener('pagehide', saveRecovery);
 
 const offlineStatus = document.querySelector('#offlineStatus');
 if ('serviceWorker' in navigator && window.isSecureContext) {
-  navigator.serviceWorker.register('sw.js').then(async registration => {
+  let hadOfflineController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadOfflineController) { hadOfflineController = true; return; }
+    if (!state.dirty && !state.levels.length && !archiveContext && !recoveryLoading) { location.reload(); return; }
+    offlineStatus.textContent = 'Обновление установлено · сохраните дворец и обновите страницу';
+  });
+  navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).then(async registration => {
     const watchInstallation = () => {
       const worker = registration.installing;
       if (!worker) return;

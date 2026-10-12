@@ -6,10 +6,22 @@ const JSZip=require('../vendor/jszip.min.js');
 for(const [profile,options]of profiles)test(`${profile}: camera editor selection, links, start, delete, undo and archive`,async t=>{
  const browser=await launchBrowser();t.after(()=>browser.close());
  const {page,context}=await openSession(browser,t,options);
- await page.locator('[data-tool="camera"]').click();
+ // The 3D toolbar must enter plan editing, never a transition popup.
+ await page.locator('#abTour').click();
+ await page.waitForFunction(()=>!!activeLocalPano);
+ await page.locator('#tourSettingsBtn').click();
+ await page.locator('#cameraTransitionsOpen').click();
+ await page.waitForFunction(()=>state.layout==='plan'&&state.tool==='camera'&&cameraLinkSource==='a');
+ assert.equal(await page.locator('#cameraTransitions').count(),0);
+ await page.locator('#cameraEditorLink').click(); // cancel pending link
  await page.locator('#plan .plan-cam[data-pano="a"]').click();
  assert.equal(await page.locator('#cameraEditorSelect').inputValue(),'a');
  assert.equal(await page.evaluate(()=>state.layout),'plan');
+ await page.locator('#plan .plan-cam[data-pano="a"]').click({button:'right'});
+ await page.locator('.ctx-item').filter({hasText:'Добавить переход на плане'}).click();
+ await page.waitForFunction(()=>cameraLinkSource==='a');
+ assert.equal(await page.locator('.modal.show').count(),0);
+ await page.locator('#cameraEditorLink').click();
  const old=await page.evaluate(()=>({...state.panoramas.a.planPx}));
  const box=await page.locator('#plan .plan-cam[data-pano="a"]').boundingBox();
  const x=box.x+box.width/2,y=box.y+box.height/2;
