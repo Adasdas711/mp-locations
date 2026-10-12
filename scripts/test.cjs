@@ -15,7 +15,7 @@ const server = http.createServer(async (request,response)=>{
   } catch (error) {response.writeHead(error.code==='ENOENT'?404:500);response.end()}
 });
 server.listen(0,'127.0.0.1',()=>{
-  const child=spawn(process.execPath,['--test','--test-reporter=tap',...require('node:fs').readdirSync(path.join(root,'test')).filter(file=>file.endsWith('.cjs')).sort().map(file=>'test/'+file)],{cwd:root,stdio:'inherit',env:{...process.env,PALACE_TEST_URL:`http://127.0.0.1:${server.address().port}`}});
+  const child=spawn(process.execPath,['--test','--test-reporter=tap','--test-concurrency=2',...require('node:fs').readdirSync(path.join(root,'test')).filter(file=>file.endsWith('.cjs')&&(!process.env.PALACE_TEST_FILES||process.env.PALACE_TEST_FILES.split(',').includes(file))).sort().map(file=>'test/'+file)],{cwd:root,stdio:'inherit',env:{...process.env,PALACE_TEST_URL:`http://127.0.0.1:${server.address().port}`}});
   child.on('error',error=>{console.error(error);server.close();process.exitCode=1});
   child.on('exit',code=>{server.close();process.exitCode=code??1});
 });

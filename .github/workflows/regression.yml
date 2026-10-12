@@ -5,7 +5,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    env:
+      PALACE_BROWSER: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -13,5 +19,5 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - run: npx playwright-core install --with-deps chromium
+      - run: npx playwright-core install --with-deps ${{ matrix.browser }}
       - run: npm test

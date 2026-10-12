@@ -1,3 +1,4 @@
+const {launchBrowser}=require('./support/browser.cjs');
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright-core');
@@ -7,7 +8,7 @@ const path = require('node:path');
 const base = process.env.PALACE_TEST_URL || 'http://127.0.0.1:8000';
 let browser, fixture;
 before(async () => {
-  browser = await chromium.launch({executablePath: process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : chromium.executablePath()), args:['--no-sandbox','--enable-unsafe-swiftshader']});
+  browser = await launchBrowser();
   const png = fs.readFileSync(path.join(__dirname,'../icons/icon-192.png'));
   const zip = new JSZip();
   zip.file('palace.json',JSON.stringify({name:'Regression',layout:'plan',levels:[{name:'Floor',floorId:1,w:192,h:192,image:'images/level-1.png',markers:[{x:50,y:50,note:'one'},{x:100,y:70,note:'two'},{x:130,y:140,note:'three'}]}],panoramas:Object.fromEntries(['p1','p2','p3'].map((id,i)=>[id,{mode:'equirect',file:'panoramas/'+id+'.png',floorId:1,room:'Room '+id,navYawOffsetDeg:0,destinations:[{panoId:id==='p1'?'p2':'p1',room:'Exit',angleDeg:0}]}]))}));

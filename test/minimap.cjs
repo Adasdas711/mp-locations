@@ -1,10 +1,11 @@
+const {launchBrowser}=require('./support/browser.cjs');
 const {test,before,after}=require('node:test');
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
 const fs=require('node:fs');
 const base=process.env.PALACE_TEST_URL||'http://127.0.0.1:8000';
 let browser;
-before(async()=>{browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':chromium.executablePath()),args:['--no-sandbox','--enable-unsafe-swiftshader']})});
+before(async()=>{browser=await launchBrowser()});
 after(async()=>{await browser?.close()});
 async function fit(page,w,h){
   await page.waitForFunction(()=>mm.geo&&document.querySelector('#minimapBody').clientHeight>0);
@@ -12,7 +13,9 @@ async function fit(page,w,h){
   await page.waitForFunction(()=>{
     const map=document.querySelector('#minimap'),body=document.querySelector('#minimapBody'),panel=map.parentElement;
     const m=map.getBoundingClientRect(),b=body.getBoundingClientRect(),p=panel.getBoundingClientRect(),g=mm.geo;
-    return g&&g.ox>=1&&g.oy>=1&&g.ox+g.dw<body.clientWidth-1&&g.oy+g.dh<body.clientHeight-1&&m.top>=p.top-1&&m.bottom<=p.bottom+1&&b.bottom<=m.bottom;
+    const cameras=[...document.querySelectorAll("#minimapSvg .mm-dot")];
+    const camerasFit=cameras.length===2&&cameras.every(el=>{const r=el.getBoundingClientRect();return r.left>=b.left&&r.right<=b.right&&r.top>=b.top&&r.bottom<=b.bottom});
+    return camerasFit&&g&&g.ox>=1&&g.oy>=1&&g.ox+g.dw<body.clientWidth-1&&g.oy+g.dh<body.clientHeight-1&&m.top>=p.top-1&&m.bottom<=p.bottom+1&&b.bottom<=m.bottom;
   },null,{timeout:10000});
   const info=await page.evaluate(()=>({geo:mm.geo,w:document.querySelector('#minimapBody').clientWidth,h:document.querySelector('#minimapBody').clientHeight,svg:document.querySelector('#minimapSvg').viewBox.baseVal.height,canvasHeight:document.querySelector('#minimapCanvas').height/Math.min(window.devicePixelRatio||1,2)}));
   assert.ok(Math.abs(info.geo.dw/info.geo.dh-w/h)<.001,'Full source aspect ratio is preserved');

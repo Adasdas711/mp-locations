@@ -1,0 +1,16 @@
+{
+  "id": "palace.example",
+  "name": "Сводка дворца",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "main": "main.js",
+  "description": "Пример: панель статистики дворца и добавление локуса в центр активного этажа.",
+  "permissions": ["project.read", "markers.write"],
+  "contributes": {
+    "commands": [
+      {"id": "palace.example.summary", "title": "Открыть сводку"},
+      {"id": "palace.example.center", "title": "Добавить локус в центре"}
+    ],
+    "panels": [{"id": "palace.example.panel", "title": "Сводка дворца"}]
+  }
+}

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "test": "node scripts/test.cjs",
-    "update:offline": "node scripts/update-offline.cjs"
+    "update:offline": "node scripts/update-offline.cjs",
+    "package:addon": "node scripts/package-addon.cjs"
   },
   "devDependencies": {
     "playwright-core": "1.61.1"
