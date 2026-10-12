@@ -15,7 +15,7 @@ for(const [name,options]of profiles)test(`${name}: addon install, module import,
  await card.locator('[data-action="toggle"]').click();await page.waitForFunction(()=>addonHosts.get('palace.example')?.ready);
  await page.locator('#addonMode').uncheck();assert.equal(await page.evaluate(()=>addonHosts.size),0);await page.locator('#addonMode').check();await page.waitForFunction(()=>addonHosts.get('palace.example')?.ready);
  await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>addonHosts.get('palace.example')?.ready);if(await page.locator('#recoveryModal.show').count())await page.locator('#recoveryClose').click();
- await page.locator('#addonsOpen').click();await card.locator('[data-action="remove"]').click();await page.waitForFunction(()=>!addonPackages.has('palace.example'));assert.equal(await card.count(),0);await page.reload();await page.waitForFunction(()=>document.querySelector('#addonList').textContent.includes('пока'));assert.equal(await page.evaluate(()=>addonHosts.size),0);
+ await page.locator('#addonsOpen').click();await card.locator('[data-action="remove"]').click();await page.waitForFunction(()=>!addonPackages.has('palace.example'));assert.equal(await card.count(),0);await page.reload();await page.waitForFunction(()=>!!document.querySelector('#addonList .addon-empty'));assert.equal(await page.evaluate(()=>addonHosts.size),0);
 });
 test('addon capability denial, edit protection, isolation, invalid manifests and command failure',async t=>{
  const {page}=await openSession(browser,t,profiles[0][1],{offlineCache:true});

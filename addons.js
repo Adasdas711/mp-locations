@@ -3,14 +3,15 @@
 const addonPackages=new Map(),addonHosts=new Map();
 const ADDON_LIMIT=8*1024*1024;
 const addonModal=persistenceModal('addonsModal','Аддоны',`
-<p>Аддоны PALACE добавляют команды и панели. Файлы VSCode .vsix не поддерживаются.</p>
-<div class="persistence-actions"><button id="addonUpload">Загрузить ZIP</button><input id="addonFile" type="file" accept=".zip,.palace-addon" hidden><label><input id="addonMode" type="checkbox" checked> Модульный режим</label></div>
-<label for="addonSearch">Поиск аддонов и команд</label><input id="addonSearch" type="search" placeholder="Название аддона или команды" style="width:100%;padding:8px"><div id="addonInstallPreview" hidden></div><div id="addonList"></div><div id="addonStatus" role="status"></div><button id="addonsClose">Закрыть</button>`);
+<p class="addon-intro">Расширения для вашего дворца: инструменты, команды и оформление.</p>
+<div class="addon-toolbar"><button id="addonUpload" type="button" aria-expanded="false" aria-controls="addonUploader">＋ Установить аддон</button><label class="addon-mode"><input id="addonMode" type="checkbox" checked> Модульный режим</label></div>
+<section id="addonUploader" hidden aria-label="Установка аддона"><div class="addon-upload-heading"><strong>Установка из файла</strong><button id="addonUploadClose" type="button" aria-label="Закрыть установку">×</button></div><label id="addonDrop" for="addonFile" role="button" tabindex="0"><svg class="ic"><use href="#i-upload"/></svg><strong>Выберите или перетащите пакет</strong><span>.palace-addon или ZIP · до 8 МБ</span></label><input id="addonFile" type="file" accept=".zip,.palace-addon" tabindex="-1" aria-hidden="true"><span id="addonFileName">Файл не выбран</span><div id="addonInstallPreview" hidden></div></section>
+<label class="addon-search" for="addonSearch"><svg class="ic"><use href="#i-search"/></svg><input id="addonSearch" type="search" placeholder="Поиск аддонов и команд"></label><div id="addonList"></div><div id="addonStatus" role="status" aria-live="polite"></div><footer class="addon-footer"><span>Пакеты PALACE</span><button id="addonsClose" type="button">Закрыть</button></footer>`);
 const addonPanel=persistenceModal('addonPanel','Панель аддона','<div id="addonPanelFrames"></div><button id="addonPanelClose">Закрыть панель</button>');
 persistenceStyle.textContent+='\n.addon-card{border:1px solid var(--line);border-radius:4px;padding:12px;margin:10px 0}.addon-runtime{width:100%;height:380px;border:0;background:var(--vscode-editor-bg)}.addon-runtime[hidden]{display:none!important}#addonList .addon-description{color:var(--muted);white-space:pre-wrap}.addon-commands{display:flex;gap:6px;flex-wrap:wrap}.addon-card code{overflow-wrap:anywhere}';
 const addonsButton=document.createElement('button');addonsButton.className='abtn';addonsButton.id='addonsOpen';addonsButton.type='button';addonsButton.title='Аддоны';addonsButton.setAttribute('aria-label','Аддоны');addonsButton.innerHTML='<svg class="ic"><use href="#i-braces"/></svg>';
 document.querySelector('#abHotkeys').before(addonsButton);
-let addonMode=true,pendingAddon=null;
+let addonMode=true,pendingAddon=null,addonReadSequence=0;
 function addonMessage(message){document.querySelector('#addonStatus').textContent=message;}
 function addonStorage(){return new Promise((resolve,reject)=>{const r=indexedDB.open('palace-addons',1);r.onupgradeneeded=()=>r.result.createObjectStore('packages',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(new Error('Хранилище занято другой вкладкой.'))})}
 async function storeAddon(record,remove=false){const db=await addonStorage();try{const tx=db.transaction('packages','readwrite');const complete=idbComplete(tx);if(remove)tx.objectStore('packages').delete(record.id);else tx.objectStore('packages').put(record);await complete}finally{db.close()}}
@@ -140,14 +141,14 @@ window.addEventListener('message',async event=>{
 });
 function renderAddons(){
  const list=document.querySelector('#addonList');list.replaceChildren();
- if(!addonPackages.size)list.textContent='Аддоны пока не установлены.';
+ if(!addonPackages.size)list.innerHTML='<div class="addon-empty"><svg class="ic"><use href="#i-braces"/></svg><strong>Здесь появятся ваши аддоны</strong><span>Установите пакет, чтобы добавить новые возможности.</span></div>';
  const search=document.querySelector('#addonSearch').value.trim().toLowerCase();
  for(const record of addonPackages.values()){
   if(search&&!([record.id,record.manifest.name,...(record.manifest.contributes?.commands||[]).map(c=>c.title)].join(' ').toLowerCase().includes(search)))continue;
   const host=addonHosts.get(record.id),card=document.createElement('section');card.className='addon-card';card.dataset.addon=record.id;
   const title=document.createElement('h3');title.textContent=record.manifest.name+' '+record.manifest.version;
   const description=document.createElement('p');description.className='addon-description';description.textContent=record.manifest.description||record.id;
-  const stateLabel=document.createElement('p');stateLabel.textContent=host?.error?'Ошибка: '+host.error:!addonMode?'Модульный режим выключен':!record.enabled?'Отключён':host?.ready?'Активен':'Активируется…';
+  const stateLabel=document.createElement('p');stateLabel.className='addon-state';stateLabel.dataset.state=host?.error?'error':host?.ready&&record.enabled&&addonMode?'active':'inactive';stateLabel.textContent=host?.error?'Ошибка: '+host.error:!addonMode?'Модульный режим выключен':!record.enabled?'Отключён':host?.ready?'Активен':'Активируется…';
   const actions=document.createElement('div');actions.className='persistence-actions';
   const toggle=document.createElement('button');toggle.textContent=record.enabled?'Отключить':'Включить';toggle.dataset.action='toggle';toggle.onclick=async()=>{try{record.enabled=!record.enabled;await storeAddon(record);record.enabled?startAddon(record):stopAddon(record.id);renderAddons()}catch(error){addonMessage(error.message)}};
   const remove=document.createElement('button');remove.textContent='Удалить';remove.dataset.action='remove';remove.onclick=async()=>{try{await storeAddon(record,true);stopAddon(record.id);addonPackages.delete(record.id);renderAddons()}catch(error){addonMessage(error.message)}};
@@ -161,21 +162,29 @@ function renderAddons(){
 async function installPendingAddon(){
  if(!pendingAddon)return;
  const record=pendingAddon;const old=addonPackages.get(record.id);record.storage=old?.storage||{};
- await storeAddon(record);addonPackages.set(record.id,record);startAddon(record);pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;renderAddons();addonMessage('Аддон установлен: '+record.manifest.name);
+ await storeAddon(record);addonPackages.set(record.id,record);startAddon(record);pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;showAddonUploader(false);document.querySelector('#addonFile').value='';document.querySelector('#addonFileName').textContent='Файл не выбран';renderAddons();addonMessage('Аддон установлен: '+record.manifest.name);
 }
 addonsButton.onclick=()=>{renderAddons();showPersistenceModal(addonModal)};
 document.querySelector('#addonsClose').onclick=()=>closePersistenceModal(addonModal);
 document.querySelector('#addonPanelClose').onclick=()=>closePersistenceModal(addonPanel);
-document.querySelector('#addonUpload').onclick=()=>{const input=document.querySelector('#addonFile');input.value='';input.click()};
+function showAddonUploader(visible=true){document.querySelector('#addonUploader').hidden=!visible;document.querySelector('#addonUpload').setAttribute('aria-expanded',String(visible))}
+document.querySelector('#addonUpload').onclick=()=>showAddonUploader(document.querySelector('#addonUploader').hidden);
+document.querySelector('#addonUploadClose').onclick=()=>{showAddonUploader(false);addonReadSequence++;pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;document.querySelector('#addonFile').value='';document.querySelector('#addonFileName').textContent='Файл не выбран'};
+
 document.querySelector('#addonFile').onchange=async event=>{
- const file=event.target.files[0];if(!file)return;
+ const file=event.target.files[0];if(!file)return;document.querySelector('#addonFileName').textContent=file.name;showAddonUploader();const sequence=++addonReadSequence;pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;addonMessage('Проверка пакета…');
  try{
-  pendingAddon=await readAddon(file);const preview=document.querySelector('#addonInstallPreview');preview.replaceChildren();preview.hidden=false;
+  const record=await readAddon(file);if(sequence!==addonReadSequence)return;pendingAddon=record;const preview=document.querySelector('#addonInstallPreview');preview.replaceChildren();preview.hidden=false;
   const text=document.createElement('p');text.textContent=pendingAddon.manifest.name+' '+pendingAddon.manifest.version+' · разрешения: '+(pendingAddon.manifest.permissions.join(', ')||'нет')+(addonPackages.has(pendingAddon.id)?' · заменит установленную версию':'');
   const accept=document.createElement('button');accept.id='addonInstall';accept.textContent='Установить';accept.onclick=()=>installPendingAddon().catch(error=>addonMessage(error.message));
   const cancel=document.createElement('button');cancel.textContent='Отмена';cancel.onclick=()=>{pendingAddon=null;preview.hidden=true};preview.append(text,accept,cancel);addonMessage('Пакет проверен. Установите аддон, чтобы запустить его.');
- }catch(error){pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;addonMessage('Не удалось загрузить: '+error.message)}
+ }catch(error){if(sequence!==addonReadSequence)return;pendingAddon=null;document.querySelector('#addonInstallPreview').hidden=true;addonMessage('Не удалось загрузить: '+error.message)}
 };
+const addonDrop=document.querySelector('#addonDrop');
+addonDrop.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();document.querySelector('#addonFile').click()}});
+addonDrop.addEventListener('dragover',event=>{event.preventDefault();addonDrop.classList.add('drag-over')});
+addonDrop.addEventListener('dragleave',()=>addonDrop.classList.remove('drag-over'));
+addonDrop.addEventListener('drop',event=>{event.preventDefault();event.stopPropagation();addonDrop.classList.remove('drag-over');const files=event.dataTransfer?.files;if(files?.length)document.querySelector('#addonFile').onchange({target:{files}})});
 document.querySelector('#addonMode').onchange=event=>{
  addonMode=event.target.checked;try{localStorage.setItem('palace.addonMode',String(addonMode))}catch{}
  for(const record of addonPackages.values())addonMode?startAddon(record):stopAddon(record.id);renderAddons();
@@ -195,3 +204,18 @@ render=function(){const result=addonRender();notifyAddonProjectChanged();return 
 
 document.querySelector('#addonSearch').oninput=renderAddons;
 window.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.shiftKey&&event.code==='KeyP'){event.preventDefault();event.stopImmediatePropagation();renderAddons();showPersistenceModal(addonModal);document.querySelector('#addonSearch').focus()}},true);
+// Keep installation and management together in a compact, responsive dialog.
+persistenceStyle.textContent+=`
+#addonsModal .dialog{width:min(760px,94vw)!important;padding:22px;box-sizing:border-box;font:13px/1.5 system-ui;border-radius:12px}
+#addonsModal h2{margin:0;font-size:20px}#addonsModal .addon-intro{margin:6px 0 16px;color:var(--muted)}
+#addonsModal button{font:inherit;min-height:32px;padding:6px 11px;border-radius:6px;cursor:pointer}#addonsModal button:focus-visible,#addonsModal input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.addon-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}#addonUpload,#addonInstall{background:var(--vscode-button-bg);color:var(--vscode-button-fg,#fff);border:1px solid transparent}.addon-mode{display:flex;align-items:center;gap:7px;color:var(--muted)}.addon-mode input{accent-color:var(--blue)}
+#addonUploader{padding:14px;margin-bottom:14px;border:1px solid var(--line);border-radius:8px;background:var(--vscode-editor-bg,var(--panel))}#addonUploader[hidden],#addonInstallPreview[hidden]{display:none!important}.addon-upload-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}#addonUploadClose{min-height:24px;padding:0 7px;background:transparent;border:0;font-size:20px}
+#addonDrop{display:flex;flex-direction:column;align-items:center;gap:5px;padding:18px;border:1px dashed var(--line);border-radius:6px;cursor:pointer;text-align:center}#addonDrop .ic{width:24px;height:24px;color:var(--blue)}#addonDrop span{font-size:11px;color:var(--muted)}#addonDrop.drag-over{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 10%,transparent)}#addonFile{display:block;width:100%;box-sizing:border-box;margin-top:10px;font:inherit;color:var(--muted)}#addonFile::file-selector-button{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--text);margin-right:8px}#addonInstallPreview{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}#addonInstallPreview p{overflow-wrap:anywhere;font-size:12px}#addonInstallPreview button{margin-right:6px}
+.addon-search{display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--vscode-input-bg,var(--panel));margin-bottom:12px}.addon-search .ic{width:16px;height:16px;color:var(--muted)}#addonSearch{width:100%;min-width:0;border:0;background:transparent;color:var(--text);padding:9px 0;font:inherit}
+#addonList{max-height:40vh;overflow:auto;padding:1px;overscroll-behavior:contain}.addon-card{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:14px;margin:0 0 10px;border-radius:8px;background:var(--vscode-editor-bg,var(--panel))}.addon-card h3{font-size:14px;margin:0;overflow-wrap:anywhere}.addon-card .addon-description{grid-column:1;margin:0;font-size:12px;overflow-wrap:anywhere}.addon-state{grid-column:2;grid-row:1;align-self:start;margin:0;padding:2px 7px;border:1px solid var(--line);border-radius:12px;font-size:10px;color:var(--muted);max-width:180px;overflow-wrap:anywhere}.addon-state[data-state=active]{color:var(--blue);border-color:var(--blue)}.addon-state[data-state=error]{color:var(--red)}.addon-card .persistence-actions{grid-column:1/-1;margin:4px 0 0}.addon-card .addon-commands{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.addon-commands:empty{display:none}.addon-card [data-action=remove]{color:var(--red);margin-left:auto}
+.addon-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:32px 12px;text-align:center;color:var(--muted)}.addon-empty .ic{width:32px;height:32px}.addon-empty strong{color:var(--text);font-size:14px}.addon-empty span{font-size:12px}#addonStatus{font-size:12px;overflow-wrap:anywhere;margin-top:8px;color:var(--muted)}#addonStatus:empty{display:none}.addon-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:12px;margin-top:14px}.addon-footer span{font-size:11px;color:var(--muted)}
+@media(max-width:600px){#addonsModal .dialog{padding:16px}.addon-toolbar{gap:8px}.addon-card{grid-template-columns:minmax(0,1fr)}.addon-state{grid-column:1;grid-row:auto;justify-self:start;max-width:100%}.addon-card .addon-description{grid-column:1}#addonList{max-height:35vh}}
+`;
+
+persistenceStyle.textContent+=`#addonsModal,#toolsSettings{box-sizing:border-box;height:100dvh;padding:12px!important;align-items:center!important}#addonsModal .dialog,#toolsSettings .dialog{display:block;max-height:calc(100dvh - 24px)!important}#addonUploader{position:relative}#addonFile{position:absolute;width:1px;height:1px;padding:0;margin:0;opacity:0;clip-path:inset(50%)}#addonFileName{display:block;margin-top:8px;font-size:11px;color:var(--muted);overflow-wrap:anywhere}#addonDrop:focus-visible{outline:2px solid var(--blue);outline-offset:2px}`;

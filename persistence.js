@@ -45,7 +45,7 @@ function persistenceModal(id, title, body) {
   el.addEventListener('keydown', event => {
     if (event.key === 'Escape') { event.stopPropagation(); closePersistenceModal(el); }
     if (event.key === 'Tab') {
-      const controls = [...el.querySelectorAll('button:not(:disabled),textarea,input')].filter(x => x.offsetParent);
+      const controls = [...el.querySelectorAll('button:not(:disabled),textarea:not(:disabled),input:not(:disabled):not([tabindex="-1"]),select:not(:disabled),[tabindex="0"]')].filter(x => x.offsetParent);
       if (!controls.length) return;
       const first = controls[0], last = controls[controls.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }

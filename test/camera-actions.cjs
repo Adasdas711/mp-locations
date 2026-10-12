@@ -34,10 +34,11 @@ for(const [name,options]of profiles)test(`${name}: cone exits with 3D; camera to
  await page.locator('#plan .plan-cam[data-pano="a"]').click();
  await page.locator('#cameraEditorStart').click();await page.locator('#cameraEditorStart').click();assert.equal(await page.evaluate(()=>state.startPano),'a');
  assert.equal(await page.locator('#cameraEditorStart').getAttribute('aria-pressed'),'true');
- assert.equal(await page.locator('.camera-edit-selected .cam-start').isVisible(),false,'Selected initial camera has only one visible flag');
+ assert.equal(await page.locator('#cameraEditorStart').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(245, 179, 1)');
+ assert.equal(await page.locator('.camera-edit-selected .cam-start').count(),0,'Selected initial camera has only one visible flag');
  assert.equal(await page.locator('.camera-edit-selected [data-action="set-start"]').isVisible(),true);
  await page.locator('#plan .plan-cam[data-pano="b"]').click();
- assert.equal(await page.locator('#plan .plan-cam[data-pano="a"] .cam-start').isVisible(),true,'Initial camera indicator returns when another camera is selected');
+ assert.equal(await page.locator('#plan .cam-start').count(),0,'Legacy flags are never rendered in camera editing');
  await page.locator('#plan .plan-cam[data-pano="a"]').click();
  await page.locator('#cameraEditorDelete').click();await page.locator('#askNo').click();assert.equal(await page.evaluate(()=>!!state.panoramas.a),true);
  await page.locator('#cameraEditorDelete').click();await page.locator('#askYes').click();await page.keyboard.press('Control+z');await page.waitForFunction(()=>!!state.panoramas.a&&state.startPano==='a');

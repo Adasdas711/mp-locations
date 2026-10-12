@@ -4,7 +4,7 @@ const palaceTools=new Map(),extensionLayers=new Map();let toolPreferences={};
 try{toolPreferences=JSON.parse(localStorage.getItem('palace.tools')||'{}')}catch{}
 if(!toolPreferences||typeof toolPreferences!=='object'||Array.isArray(toolPreferences))toolPreferences={};
 const toolStyle=document.createElement('style');toolStyle.textContent='[data-palace-hidden="true"]{display:none!important}.tool-settings-row{display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--line)}.extension-icon{width:20px;height:20px;object-fit:contain}.extension-overlay{position:absolute;inset:0;pointer-events:none;z-index:8}.extension-overlay svg{width:100%;height:100%;overflow:hidden}';document.head.appendChild(toolStyle);
-const toolsModal=persistenceModal('toolsSettings','Настройка инструментов','<p>Выберите инструменты, которые должны отображаться. Настройки сохраняются в этом браузере. Скрытый инструмент можно вернуть здесь.</p><input id="toolsFilter" type="search" placeholder="Поиск инструментов" style="width:100%;padding:8px"><div id="toolsList"></div><div class="persistence-actions"><button id="toolsReset">Показать все</button><button id="toolsClose">Закрыть</button></div>');
+const toolsModal=persistenceModal('toolsSettings','Настройка инструментов','<p class="tools-intro">Выберите инструменты для вашего интерфейса. Скрытые инструменты можно вернуть здесь.</p><div class="tools-filters"><input id="toolsFilter" type="search" aria-label="Поиск инструментов" placeholder="Поиск инструментов"><select id="toolsCategory" aria-label="Тип инструментов"><option value="all">Все инструменты</option><option value="system">Системные</option><option value="addons">Аддонные</option></select></div><div id="toolsList"></div><div class="persistence-actions"><button id="toolsReset">Показать все</button><button id="toolsClose">Закрыть</button></div>');
 const settingsButton=document.createElement('button');settingsButton.id='toolsSettingsOpen';settingsButton.className='abtn';settingsButton.type='button';settingsButton.title='Настройка инструментов';settingsButton.setAttribute('aria-label','Настройка инструментов');settingsButton.innerHTML='<svg class="ic"><use href="#i-gear"/></svg>';settingsButton.dataset.short='Инструменты';document.querySelector('.activity').appendChild(settingsButton);
 function registerPalaceTool(key,label,element,owner='system'){
  const existing=palaceTools.get(key);if(existing&&existing.element!==element)existing.element.removeAttribute('data-palace-hidden');
@@ -27,14 +27,15 @@ function setToolVisibility(key,visible){
 function renderToolSettings(){
  const list=document.querySelector('#toolsList'),query=document.querySelector('#toolsFilter').value.toLowerCase();list.replaceChildren();
  for(const tool of palaceTools.values()){
-  if(!tool.element.isConnected||!(tool.label+' '+tool.owner).toLowerCase().includes(query))continue;
+  const category=document.querySelector('#toolsCategory').value;
+  if(!tool.element.isConnected||category==='system'&&tool.owner!=='system'||category==='addons'&&tool.owner==='system'||!(tool.label+' '+tool.owner).toLowerCase().includes(query))continue;
   const row=document.createElement('label');row.className='tool-settings-row';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=toolPreferences[tool.key]!==false;checkbox.dataset.toolKey=tool.key;
   checkbox.onchange=()=>{try{setToolVisibility(tool.key,checkbox.checked)}catch(error){checkbox.checked=!checkbox.checked;notify(error.message)}};
-  const text=document.createElement('span');text.textContent=tool.label+' · '+(tool.owner==='system'?'Системный':tool.owner);row.append(checkbox,text);list.appendChild(row);
+  const text=document.createElement('span');text.textContent=tool.label;const owner=document.createElement('small');owner.textContent=tool.owner==='system'?'Системный':tool.owner;const info=document.createElement('span');info.className='tool-settings-info';info.append(text,owner);row.append(checkbox,info);list.appendChild(row);
  }
 }
 settingsButton.onclick=()=>{refreshSystemTools();renderToolSettings();showPersistenceModal(toolsModal)};
-document.querySelector('#toolsFilter').oninput=renderToolSettings;document.querySelector('#toolsClose').onclick=()=>closePersistenceModal(toolsModal);
+document.querySelector('#toolsCategory').onchange=renderToolSettings;document.querySelector('#toolsFilter').oninput=renderToolSettings;document.querySelector('#toolsClose').onclick=()=>closePersistenceModal(toolsModal);
 document.querySelector('#toolsReset').onclick=()=>{try{localStorage.setItem('palace.tools','{}');toolPreferences={};for(const tool of palaceTools.values())tool.element.dataset.palaceHidden='false';renderToolSettings()}catch(error){notify('Не удалось сохранить настройки: '+error.message)}};
 window.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.altKey&&event.code==='KeyT'){event.preventDefault();settingsButton.click()}},true);
 refreshSystemTools();
@@ -111,3 +112,5 @@ new MutationObserver(()=>{
   if(!layer&&addonHosts.get(definition.host.record.id)===definition.host){try{addonOverlay(definition.host,definition.input)}catch{}}
  }
 }).observe(document.querySelector('#plan'),{childList:true});
+
+toolStyle.textContent+=`#toolsSettings .dialog{width:min(760px,94vw)!important;padding:22px;box-sizing:border-box;border-radius:12px;font:13px/1.5 system-ui}#toolsSettings h2{font-size:20px;margin:0}.tools-intro{color:var(--muted);margin:6px 0 16px}.tools-filters{display:flex;gap:8px;margin-bottom:12px}.tools-filters input{flex:1;min-width:0}.tools-filters input,.tools-filters select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--vscode-input-bg,var(--panel));color:var(--text)}#toolsList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:50vh;overflow:auto;overscroll-behavior:contain;padding:1px}.tool-settings-row{border:1px solid var(--line);border-radius:6px;margin:0;padding:9px;min-width:0;background:var(--vscode-editor-bg,var(--panel));cursor:pointer}.tool-settings-row:focus-within{outline:1px solid var(--blue)}.tool-settings-row input{accent-color:var(--blue);flex:none}.tool-settings-info{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}.tool-settings-info small{color:var(--muted);font-size:10px}#toolsSettings .persistence-actions{border-top:1px solid var(--line);padding-top:12px;margin:14px 0 0;justify-content:space-between}#toolsSettings button{font:inherit;padding:6px 11px;border-radius:6px}@media(max-width:600px){#toolsSettings .dialog{padding:16px}#toolsList{grid-template-columns:1fr}.tools-filters{flex-direction:column}}`;
