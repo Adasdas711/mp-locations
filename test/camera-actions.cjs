@@ -19,7 +19,8 @@ for(const [name,options]of profiles)test(`${name}: cone exits with 3D; camera to
  assert.ok(flag.x+flag.width/2<marker.x+marker.width/2&&flag.y+flag.height/2>marker.y+marker.height/2,'Flag is bottom left');
  assert.equal(await page.locator('#cameraEditorLinks').count(),0);
  const plus=page.locator('#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]');
- const badge=await plus.boundingBox();assert.ok(badge.width>=20&&badge.width<=30,'Corner actions keep a usable screen size at the current zoom');
+ const badge=await plus.boundingBox(),peer=await page.locator('#plan .plan-cam[data-pano="c"]').boundingBox();assert.ok(Math.abs(badge.width/peer.width-.34)<.02,'Corner actions are proportional to markers');
+ assert.equal(await page.locator('[data-tool="camera"] use').getAttribute('href'),'#i-camera-edit');
  await plus.click();await page.waitForFunction(()=>state.panoramas.a.destinations.some(d=>d.panoId==='c'));
  assert.equal(await page.locator('.camera-link-lines line.selected').count(),2);
  assert.equal(await page.locator('#plan .plan-cam.camera-edit-connected').count(),2);

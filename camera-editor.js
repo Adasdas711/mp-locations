@@ -6,17 +6,15 @@ cameraStyle.textContent = `
 .tool-camera #plan .plan-cam{cursor:grab}.tool-camera #plan .plan-cam.dragging{cursor:grabbing}
 .tool-camera #plan .plan-cam.camera-edit-selected{outline:3px solid var(--blue)!important;outline-offset:4px;background:var(--vscode-button-bg)!important;color:#fff!important;z-index:5}
 .tool-camera #plan .plan-cam.camera-edit-connected{outline:2px solid var(--blue)!important;outline-offset:2px;box-shadow:0 0 0 5px color-mix(in srgb,var(--blue) 20%,transparent)!important;z-index:4}
-#plan .plan-cam .camera-action{position:absolute;right:-8px;top:-9px;display:flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;min-height:22px;padding:0;border:1.5px solid var(--panel);border-radius:50%;background:var(--vscode-button-bg);color:#fff;font:700 16px/1 system-ui;cursor:pointer;z-index:8;box-shadow:0 1px 4px #0005;transform:rotate(var(--mrot,0deg)) scale(var(--camera-action-scale,1));transform-origin:center}
-#plan .plan-cam .camera-action[data-action=remove-link]{background:var(--red);color:#fff}
-#plan .plan-cam .camera-action[data-action=delete-camera]{background:var(--red);color:#fff;font-size:12px}
-#plan .plan-cam .camera-action[data-action=set-start]{right:auto;top:auto;left:-8px;bottom:-9px}
+#plan .plan-cam .camera-action{box-sizing:border-box;position:absolute;right:-12%;top:-12%;display:flex;align-items:center;justify-content:center;width:34%;height:34%;min-width:0;min-height:0;padding:0;border:calc(var(--camera-marker-size,68px)*.022) solid var(--panel);border-radius:50%;background:var(--vscode-button-bg);color:#fff;font:700 calc(var(--camera-marker-size,68px)*.24)/1 system-ui;cursor:pointer;z-index:8;transform:rotate(var(--mrot,0deg));transform-origin:center}
+#plan .plan-cam .camera-action[data-action=remove-link],#plan .plan-cam .camera-action[data-action=delete-camera]{background:var(--red);color:#fff}
+#plan .plan-cam .camera-action[data-action=set-start]{right:auto;top:auto;left:-12%;bottom:-12%}
 #plan .plan-cam .camera-action[data-action=set-start][aria-pressed=true]{background:var(--yellow);color:var(--panel)}
-#plan .plan-cam .camera-action .ic{width:12px;height:12px}
+#plan .plan-cam .camera-action .ic{width:60%;height:60%}
 .camera-link-lines{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;overflow:visible;pointer-events:none;z-index:1}
 .camera-link-lines line{stroke:var(--blue);stroke-width:2;stroke-dasharray:6 5;opacity:.5;vector-effect:non-scaling-stroke}
 .camera-link-lines line.selected{stroke-width:3;opacity:1}
 .tool-camera #markerCtl{display:none}
-@media(max-width:600px){#plan .plan-cam .camera-action{width:26px;height:26px;min-width:26px;min-height:26px;right:-10px;top:-10px}}
 `;
 document.head.append(cameraStyle);
 async function openCameraEditor(id, link = false) {
@@ -45,12 +43,12 @@ function refreshCameraEditor() {
     const ids = level() ? panoramasForLevel(level()) : [];
     if (!panos[editedCameraId] || !ids.includes(editedCameraId)) editedCameraId = ids.includes(activeLocalPano) ? activeLocalPano : ids[0] || null;
   }
-  syncCameraZoom();
   document.querySelectorAll('#plan .plan-cam').forEach(node=>{
     const id=node.dataset.pano,selected=editing&&id===editedCameraId,connected=editing&&!!editedCameraId&&id!==editedCameraId&&(linkedCamera(editedCameraId,id)||linkedCamera(id,editedCameraId));
     node.classList.toggle('camera-edit-selected',selected);node.classList.toggle('camera-edit-connected',connected);node.setAttribute('aria-pressed',String(selected));
     const base=Math.max(20,Math.round(1.24*markerSize()));
-    node.style.width=node.style.height=editing&&window.PALACE_MOBILE?.phone?'max('+base+'px, var(--camera-touch-size, 32px))':base+'px';
+    node.style.width=node.style.height=base+'px';
+    node.style.setProperty('--camera-marker-size',base+'px');
     node.querySelectorAll('.camera-action').forEach(button=>button.remove());
     if(!editing)return;
     node.title='Камера: '+(panos[id]?.room||id);
@@ -128,18 +126,3 @@ window.openCameraTool=async function(){
   state.tool='camera';state.layout='plan';
   await setPlanView('2d',true);applyLayout();syncTools();drawPlan();refreshCameraEditor();
 };
-
-// Zoom changes inherited CSS values only: retain controls, listeners and the graph.
-function syncCameraZoom(){
-  const plan=document.querySelector('#plan');if(!plan)return;
-  const inverse=1/(state.zoom||1);
-  plan.style.setProperty('--camera-action-scale',String(inverse));
-  plan.style.setProperty('--camera-touch-size',32*inverse+'px');
-}
-let cameraZoomFrame=0;
-function scheduleCameraZoom(){
-  if(cameraZoomFrame)return;
-  cameraZoomFrame=requestAnimationFrame(()=>{cameraZoomFrame=0;syncCameraZoom()});
-}
-const cameraApplyZoom=applyZoom;applyZoom=function(...args){const before=state.zoom,result=cameraApplyZoom(...args);if(state.tool==='camera'&&state.zoom!==before)scheduleCameraZoom();return result};
-const cameraFitPlanView=fitPlanView;fitPlanView=function(...args){const result=cameraFitPlanView(...args);if(result&&state.tool==='camera')syncCameraZoom();return result};
