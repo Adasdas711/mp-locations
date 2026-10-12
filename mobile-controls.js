@@ -28,11 +28,11 @@ window.addEventListener('click',event=>{
  if(mobilePendingTap?.button===button){mobilePendingTap.native=true;clearTimeout(mobilePendingTap.timer)}
 },true);
 // Small touch screens hide a few desktop buttons; expose their actions in a compact menu.
-const mobileMoreButton=document.createElement('button');mobileMoreButton.type='button';mobileMoreButton.id='mobileMore';mobileMoreButton.className='abtn';mobileMoreButton.title='Ещё';mobileMoreButton.setAttribute('aria-label','Ещё');mobileMoreButton.innerHTML='<svg class="ic"><use href="#i-gear"/></svg>';
+const mobileMoreButton=document.createElement('button');mobileMoreButton.type='button';mobileMoreButton.id='mobileMore';mobileMoreButton.className='abtn';mobileMoreButton.title="More";mobileMoreButton.setAttribute('aria-label',"More");mobileMoreButton.innerHTML='<svg class="ic"><use href="#i-gear"/></svg>';
 document.querySelector('#abHotkeys').before(mobileMoreButton);
 const mobileControlsStyle=document.createElement('style');mobileControlsStyle.textContent='#mobileMore{display:none}html.touch #mobileMore{display:inline-flex}';document.head.appendChild(mobileControlsStyle);
 mobileMoreButton.onclick=()=>{const box=mobileMoreButton.getBoundingClientRect();showCtxMenu(box.left,Math.max(0,box.top-200),[
- {label:'Горячие клавиши',icon:'keyboard',run:()=>openHotkeys()},
- {label:'Повернуть план…',icon:'rotate',disabled:!canEditPlan(),run:()=>ask('Угол поворота в градусах',value=>{const angle=Number(value);if(Number.isFinite(angle))applyRotation(angle)},{input:String(state.rotation),yes:'Применить'})},
- {label:'Размер локусов…',icon:'pin',disabled:!canEditPlan(),run:()=>ask('Размер локусов: 20–100',value=>{const size=Number(value);if(!Number.isFinite(size))return;state.markerSize=Math.max(20,Math.min(100,Math.round(size)));touch();render()},{input:String(markerSize()),yes:'Применить'})}
-],'Ещё')};
+ {label:"Hotkeys",icon:'keyboard',run:()=>openHotkeys()},
+ {label:"Rotate plan…",icon:'rotate',disabled:!canEditPlan(),run:()=>ask("Rotation angle in degrees",value=>{const angle=Number(value);if(Number.isFinite(angle))applyRotation(angle)},{input:String(state.rotation),yes:"Apply"})},
+ {label:"Locus size…",icon:'pin',disabled:!canEditPlan(),run:()=>ask("Locus size: 20–100",value=>{const size=Number(value);if(!Number.isFinite(size))return;state.markerSize=Math.max(20,Math.min(100,Math.round(size)));touch();render()},{input:String(markerSize()),yes:"Apply"})}
+],"More")};

@@ -85,7 +85,7 @@ for(const [profile,options]of profiles){
  });
  test(`${profile}: hotkey filtering, rebinding, reset and safe new-project confirmation`,async t=>{
   const {page}=await openSession(browser,t,options);
-  await page.locator('#toolsSettingsOpen').click();await page.locator('#abHotkeys').click();await page.locator('#hkFilter').fill('Маркер');assert.equal(await page.locator('#hkList .hk-row:not(.fixed)').count(),1);
+  await page.locator('#toolsSettingsOpen').click();await page.locator('#abHotkeys').click();await page.locator('#hkFilter').fill("Marker");assert.equal(await page.locator('#hkList .hk-row:not(.fixed)').count(),1);
   await page.locator('.hk-key[data-id="tool.marker"]').click();await page.keyboard.press('Alt+y');assert.equal(await page.evaluate(()=>hkBinding('tool.marker')),'Alt+KeyY');
   await page.locator('.hk-reset[data-id="tool.marker"]').click();assert.equal(await page.evaluate(()=>hkBinding('tool.marker')),'KeyM');await page.locator('#hkClose').click();
   await page.locator('#palaceName').fill('Keep this');await page.locator('#palaceName').press('Tab');await page.locator('#menuFile').click();await page.locator('#newBtn').click();await page.locator('#askNo').click();assert.equal(await page.evaluate(()=>state.name),'Keep this');

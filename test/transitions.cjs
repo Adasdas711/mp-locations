@@ -17,7 +17,7 @@ for(const [profile,options]of profiles)test(`${profile}: camera editor selection
  assert.equal(await page.evaluate(()=>editedCameraId),'a');
  assert.equal(await page.evaluate(()=>state.layout),'plan');
  await page.locator('#plan .plan-cam[data-pano="a"]').click({button:'right'});
- await page.locator('.ctx-item').filter({hasText:'Добавить переход на плане'}).click();
+ await page.locator('.ctx-item').filter({hasText:"Add transition on plan"}).click();
  await page.waitForFunction(()=>editedCameraId==='a');
  assert.equal(await page.locator('.modal.show').count(),0);
  const old=await page.evaluate(()=>({...state.panoramas.a.planPx}));

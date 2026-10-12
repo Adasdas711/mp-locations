@@ -8,7 +8,7 @@ for(const [name,options]of profiles){
   await context.addInitScript(()=>{Object.defineProperty(window,'indexedDB',{value:{open(){throw new DOMException('Storage unavailable','QuotaExceededError')}}})});
   await page.goto(process.env.PALACE_TEST_URL||'http://127.0.0.1:8000',{waitUntil:'networkidle'});
   await page.locator('#palaceName').fill('Without storage');await page.locator('#palaceName').press('Tab');await page.locator('#abSave').click();
-  await page.waitForFunction(()=>document.querySelector('#recoveryStatus').textContent.includes('недоступно'));
+  await page.waitForFunction(()=>document.querySelector('#recoveryStatus').textContent.includes("unavailable"));
   const waiting=page.waitForEvent('download');await page.locator('#saveJsonBtn').click();const download=await waiting;
   const json=JSON.parse(require('node:fs').readFileSync(await download.path(),'utf8'));assert.equal(json.name,'Without storage');
  });

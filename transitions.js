@@ -17,14 +17,14 @@ function changeCameraTransition(source,target,add) {
     } else camera.destinations=camera.destinations.filter(link=>String(link.panoId)!==to);
   }
   touch(); render();
-  status(add?'Переход добавлен в обе стороны':'Переход удалён в обе стороны');
+  status(add?"Bidirectional transition added":"Bidirectional transition removed");
   return true;
 }
 // Legacy entry points now open the on-plan editor; there is no transition dialog.
 function openCameraTransitions(id) {
   return openCameraEditor(id, true);
 }
-const transitionButton=document.createElement('button');transitionButton.id='cameraTransitionsOpen';transitionButton.textContent='Переходы на плане';transitionButton.type='button';
+const transitionButton=document.createElement('button');transitionButton.id='cameraTransitionsOpen';transitionButton.textContent="Transitions on plan";transitionButton.type='button';
 document.querySelector('#tourToolbarLocal').appendChild(transitionButton);
 transitionButton.addEventListener('click',()=>openCameraTransitions(activeLocalPano));
 function syncTransitionButton(){transitionButton.hidden=!canEditPlan();transitionButton.disabled=!canEditPlan()||!state.panoramas[activeLocalPano]}

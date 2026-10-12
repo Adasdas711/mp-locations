@@ -1,10 +1,10 @@
 {
   "id": "palace.example",
-  "name": "Сводка дворца",
+  "name": "Palace overview",
   "version": "1.1.0",
   "apiVersion": 1,
   "main": "main.js",
-  "description": "Пример: панель статистики дворца и добавление локуса в центр активного этажа.",
+  "description": "Example plugin: palace statistics and adding a locus at the center of the active floor.",
   "permissions": [
     "project.read",
     "markers.write",
@@ -14,23 +14,23 @@
     "commands": [
       {
         "id": "palace.example.summary",
-        "title": "Открыть сводку"
+        "title": "Open overview"
       },
       {
         "id": "palace.example.center",
-        "title": "Добавить локус в центре"
+        "title": "Add locus at center"
       }
     ],
     "panels": [
       {
         "id": "palace.example.panel",
-        "title": "Сводка дворца"
+        "title": "Palace overview"
       }
     ],
     "activityBar": [
       {
         "id": "palace.example.activity",
-        "title": "Сводка дворца",
+        "title": "Palace overview",
         "icon": "icon.svg",
         "command": "palace.example.summary"
       }
@@ -38,7 +38,7 @@
     "toolbars": [
       {
         "id": "palace.example.centerTool",
-        "title": "Локус в центре",
+        "title": "Locus at center",
         "location": "plan",
         "icon": "pin",
         "command": "palace.example.center"

@@ -2,7 +2,7 @@
   "themes": [
     {
       "id": "palace.appearance.ocean",
-      "title": "Океан",
+      "title": "Ocean",
       "base": "darcula",
       "mode": "dark",
       "colors": {
@@ -40,7 +40,7 @@
     },
     {
       "id": "palace.appearance.violet",
-      "title": "Фиолетовый",
+      "title": "Violet",
       "base": "darcula",
       "mode": "dark",
       "colors": {
@@ -78,7 +78,7 @@
     },
     {
       "id": "palace.appearance.paper",
-      "title": "Светлая бумага",
+      "title": "Light paper",
       "base": "darcula",
       "mode": "light",
       "colors": {
@@ -118,7 +118,7 @@
   "iconThemes": [
     {
       "id": "palace.appearance.angular",
-      "title": "Угловые иконки",
+      "title": "Angular icons",
       "icons": {
         "i-camera": [
           {
@@ -154,7 +154,7 @@
     },
     {
       "id": "palace.appearance.round",
-      "title": "Округлые иконки",
+      "title": "Rounded icons",
       "icons": {
         "i-camera": [
           {

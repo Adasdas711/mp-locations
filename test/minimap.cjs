@@ -36,7 +36,7 @@ for(const [viewportName,options]of [['desktop',{viewport:{width:1280,height:800}
         const c=canvas.getContext('2d');c.fillStyle='white';c.fillRect(0,0,w,h);c.strokeStyle='black';c.lineWidth=3;c.strokeRect(2,2,w-4,h-4);
         const image=canvas.toDataURL('image/png').split(',')[1];
         const zip=new JSZip();zip.file('images/level-1.png',image,{base64:true});zip.file('panoramas/p.png',image,{base64:true});
-        zip.file('palace.json',JSON.stringify({name:'Minimap',layout:'tour',levels:[{name:'Очень длинное название этажа — проверка компактного заголовка',floorId:1,image:'images/level-1.png',w,h,markers:[]}],panoramas:{start:{mode:'equirect',file:'panoramas/p.png',floorId:1,planPx:{x:0,y:0},room:'Начало длинного плана',destinations:[{panoId:'end'}]},end:{mode:'equirect',file:'panoramas/p.png',floorId:1,planPx:{x:w,y:h},room:'Конец',destinations:[{panoId:'start'}]}}}));
+        zip.file('palace.json',JSON.stringify({name:'Minimap',layout:'tour',levels:[{name:"Очень длинное название этажа — проверка компактного заголовка",floorId:1,image:'images/level-1.png',w,h,markers:[]}],panoramas:{start:{mode:'equirect',file:'panoramas/p.png',floorId:1,planPx:{x:0,y:0},room:"Начало длинного плана",destinations:[{panoId:'end'}]},end:{mode:'equirect',file:'panoramas/p.png',floorId:1,planPx:{x:w,y:h},room:"Конец",destinations:[{panoId:'start'}]}}}));
         await openAnyArchiveBuffer(await zip.generateAsync({type:'arraybuffer'}),'minimap.mpalace');
       },{w,h});
       await fit(page,w,h);

@@ -10,7 +10,7 @@ for(const [name,options]of profiles)test(`${name}: unified settings, removed sid
  await page.locator('[data-settings-page="appearance"].settings-nav-item').click();
  await page.locator('#settingsTheme').selectOption('borealis');assert.equal(await page.evaluate(()=>getTheme()),'borealis');
  await page.locator('#settingsSize').selectOption('0');assert.equal(await page.evaluate(()=>PALACE_UI.size),0);
- await page.locator('#settingsSearch').fill('Аддоны');assert.equal(await page.locator('#settingsModal').getAttribute('data-page'),'addons');assert.equal(await page.locator('#addonSearch').inputValue(),'');
+ await page.locator('#settingsSearch').fill("Community plugins");assert.equal(await page.locator('#settingsModal').getAttribute('data-page'),'addons');assert.equal(await page.locator('#addonSearch').inputValue(),'');
  await page.locator('#settingsSearch').fill('');await page.locator('#addonUpload').click();assert.equal(await page.locator('#settingsModal #addonUploader').isVisible(),true);
  assert.equal(await page.locator('.modal.show').count(),1);
  const layout=await page.locator('#settingsModal > .dialog').evaluate(el=>{const r=el.getBoundingClientRect();return {within:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,overflow:el.scrollWidth>el.clientWidth}});assert.deepEqual(layout,{within:true,overflow:false});

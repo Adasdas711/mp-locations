@@ -20,7 +20,7 @@ for(const [profile,options]of profiles)test(`${profile}: recovery, archive metad
     page.on('request', r => { if (!r.url().startsWith(base) && !r.url().startsWith('blob:') && !r.url().startsWith('data:')) external.push(r.url()); });
     await page.goto(base, {waitUntil: 'networkidle'});
     await page.waitForFunction(() => navigator.serviceWorker.controller, {timeout: 60000});
-    await page.waitForFunction(() => document.querySelector('#offlineStatus').textContent.includes('готов'));
+    await page.waitForFunction(() => document.querySelector('#offlineStatus').textContent.includes("ready"));
     assert.equal(await page.title(), 'PALACE / Memory Mapper');
     const png = await fs.readFile(path.join(root, 'icons/icon-192.png'));
     const zip = new JSZip();
@@ -36,7 +36,7 @@ for(const [profile,options]of profiles)test(`${profile}: recovery, archive metad
     await page.locator('#abSave').click(); await page.locator('#metaOpen').click();
     assert.match(await page.locator('#metaEditor').inputValue(), /Original/);
     await page.locator('#metaEditor').fill('{invalid'); await page.locator('#metaApply').click();
-    assert.match(await page.locator('#metaError').innerText(), /Не удалось/);
+    assert.match(await page.locator('#metaError').innerText(), /Unable to apply/);
     assert.equal(await page.evaluate(() => JSON.parse(archiveContext.metaText).title), 'Original');
     const edited = {title:'Updated',unknown:{keep:true},nested:['a',2]};
     await page.locator('#metaEditor').fill(JSON.stringify(edited)); await page.locator('#metaApply').click();
@@ -46,7 +46,7 @@ for(const [profile,options]of profiles)test(`${profile}: recovery, archive metad
     for (const file of Object.keys(zip.files).filter(x => x !== 'meta.json' && !zip.files[x].dir)) assert.deepEqual(await result.file(file).async('nodebuffer'), await zip.file(file).async('nodebuffer'));
     await page.locator('#metaClose').click(); await page.locator('#closeSaveModal').click();
     await page.locator('#palaceName').fill('Recovered palace'); await page.locator('#palaceName').press('Tab');
-    await page.waitForFunction(() => document.querySelector('#recoveryStatus').textContent.startsWith('Автосохранено'), {timeout:15000});
+    await page.waitForFunction(() => document.querySelector('#recoveryStatus').textContent.startsWith("Autosaved"), {timeout:15000});
     await page.reload({waitUntil:'networkidle'});
     await page.evaluate(async()=>{await showRecovery();await showRecovery(true);document.querySelector('#recoveryOpen').click()});
     assert.equal(await page.locator('#recoveryModal').isVisible(), false, 'Recovery picker must stay closed on startup, including programmatic calls');

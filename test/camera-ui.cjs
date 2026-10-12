@@ -6,9 +6,9 @@ for(const [name,options]of profiles)test(`${name}: marker controls, full dashed 
  await page.locator('[data-tool="camera"]').click();
  assert.equal(await page.locator('.camera-link-lines line').count(),1,'Each bidirectional transition is drawn once, before selecting a camera');
  await page.evaluate(()=>{
-  for(let i=0;i<12;i++){const id='extra'+i;state.panoramas[id]={...state.panoramas.b,room:'Очень длинное название комнаты '+i,floorId:1,planPx:{x:10+(i%4)*45,y:15+Math.floor(i/4)*55},destinations:[{panoId:'a'}]};state.panoramas.a.destinations.push({panoId:id})}
+  for(let i=0;i<12;i++){const id='extra'+i;state.panoramas[id]={...state.panoramas.b,room:"Очень длинное название комнаты "+i,floorId:1,planPx:{x:10+(i%4)*45,y:15+Math.floor(i/4)*55},destinations:[{panoId:'a'}]};state.panoramas.a.destinations.push({panoId:id})}
   state.panoramas.b.destinations.push({panoId:'extra0'});state.panoramas.extra0.destinations.push({panoId:'b'});
-  state.panoramas.upstairs={...state.panoramas.b,room:'Другой этаж',floorId:2,planPx:{x:50,y:50},destinations:[{panoId:'a'}]};
+  state.panoramas.upstairs={...state.panoramas.b,room:"Другой этаж",floorId:2,planPx:{x:50,y:50},destinations:[{panoId:'a'}]};
   state.panoramas.a.destinations.push({panoId:'upstairs'},{panoId:'missing'});drawPlan();resetHistory();
  });
  await page.evaluate(()=>selectCameraForEditing('a'));

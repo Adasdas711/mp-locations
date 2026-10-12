@@ -56,19 +56,19 @@ function refreshCameraEditor() {
     node.querySelectorAll('.camera-action').forEach(button=>button.remove());
     if(!editing)return;
     node.querySelectorAll('.cam-start').forEach(flag=>flag.remove());
-    node.title='Камера: '+(panos[id]?.room||id);
+    node.title="Camera: "+(panos[id]?.room||id);
     if(!editedCameraId)return;
     const button=document.createElement('button');button.type='button';button.className='camera-action';button.dataset.target=id;
     button.dataset.action=selected?'delete-camera':connected?'remove-link':'add-link';
-    if(selected){button.id='cameraEditorDelete';button.title='Удалить камеру';button.innerHTML='<svg class="ic"><use href="#i-trash"/></svg>'}
-    else {button.textContent=connected?'−':'+';button.title=(connected?'Удалить переход: ':'Добавить переход: ')+(panos[id]?.room||id)}
+    if(selected){button.id='cameraEditorDelete';button.title="Remove camera";button.innerHTML='<svg class="ic"><use href="#i-trash"/></svg>'}
+    else {button.textContent=connected?'−':'+';button.title=(connected?"Remove transition: ":"Add transition: ")+(panos[id]?.room||id)}
     button.setAttribute('aria-label',button.title);
     ['pointerdown','pointerup','mousedown','mouseup','keydown','contextmenu'].forEach(type=>button.addEventListener(type,event=>event.stopPropagation()));
     button.onclick=event=>{event.stopPropagation();if(!canEditPlan())return;if(selected)requestCameraDeletion(id);else{changeCameraTransition(editedCameraId,id,!connected);cameraLinkSource=null;refreshCameraEditor()}};
     node.append(button);
     if(selected){
       const flag=document.createElement('button');flag.type='button';flag.id='cameraEditorStart';flag.className='camera-action';flag.dataset.action='set-start';flag.dataset.target=id;
-      flag.title='Сделать начальной камерой';flag.setAttribute('aria-label',flag.title);flag.setAttribute('aria-pressed',String(state.startPano===id));
+      flag.title="Set as initial camera";flag.setAttribute('aria-label',flag.title);flag.setAttribute('aria-pressed',String(state.startPano===id));
       flag.innerHTML='<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 14V2m0 0h9l-2 3 2 3H3"/></svg>';
       ['pointerdown','pointerup','mousedown','mouseup','keydown','contextmenu'].forEach(type=>flag.addEventListener(type,event=>event.stopPropagation()));
       flag.onclick=event=>{event.stopPropagation();if(canEditPlan()&&state.panoramas[id]){if(state.startPano!==id)setStartPano(id);refreshCameraEditor()}};
@@ -77,7 +77,7 @@ function refreshCameraEditor() {
   });
   renderCameraPlanLinks();
 }
-function requestCameraDeletion(id){if(canEditPlan()&&state.panoramas[id])ask('Удалить камеру «'+(state.panoramas[id].room||id)+'» и её переходы?',()=>removeEditedCamera(id),{yes:'Удалить',title:'Удаление камеры'})}
+function requestCameraDeletion(id){if(canEditPlan()&&state.panoramas[id])ask("Remove camera “"+(state.panoramas[id].room||id)+"” and its transitions?",()=>removeEditedCamera(id),{yes:"Remove",title:"Remove camera"})}
 function renderCameraPlanLinks() {
   const plan=document.querySelector('#plan');if(!plan)return;
   plan.querySelector('.camera-link-lines')?.remove();
@@ -106,7 +106,7 @@ function removeEditedCamera(id) {
   if(state.startPano===id){state.startPano=null;state.startYaw=null}
   if(activeLocalPano===id)activeLocalPano=null;
   editedCameraId=null;cameraLinkSource=null;touch();render();renderMinimap();refreshCameraEditor();
-  status('Камера удалена. Отмена: Ctrl/Cmd+Z');return true;
+  status("Camera removed. Undo: Ctrl/Cmd+Z");return true;
 }
 const cameraOriginalRender=renderPlanCameras;
 renderPlanCameras=function(...args){cameraOriginalRender(...args);refreshCameraEditor()};

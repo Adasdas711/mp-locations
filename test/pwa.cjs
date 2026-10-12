@@ -5,13 +5,13 @@ for(const [name,options]of profiles)test(`${name}: PWA install guidance, native 
  const {page}=await openSession(browser,t,options);
  await page.locator('#toolsSettingsOpen').click();await page.locator('.settings-nav-item[data-settings-page="app"]').click();
  assert.equal(await page.locator('#pwaInstructions').isVisible(),true);
- const instructions=await page.locator('#pwaInstructions').innerText();if(name==='iPhone'||name==='iPad')assert.ok(instructions.includes('Safari')&&instructions.includes('Поделиться'));if(name==='Android')assert.ok(instructions.includes('Chrome'));
+ const instructions=await page.locator('#pwaInstructions').innerText();if(name==='iPhone'||name==='iPad')assert.ok(instructions.includes('Safari')&&instructions.includes("Share"));if(name==='Android')assert.ok(instructions.includes('Chrome'));
  await page.evaluate(()=>{window.testPromptCalls=0;const e=new Event('beforeinstallprompt',{cancelable:true});e.prompt=async()=>{testPromptCalls++};e.userChoice=Promise.resolve({outcome:'dismissed'});dispatchEvent(e);window.testPromptPrevented=e.defaultPrevented});
- assert.equal(await page.evaluate(()=>testPromptPrevented),true);assert.equal(await page.locator('#pwaInstall').innerText(),'Установить приложение');
- await page.locator('#pwaInstall').click();assert.equal(await page.evaluate(()=>testPromptCalls),1);assert.ok((await page.locator('#pwaStatus').innerText()).includes('отменена'));
+ assert.equal(await page.evaluate(()=>testPromptPrevented),true);assert.equal(await page.locator('#pwaInstall').innerText(),"Install application");
+ await page.locator('#pwaInstall').click();assert.equal(await page.evaluate(()=>testPromptCalls),1);assert.ok((await page.locator('#pwaStatus').innerText()).includes("cancelled"));
  await page.evaluate(()=>{const e=new Event('beforeinstallprompt',{cancelable:true});e.prompt=async()=>{testPromptCalls++};e.userChoice=Promise.resolve({outcome:'accepted'});dispatchEvent(e)});
  await page.locator('#pwaInstall').click();await page.evaluate(()=>dispatchEvent(new Event('appinstalled')));
- assert.equal(await page.locator('#pwaInstall').isVisible(),false);assert.equal(await page.locator('#pwaInstructions').isVisible(),false);assert.equal(await page.locator('#pwaStatus').innerText(),'Приложение установлено.');
+ assert.equal(await page.locator('#pwaInstall').isVisible(),false);assert.equal(await page.locator('#pwaInstructions').isVisible(),false);assert.equal(await page.locator('#pwaStatus').innerText(),"Application installed.");
  assert.equal(await page.evaluate(()=>state.levels.length),2);
 });
 test('PWA manifest, icon dimensions and offline installation shell are coherent',async()=>{

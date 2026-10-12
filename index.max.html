@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>PALACE / Memory Mapper</title>
@@ -6212,7 +6212,9 @@
       style="position: absolute; width: 0; height: 0; overflow: hidden"
     >
       <defs>
-        <symbol id="i-plan" viewBox="0 0 16 16">
+        <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M6 19v-2a6 6 0 0 1 12 0v2"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><path d="M14 3a7 7 0 0 0-6 10L2 19v3h4v-3h3v-3l2-2A7 7 0 1 0 14 3Z"/><circle cx="16" cy="8" r="1"/></symbol>
+<symbol id="i-plan" viewBox="0 0 16 16">
           <rect x="2" y="2" width="12" height="12" rx="1.6" />
           <path d="M2 8.4h4.6M6.6 8.4V14M9.6 2v3.6M9.6 5.6H14M9.6 10.8H14" />
         </symbol>
@@ -6622,25 +6624,25 @@
     <div class="app" data-ui="editor" data-layout="plan" id="appRoot">
       <header class="top">
         <div class="menubar">
-          <button type="button" class="menu-item" id="menuFile" title="Файл">
-            Файл
+          <button type="button" class="menu-item" id="menuFile" title="File">
+            File
           </button>
           <button
             type="button"
             class="menu-item"
             id="modeBtn"
-            title="Режим редактирования / просмотра"
+            title="Edit / view mode"
           >
-            Вид
+            View
           </button>
         </div>
         <div class="title">
           <div class="cc">
             <svg class="ic"><use href="#i-search" /></svg
             ><input
-              aria-label="Название дворца"
+              aria-label="Palace name"
               id="palaceName"
-              value="Новый дворец памяти — PALACE"
+              value="New memory palace — PALACE"
             />
           </div>
         </div>
@@ -6648,7 +6650,7 @@
           <button
             id="themeBtn"
             type="button"
-            title="Цветовая тема (Ctrl+K Ctrl+T)"
+            title="Color theme (Ctrl+K Ctrl+T)"
             aria-haspopup="listbox"
           >
             <svg class="ic"><use href="#i-palette" /></svg
@@ -6656,11 +6658,11 @@
           </button>
           <button
             id="reviewBtn"
-            title="Случайно выбрать режим повторения (1–5) и начать"
+            title="Start a random review mode (1–5)"
           >
-            Повторение
+            Review
           </button>
-          <button class="primary" id="saveBtn">Сохранить</button>
+          <button class="primary" id="saveBtn">Save</button>
         </div>
         <input
           accept=".mplace,.mpalace,.3dview,.zip"
@@ -6670,13 +6672,13 @@
         />
       </header>
       <div class="workbench">
-        <nav class="activity" aria-label="Режимы">
+        <nav class="activity" aria-label="Modes">
           <button
             type="button"
             class="abtn active"
             data-ui="plan"
             id="abPlan"
-            title="План дворца"
+            title="Palace plan"
           >
             <svg class="ic"><use href="#i-plan" /></svg>
           </button>
@@ -6685,7 +6687,7 @@
             class="abtn"
             data-ui="tour"
             id="abTour"
-            title="3D-тур"
+            title="3D tour"
           >
             <svg class="ic"><use href="#i-cube" /></svg>
           </button>
@@ -6694,8 +6696,8 @@
             type="button"
             class="abtn"
             id="btnSplit"
-            title="Разделить: план и 3D рядом"
-            aria-label="Разделить"
+            title="Split: plan and 3D side by side"
+            aria-label="Split view"
           >
             <svg class="ic"><use href="#i-split" /></svg>
           </button>
@@ -6703,21 +6705,21 @@
             type="button"
             class="abtn"
             id="btnSwapPanes"
-            title="Поменять панели местами"
-            aria-label="Поменять панели местами"
+            title="Swap panels"
+            aria-label="Swap panels"
             hidden
           >
             <svg class="ic"><use href="#i-swap" /></svg>
           </button>
           <div class="ab-sep"></div>
-          <button type="button" class="abtn" id="newBtn" title="Новый дворец">
+          <button type="button" class="abtn" id="newBtn" title="New palace">
             <svg class="ic"><use href="#i-plus" /></svg>
           </button>
           <button
             type="button"
             class="abtn"
             id="openBtn"
-            title="Открыть .mplace / .mpalace / .3dview"
+            title="Open .mplace / .mpalace / .3dview"
           >
             <svg class="ic"><use href="#i-folder" /></svg>
           </button>
@@ -6725,7 +6727,7 @@
             type="button"
             class="abtn primary-act"
             id="abSave"
-            title="Сохранить"
+            title="Save"
           >
             <svg class="ic"><use href="#i-save" /></svg>
           </button>
@@ -6735,7 +6737,7 @@
             type="button"
             class="abtn"
             id="abHotkeys"
-            title="Горячие клавиши"
+            title="Hotkeys"
           >
             <svg class="ic"><use href="#i-keyboard" /></svg>
           </button>
@@ -6747,8 +6749,8 @@
                 <button
                   class="tool view-dim active"
                   id="planView2d"
-                  title="Просмотр в 2D — план этажа"
-                  aria-label="Просмотр в 2D"
+                  title="2D view — floor plan"
+                  aria-label="2D view"
                   aria-pressed="true"
                 >
                   <svg class="ic"><use href="#i-floorplan" /></svg>
@@ -6756,8 +6758,8 @@
                 <button
                   class="tool view-dim"
                   id="planView3d"
-                  title="Просмотр в 3D — объёмная модель этажей, как Dollhouse в Matterport"
-                  aria-label="Просмотр в 3D"
+                  title="3D view — floor dollhouse"
+                  aria-label="3D view"
                   aria-pressed="false"
                 >
                   <svg class="ic"><use href="#i-dollhouse" /></svg>
@@ -6766,8 +6768,8 @@
                   class="tool"
                   id="planPhoto3d"
                   hidden
-                  title="Фото интерьера на стенах и полу"
-                  aria-label="Фото интерьера в 3D"
+                  title="Interior photos on walls and floor"
+                  aria-label="Interior photos in 3D"
                   aria-pressed="true"
                 >
                   <svg class="ic"><use href="#i-pano360" /></svg>
@@ -6776,24 +6778,24 @@
                 <button
                   class="tool active"
                   data-tool="select"
-                  title="Выбор"
-                  aria-label="Выбор"
+                  title="Select"
+                  aria-label="Select"
                 >
                   <svg class="ic"><use href="#i-cursor" /></svg>
                 </button>
                 <button
                   class="tool"
                   data-tool="marker"
-                  title="Маркер"
-                  aria-label="Маркер"
+                  title="Marker"
+                  aria-label="Marker"
                 >
                   <svg class="ic"><use href="#i-pin" /></svg>
                 </button>
                 <button
                   class="tool"
                   data-tool="camera"
-                  title="Редактирование камеры"
-                  aria-label="Редактирование камеры"
+                  title="Camera editor"
+                  aria-label="Camera editor"
                 >
                   <svg class="ic"><use href="#i-camera-edit" /></svg>
                 </button>
@@ -6801,16 +6803,16 @@
                 <button
                   class="tool"
                   id="zoomOut"
-                  title="Уменьшить"
-                  aria-label="Уменьшить"
+                  title="Zoom out"
+                  aria-label="Zoom out"
                 >
                   <svg class="ic"><use href="#i-minus" /></svg>
                 </button>
                 <button
                   class="tool"
                   id="zoomIn"
-                  title="Увеличить"
-                  aria-label="Увеличить"
+                  title="Zoom in"
+                  aria-label="Zoom in"
                 >
                   <svg class="ic"><use href="#i-plus" /></svg>
                 </button>
@@ -6818,8 +6820,8 @@
                 <button
                   class="tool"
                   id="planShowHiddenCams"
-                  title="Показать скрытые камеры"
-                  aria-label="Показать скрытые камеры"
+                  title="Show hidden cameras"
+                  aria-label="Show hidden cameras"
                   aria-pressed="false"
                 >
                   <svg class="ic"><use href="#i-eye-hidden" /></svg>
@@ -6827,16 +6829,16 @@
                 <button
                   class="tool"
                   id="planTransparentBg"
-                  title="Убрать белый фон плана и сделать его прозрачным"
-                  aria-label="Прозрачный фон плана"
+                  title="Remove the white plan background"
+                  aria-label="Transparent plan background"
                 >
                   <svg class="ic"><use href="#i-transparent" /></svg>
                 </button>
                 <button
                   class="tool"
                   id="planDarkFloor"
-                  title="Тёмный / светлый план"
-                  aria-label="Тёмный план"
+                  title="Dark / light floor plan"
+                  aria-label="Dark plan"
                   aria-pressed="false"
                 >
                   <svg class="ic"><use href="#i-moon" /></svg>
@@ -6847,8 +6849,8 @@
                 <button
                   class="rv-stop"
                   id="reviewStop"
-                  title="Остановить повторение и посмотреть итоги"
-                  aria-label="Остановить"
+                  title="Stop review and show results"
+                  aria-label="Stop"
                 >
                   <svg class="ic"><use href="#i-close" /></svg>
                 </button>
@@ -6866,12 +6868,12 @@
                     <button
                       class="primary"
                       id="reviewCheck"
-                      title="Проверить расставленные локусы"
+                      title="Check placed loci"
                     >
-                      Проверить
+                      Check
                     </button>
                     <button class="primary" id="reviewNext" hidden>
-                      Дальше
+                      Next
                     </button>
                   </div>
                   <div class="rv-stats">
@@ -6884,15 +6886,13 @@
               </div>
               <div class="empty" id="empty">
                 <div>
-                  <strong>Холст пуст</strong>Откройте сохранённый дворец или
-                  добавьте планы этажей
+                  <strong>Empty canvas</strong>Open a saved palace or add floor plans
                   <div class="empty-actions">
                     <button class="primary" id="emptyOpenFile" type="button">
-                      <svg class="ic"><use href="#i-folder" /></svg>Открыть файл
+                      <svg class="ic"><use href="#i-folder" /></svg>Open file
                     </button>
                     <button id="uploadBtn" type="button">
-                      <svg class="ic"><use href="#i-upload" /></svg>Загрузить
-                      планы
+                      <svg class="ic"><use href="#i-upload" /></svg>Upload plans
                     </button>
                   </div>
                 </div>
@@ -6903,7 +6903,7 @@
               <div class="dollhouse" id="dollhouse" hidden>
                 <canvas
                   id="dollhouseCanvas"
-                  aria-label="3D-вид плана: объёмная модель этажей"
+                  aria-label="3D floor view: a three-dimensional floor model"
                 ></canvas>
                 <div class="dh-tip" id="dhTip" hidden></div>
                 <div class="dh-busy" id="dhBusy" hidden></div>
@@ -6915,13 +6915,13 @@
                 id="arrangeBar"
                 hidden
                 role="toolbar"
-                aria-label="Расположение этажа"
+                aria-label="Floor arrangement"
               >
                 <div class="ab-row1">
                   <span
                     class="ab-grip"
                     id="arrangeGrip"
-                    title="Перетащите, чтобы подвинуть панель · двойной щелчок — вернуть на место"
+                    title="Drag to move the panel · Double-click to reset"
                     ><svg class="ic"><use href="#i-grip" /></svg
                   ></span>
                   <span class="ab-name" id="arrangeTitle"></span>
@@ -6929,34 +6929,34 @@
                     class="ab-chips"
                     id="arrangeParts"
                     role="radiogroup"
-                    aria-label="Что двигать"
+                    aria-label="What to move"
                   ></div>
                 </div>
                 <div class="ab-row2">
-                  <span class="ab-label">Размер</span>
+                  <span class="ab-label">Size</span>
                   <div
                     class="ab-stepper"
-                    title="Размер выбранного: всего этажа или одного плана"
+                    title="Size of the selected floor or plan"
                   >
                     <button
                       type="button"
                       id="arrangeScaleDown"
-                      title="Меньше на 2% (Shift — на 10%)"
-                      aria-label="Уменьшить"
+                      title="Reduce by 2% (Shift: 10%)"
+                      aria-label="Zoom out"
                     >
                       −
                     </button>
                     <input
                       id="arrangeScale"
                       inputmode="decimal"
-                      aria-label="Размер, %"
+                      aria-label="Size, %"
                       value="100"
                     /><span class="ab-unit">%</span>
                     <button
                       type="button"
                       id="arrangeScaleUp"
-                      title="Больше на 2% (Shift — на 10%)"
-                      aria-label="Увеличить"
+                      title="Increase by 2% (Shift: 10%)"
+                      aria-label="Zoom in"
                     >
                       +
                     </button>
@@ -6964,18 +6964,18 @@
                   <span class="ab-div"></span>
                   <span
                     class="ab-label"
-                    title="Другой этаж — полупрозрачно под планом, там, где он стоит в 3D. По нему удобно ставить этаж на место"
-                    >Под планом</span
+                    title="Show another floor underneath as a positioning reference"
+                    >Underlay</span
                   >
                   <select
                     id="arrangeGhost"
-                    aria-label="Какой этаж показать под планом"
-                    title="Какой этаж показать под планом"
+                    aria-label="Floor shown underneath"
+                    title="Floor shown underneath"
                   ></select>
                   <label
                     class="ab-eye"
                     id="arrangeGhostWrap"
-                    title="Насколько хорошо виден этаж под планом"
+                    title="Underlay opacity"
                   >
                     <svg class="ic"><use href="#i-eye" /></svg>
                     <input
@@ -6984,7 +6984,7 @@
                       min="5"
                       max="80"
                       value="34"
-                      aria-label="Насколько виден этаж под планом"
+                      aria-label="Underlay opacity"
                     />
                     <span class="ab-val" id="arrangeGhostVal">34%</span>
                   </label>
@@ -6993,8 +6993,8 @@
                     type="button"
                     class="ab-x"
                     id="arrangeCancel"
-                    title="Отмена — вернуть всё, как было до начала (Esc)"
-                    aria-label="Отмена"
+                    title="Cancel and restore the original arrangement (Esc)"
+                    aria-label="Cancel"
                   >
                     <svg class="ic"><use href="#i-close" /></svg>
                   </button>
@@ -7002,9 +7002,9 @@
                     type="button"
                     class="ab-btn primary"
                     id="arrangeDone"
-                    title="Сохранить расположение (Enter)"
+                    title="Save arrangement (Enter)"
                   >
-                    <svg class="ic"><use href="#i-check" /></svg>Готово
+                    <svg class="ic"><use href="#i-check" /></svg>Done
                   </button>
                 </div>
               </div>
@@ -7013,11 +7013,11 @@
                 id="compass"
                 tabindex="0"
                 role="slider"
-                aria-label="Поворот плана"
+                aria-label="Plan rotation"
                 aria-valuemin="0"
                 aria-valuemax="359"
                 aria-valuenow="0"
-                title="Тяните по кругу, чтобы повернуть план. Двойной щелчок — сброс"
+                title="Drag around the compass to rotate the plan. Double-click to reset"
               >
                 <svg viewBox="0 0 100 100" aria-hidden="true">
                   <circle
@@ -7048,7 +7048,7 @@
                 </svg>
                 <div class="compass-val">
                   <input
-                    aria-label="Угол поворота в градусах"
+                    aria-label="Rotation angle in degrees"
                     id="compassVal"
                     inputmode="numeric"
                     value="0"
@@ -7056,7 +7056,7 @@
                 </div>
               </div>
               <div class="canvas-ctl" id="markerCtl">
-                <label for="markerSize">Размер маркера</label>
+                <label for="markerSize">Marker size</label>
                 <input
                   id="markerSize"
                   type="range"
@@ -7066,19 +7066,19 @@
                 />
                 <output id="markerSizeVal" for="markerSize">55</output>
                 <span class="ctl-sep"></span>
-                <label for="wallColor">Стены</label>
+                <label for="wallColor">Walls</label>
                 <input
                   id="wallColor"
                   type="color"
                   value="#cc7832"
-                  title="Цвет стен в этой теме (запоминается для каждой темы)"
+                  title="Wall color for this theme (saved per theme)"
                 />
                 <button
                   type="button"
                   class="ctl-reset"
                   id="wallColorReset"
-                  title="Вернуть цвет стен темы"
-                  aria-label="Вернуть цвет стен темы"
+                  title="Reset theme wall color"
+                  aria-label="Reset theme wall color"
                   hidden
                 >
                   <svg class="ic"><use href="#i-turn-ccw" /></svg>
@@ -7091,7 +7091,7 @@
               role="separator"
               aria-orientation="vertical"
               tabindex="0"
-              title="Тяните, чтобы изменить ширину панелей. Двойной щелчок — поровну"
+              title="Drag to resize panels. Double-click for equal widths"
             >
               <span></span>
             </div>
@@ -7100,8 +7100,8 @@
                 type="button"
                 id="tourSettingsBtn"
                 class="icon-action"
-                title="Настройки 3D-вида"
-                aria-label="Настройки 3D-вида"
+                title="3D view settings"
+                aria-label="3D view settings"
                 aria-expanded="false"
               >
                 <svg class="ic"><use href="#i-gear" /></svg>
@@ -7120,24 +7120,24 @@
                 >
                   <input
                     id="tourUrl"
-                    placeholder="Любая https-ссылка на 3D: Matterport, iGUIDE, Kuula…"
-                    aria-label="Ссылка на 3D-тур"
+                    placeholder="Any HTTPS 3D tour link: Matterport, iGUIDE, Kuula…"
+                    aria-label="3D tour URL"
                   />
-                  <button class="primary" id="tourApply">Открыть</button>
+                  <button class="primary" id="tourApply">Open</button>
                   <button
                     type="button"
                     id="tourWindowBtn"
-                    title="Открыть тур отдельным окном справа"
-                    aria-label="Открыть в отдельном окне"
+                    title="Open the tour in a separate window"
+                    aria-label="Open in a separate window"
                   >
                     <svg class="ic"><use href="#i-window" /></svg>
                   </button>
                   <button
                     type="button"
                     id="tourDownload"
-                    title="Как скачать Offline iGUIDE"
+                    title="How to download Offline iGUIDE"
                   >
-                    Скачать
+                    Download
                   </button>
                 </span>
                 <span
@@ -7154,27 +7154,27 @@
                 >
                   <select
                     id="l3dPanoPicker"
-                    aria-label="Выбрать импортированную панораму"
+                    aria-label="Choose an imported panorama"
                     style="max-width: 280px; flex: 1; min-width: 0"
                   ></select>
                   <button
                     type="button"
                     id="l3dPlaceCam"
-                    title="Поставить эту панораму на план: нажмите, затем щёлкните на плане точку съёмки"
-                    aria-label="Поставить камеру на план"
+                    title="Place this panorama on the plan: click, then select its position on the plan"
+                    aria-label="Place camera on plan"
                     style="flex: none"
                   >
-                    <svg class="ic sm"><use href="#i-camera" /></svg> На план
+                    <svg class="ic sm"><use href="#i-camera" /></svg> Place on plan
                   </button>
                   <button
                     type="button"
                     id="l3dStartCam"
-                    title="Сделать эту панораму начальной камерой: с неё будет открываться дворец"
-                    aria-label="Начальная камера"
+                    title="Use this panorama as the initial camera"
+                    aria-label="Initial camera"
                     aria-pressed="false"
                     style="flex: none"
                   >
-                    <svg class="ic sm"><use href="#i-flag" /></svg> Начальная
+                    <svg class="ic sm"><use href="#i-flag" /></svg> Start camera
                   </button>
                   <span
                     class="l3d-rot"
@@ -7185,12 +7185,12 @@
                       margin-left: auto;
                       flex: none;
                     "
-                    title="Поворот колец-переходов этой панорамы. Сохраняется вместе с дворцом."
+                    title="Rotation of this panorama’s transition rings. Saved with the palace."
                   >
                     <button
                       type="button"
                       id="l3dRotCCW"
-                      title="Повернуть переходы на 15° против часовой"
+                      title="Rotate transitions 15° counterclockwise"
                     >
                       ⟲
                     </button>
@@ -7203,16 +7203,16 @@
                     <button
                       type="button"
                       id="l3dRotCW"
-                      title="Повернуть переходы на 15° по часовой"
+                      title="Rotate transitions 15° clockwise"
                     >
                       ⟳
                     </button>
                     <button
                       type="button"
                       id="l3dRotReset"
-                      title="Сбросить поворот"
+                      title="Reset rotation"
                     >
-                      Сброс
+                      Reset
                     </button>
                   </span>
                 </span>
@@ -7226,27 +7226,24 @@
                     type="button"
                     class="l3d-start"
                     id="l3dStartFlag"
-                    title="Сделать эту панораму начальной камерой"
-                    aria-label="Начальная камера"
+                    title="Set this panorama as the start camera"
+                    aria-label="Initial camera"
                     aria-pressed="false"
                   >
                     <svg class="ic sm"><use href="#i-flag" /></svg
-                    ><span>Начальная камера</span>
+                    ><span>Initial camera</span>
                   </button>
                   <div class="tour-empty" id="l3dHint">
                     <div class="guide">
-                      <strong>Локальный 3D-тур</strong>
+                      <strong>Local 3D tour</strong>
                       <p class="guide-lead">
-                        Импортируйте .3dview / .mpalace, затем переключайтесь
-                        между панорамами списком сверху или кнопками перехода
-                        внизу экрана. В режиме «только 3D» в углу — миникарта
-                        этажа с камерами и локусами.
+                        Import .3dview or .mpalace, then switch panoramas using the list above or transitions below. In 3D-only mode, the corner minimap shows cameras and loci.
                       </p>
                     </div>
                   </div>
                   <div class="l3d-error" id="l3dError">
                     <div class="guide">
-                      <strong>3D не отобразился</strong>
+                      <strong>3D view unavailable</strong>
                       <p class="guide-lead" id="l3dErrorMsg"></p>
                     </div>
                   </div>
@@ -7255,23 +7252,23 @@
                     <div class="minimap-head">
                       <svg class="ic mm-plan-icon" aria-hidden="true">
                         <use href="#i-floorplan" /></svg
-                      ><span class="mm-title" id="minimapTitle">План</span>
+                      ><span class="mm-title" id="minimapTitle">Plan</span>
                       <label
                         class="mm-switch"
-                        title="Показывать локусы на развёрнутой миникарте"
+                        title="Show loci on the expanded minimap"
                         ><input type="checkbox" id="minimapLoci" /><span
                           class="mm-track"
                           aria-hidden="true"
                         ></span
-                        >Локусы</label
+                        >Loci</label
                       >
                       <button
                         type="button"
                         class="minimap-btn"
                         id="minimapExpand"
                         aria-expanded="false"
-                        title="Развернуть"
-                        aria-label="Развернуть миникарту"
+                        title="Expand"
+                        aria-label="Expand minimap"
                       >
                         <svg class="ic"><use href="#i-expand" /></svg>
                       </button>
@@ -7281,58 +7278,52 @@
                       <div class="minimap-layer" id="minimapLayer"></div>
                       <svg
                         id="minimapSvg"
-                        aria-label="Камеры на плане этажа"
+                        aria-label="Cameras on the floor plan"
                       ></svg>
                     </div>
                   </div>
                 </div>
                 <div class="tour-empty" id="tourEmpty">
                   <div class="guide">
-                    <strong>3D-тур</strong>
+                    <strong>3D tour</strong>
                     <p class="guide-lead">
-                      Вставьте ссылку на тур в поле сверху и нажмите «Открыть».
-                      Ниже — как найти эту ссылку на почти любом сайте.
+                      Paste the tour URL above and click Open. Follow these steps to find the link on most sites.
                     </p>
                     <ol class="guide-steps">
                       <li>
-                        <b>Откройте страницу объявления</b> с 3D-туром (Redfin,
-                        сайт агентства).
+                        <b>Open the property listing</b> with a 3D tour (Redfin or an agency website).
                       </li>
                       <li>
-                        <b>Посмотрите, чей это тур.</b> Логотип обычно виден в
-                        углу самого тура: Matterport, iGUIDE, Kuula, CloudPano.
+                        <b>Identify the tour provider.</b> Its logo is usually in a corner: Matterport, iGUIDE, Kuula or CloudPano.
                       </li>
                       <li>
-                        <b>Откройте инструменты разработчика</b> —
-                        <kbd>F12</kbd> или <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd
+                        <b>Open developer tools</b> —
+                        <kbd>F12</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd
                           >I</kbd
                         >
-                        (на Mac <kbd>⌥</kbd>+<kbd>⌘</kbd>+<kbd>I</kbd>), вкладка
+                        (on Mac <kbd>⌥</kbd>+<kbd>⌘</kbd>+<kbd>I</kbd>), then the tab
                         <b>Elements</b>.
                       </li>
                       <li>
-                        <b>Найдите тур в разметке:</b> <kbd>Ctrl</kbd>+<kbd
+                        <b>Find the tour in the page markup:</b> <kbd>Ctrl</kbd>+<kbd
                           >F</kbd
                         >
-                        внутри панели и поиск по слову <code>iframe</code>, либо
-                        по названию сервиса — <code>matterport</code>,
+                        in the panel and search for <code>iframe</code>, or the provider’s name: <code>matterport</code>,
                         <code>youriguide</code>, <code>kuula</code>.
                       </li>
                       <li>
-                        <b>Скопируйте адрес</b> из атрибута
-                        <code>src</code> найденного
-                        <code>&lt;iframe&gt;</code> и вставьте сюда.
+                        <b>Copy the URL</b> from the attribute
+                        <code>src</code> of the matching
+                        <code>&lt;iframe&gt;</code> and paste it here.
                       </li>
                     </ol>
                     <p class="guide-lead">
-                      Быстрые способы без консоли: правый клик по туру →
-                      «Открыть фрейм в новой вкладке»; либо кнопка «Поделиться»
-                      у самого тура — там часто есть готовый код вставки.
+                      Quick alternatives: right-click the tour and open the frame in a new tab, or use the tour’s Share button to find an embed code.
                     </p>
                     <div class="guide-title">
-                      Как выглядят ссылки
+                      Example links
                       <span class="guide-hint"
-                        >щёлкните по образцу — скопируется</span
+                        >click an example to copy it</span
                       >
                     </div>
                     <table class="guide-table">
@@ -7344,11 +7335,11 @@
                             role="button"
                             tabindex="0"
                             data-copy="https://my.matterport.com/show/?m=ID"
-                            title="Щёлкните — образец скопируется в буфер обмена"
+                            title="Click to copy this example"
                             >my.matterport.com/show/?m=<i>ID</i></code
                           >
                         </td>
-                        <td class="ok">встраивается</td>
+                        <td class="ok">Embeddable</td>
                       </tr>
                       <tr>
                         <td>iGUIDE</td>
@@ -7357,12 +7348,12 @@
                             class="copy"
                             role="button"
                             tabindex="0"
-                            data-copy="https://youriguide.com/адрес_объекта"
-                            title="Щёлкните — образец скопируется в буфер обмена"
-                            >youriguide.com/<i>адрес</i></code
+                            data-copy="https://youriguide.com/property_address"
+                            title="Click to copy this example"
+                            >youriguide.com/<i>address</i></code
                           >
                         </td>
-                        <td class="ok">встраивается</td>
+                        <td class="ok">Embeddable</td>
                       </tr>
                       <tr>
                         <td>Kuula</td>
@@ -7372,11 +7363,11 @@
                             role="button"
                             tabindex="0"
                             data-copy="https://kuula.co/share/ID"
-                            title="Щёлкните — образец скопируется в буфер обмена"
+                            title="Click to copy this example"
                             >kuula.co/share/<i>ID</i></code
                           >
                         </td>
-                        <td class="ok">встраивается</td>
+                        <td class="ok">Embeddable</td>
                       </tr>
                       <tr>
                         <td>CloudPano</td>
@@ -7386,11 +7377,11 @@
                             role="button"
                             tabindex="0"
                             data-copy="https://app.cloudpano.com/tours/ID"
-                            title="Щёлкните — образец скопируется в буфер обмена"
+                            title="Click to copy this example"
                             >app.cloudpano.com/tours/<i>ID</i></code
                           >
                         </td>
-                        <td class="ok">встраивается</td>
+                        <td class="ok">Embeddable</td>
                       </tr>
                       <tr>
                         <td>Asteroom</td>
@@ -7400,11 +7391,11 @@
                             role="button"
                             tabindex="0"
                             data-copy="https://my.asteroom.com/player/?id=ID"
-                            title="Щёлкните — образец скопируется в буфер обмена"
+                            title="Click to copy this example"
                             >my.asteroom.com/player/?id=<i>ID</i></code
                           >
                         </td>
-                        <td class="ok">встраивается</td>
+                        <td class="ok">Embeddable</td>
                       </tr>
                       <tr>
                         <td>EyeSpy360</td>
@@ -7414,23 +7405,17 @@
                             role="button"
                             tabindex="0"
                             data-copy="https://eyespy360.com/en-gb/tour/ID"
-                            title="Щёлкните — образец скопируется в буфер обмена"
+                            title="Click to copy this example"
                             >eyespy360.com/…/tour/<i>ID</i></code
                           >
                         </td>
-                        <td class="ok">встраивается</td>
+                        <td class="ok">Embeddable</td>
                       </tr>
                     </table>
                     <p class="guide-note">
-                      <b>Zillow 3D Home:</b> сайт блокирует показ тура во
-                      фрейме, вставка ссылки сюда не поможет. Вместо этого —
-                      офлайн-выгрузка без единого клика:
-                      <code>python3 zillow_tour_grabber.py</code> → вставьте
-                      ссылку на тур в открывшееся окошко → получится файл
-                      <code>data.3dview</code> с панорамами, планом и точной
-                      привязкой комнат. Откройте его кнопкой «Открыть» в этом
-                      редакторе (или перетащите на окно) — появятся этаж, локусы
-                      и свой 3D-просмотр панорам, без всякого iframe.
+                      <b>Zillow 3D Home:</b> blocks embedding. Pasting its URL will not work. You can instead export an offline tour:
+                      <code>python3 zillow_tour_grabber.py</code> → paste the tour URL in the dialog → this creates
+                      <code>data.3dview</code> with panoramas, a plan and room positions. Open it with the Open button or drop it onto the editor for a local 3D view.
                     </p>
                   </div>
                 </div>
@@ -7441,22 +7426,22 @@
         </div>
       </div>
       <footer class="bottom">
-        <b>МАРШРУТ</b>
+        <b>ROUTE</b>
         <div class="route" id="route">
-          <span class="small">Добавьте маркеры на план</span>
+          <span class="small">Add markers to the plan</span>
         </div>
-        <span class="small" id="count">0 локусов</span>
+        <span class="small" id="count">0 loci</span>
       </footer>
       <div class="status">
-        <span class="badge">● Готово</span>
-        <span id="status">Нет активного плана</span>
+        <span class="badge">● Ready</span>
+        <span id="status">No active plan</span>
         <span
           class="status-hint"
           id="hotkeysHint"
           role="button"
           tabindex="0"
-          title="Все горячие клавиши и их настройка"
-          >Горячие клавиши</span
+          title="View and customize all hotkeys"
+          >Hotkeys</span
         >
       </div>
     </div>
@@ -7465,39 +7450,39 @@
       id="themePick"
       hidden
       role="dialog"
-      aria-label="Цветовая тема"
+      aria-label="Color theme"
     >
       <div
         class="tp-size"
         id="uiSizeSeg"
         role="radiogroup"
-        aria-label="Размер интерфейса"
+        aria-label="Interface size"
       >
-        <span class="tp-size-lbl">Размер интерфейса</span>
+        <span class="tp-size-lbl">Interface size</span>
         <button
           type="button"
           role="radio"
           data-size="0"
-          title="Иконки и текст как раньше"
+          title="Compact icons and text"
         >
-          <b style="font-size: 11px">A</b>Обычный
+          <b style="font-size: 11px">A</b>Small
         </button>
         <button
           type="button"
           role="radio"
           data-size="1"
-          title="Иконки и текст крупнее (по умолчанию)"
+          title="Larger icons and text (default)"
         >
-          <b style="font-size: 14px">A</b>Крупный
+          <b style="font-size: 14px">A</b>Medium
         </button>
-        <button type="button" role="radio" data-size="2" title="Ещё крупнее">
-          <b style="font-size: 17px">A</b>Очень крупный
+        <button type="button" role="radio" data-size="2" title="Largest icons and text">
+          <b style="font-size: 17px">A</b>Large
         </button>
       </div>
       <input
         id="themePickFilter"
-        placeholder="Выберите цветовую тему (↑↓ — предпросмотр, Enter — применить)"
-        aria-label="Поиск темы"
+        placeholder="Choose a theme (↑↓ to preview, Enter to apply)"
+        aria-label="Search themes"
         autocomplete="off"
         spellcheck="false"
       />
@@ -7510,13 +7495,13 @@
         aria-labelledby="hkTitle"
       >
         <div class="dlg-head">
-          <h2 id="hkTitle">Горячие клавиши</h2>
+          <h2 id="hkTitle">Hotkeys</h2>
           <button
             type="button"
             class="dlg-x"
             id="hkCloseX"
-            title="Закрыть"
-            aria-label="Закрыть"
+            title="Close"
+            aria-label="Close"
           >
             <svg class="ic"><use href="#i-close" /></svg>
           </button>
@@ -7524,10 +7509,10 @@
         <div class="field">
           <input
             id="hkFilter"
-            placeholder="Поиск по действию или клавише"
+            placeholder="Search actions or keys"
             autocomplete="off"
             spellcheck="false"
-            aria-label="Поиск"
+            aria-label="Search"
           />
         </div>
         <div class="hk-list" id="hkList"></div>
@@ -7535,8 +7520,8 @@
           <span class="hk-note" id="hkNote"></span>
           <span style="display: flex; gap: 8px"
             ><button type="button" class="dlg-link" id="hkResetAll">
-              <svg class="ic sm"><use href="#i-turn-ccw" /></svg>Сбросить все</button
-            ><button type="button" id="hkClose">Готово</button></span
+              <svg class="ic sm"><use href="#i-turn-ccw" /></svg>Reset all</button
+            ><button type="button" id="hkClose">Done</button></span
           >
         </div>
       </div>
@@ -7548,31 +7533,30 @@
         aria-labelledby="saveTitle"
       >
         <div class="dlg-head">
-          <h2 id="saveTitle">Сохранить дворец</h2>
+          <h2 id="saveTitle">Save palace</h2>
           <button
             type="button"
             class="dlg-x"
             id="closeSaveModalX"
-            title="Закрыть"
-            aria-label="Закрыть"
+            title="Close"
+            aria-label="Close"
           >
             <svg class="ic"><use href="#i-close" /></svg>
           </button>
         </div>
         <div class="field">
-          <label for="fileName">Имя файла</label>
+          <label for="fileName">File name</label>
           <input
             id="fileName"
-            placeholder="Новый дворец памяти"
+            placeholder="New memory palace"
             autocomplete="off"
             spellcheck="false"
           />
           <div class="small" id="fileNameHint">
-            Расширение добавляется автоматически. Пусто — берётся название
-            дворца.
+            The extension is added automatically. Leave empty to use the palace name.
           </div>
         </div>
-        <div class="dlg-label">Формат</div>
+        <div class="dlg-label">Format</div>
         <div class="save-list">
           <button type="button" class="save-opt rec" id="saveMpalaceBtn" hidden>
             <span class="so-ic"
@@ -7581,11 +7565,10 @@
             <span class="so-text"
               ><b>.mpalace</b
               ><span
-                >Дворец со встроенными панорамами — не зависит от исходного
-                .3dview</span
+                >Palace with embedded panoramas — independent of the source .3dview</span
               ></span
             >
-            <span class="so-badge">Рекомендуется</span>
+            <span class="so-badge">Recommended</span>
           </button>
           <button type="button" class="save-opt" id="saveProjectBtn">
             <span class="so-ic"
@@ -7594,8 +7577,7 @@
             <span class="so-text"
               ><b>.mplace</b
               ><span
-                >Все этажи, изображения и маркеры — открывается обратно в
-                редакторе</span
+                >All floors, images and markers — reopen in the editor</span
               ></span
             >
           </button>
@@ -7604,74 +7586,71 @@
               ><svg class="ic"><use href="#i-braces" /></svg
             ></span>
             <span class="so-text"
-              ><b>JSON</b><span>Только данные, без изображений</span></span
+              ><b>JSON</b><span>Data only, without images</span></span
             >
           </button>
         </div>
         <div class="dlg-foot">
           <button type="button" class="dlg-link" id="openExportBtn">
-            <svg class="ic sm"><use href="#i-upload" /></svg>Экспорт в PNG /
-            PDF…
+            <svg class="ic sm"><use href="#i-upload" /></svg>Export to PNG / PDF…
           </button>
-          <button type="button" id="closeSaveModal">Закрыть</button>
+          <button type="button" id="closeSaveModal">Close</button>
         </div>
       </div>
     </div>
     <div class="modal" id="exportModal">
       <div class="dialog narrow">
-        <h2>Экспорт</h2>
+        <h2>Export</h2>
         <p class="small">
-          Экспорт создаёт итоговые изображения плана — для печати или показа вне
-          редактора.
+          Export plan images for printing or sharing outside the editor.
         </p>
         <div class="section">
           <h3>PNG</h3>
           <div class="row">
             <div class="field">
-              <label for="pngScope">Что</label
+              <label for="pngScope">Scope</label
               ><select id="pngScope">
-                <option value="current">Текущий этаж</option>
-                <option value="all">Все этажи (ZIP)</option>
+                <option value="current">Current floor</option>
+                <option value="all">All floors (ZIP)</option>
               </select>
             </div>
             <div class="field">
-              <label for="pngScale">Качество</label
+              <label for="pngScale">Quality</label
               ><select id="pngScale">
-                <option value="1">1× — как есть</option>
-                <option selected="selected" value="2">2× — чёткое</option>
-                <option value="3">3× — печать</option>
+                <option value="1">1× — original</option>
+                <option selected="selected" value="2">2× — sharp</option>
+                <option value="3">3× — print</option>
               </select>
             </div>
           </div>
           <div class="row">
             <div class="field">
-              <label for="pngBg">Фон</label
+              <label for="pngBg">Background</label
               ><select id="pngBg">
-                <option value="#ffffff">Белый</option>
-                <option value="#f2f4f7">Светло-серый</option>
-                <option value="none">Прозрачный</option>
+                <option value="#ffffff">White</option>
+                <option value="#f2f4f7">Light gray</option>
+                <option value="none">Transparent</option>
               </select>
             </div>
             <div class="field">
-              <label for="pngPad">Поля</label
+              <label for="pngPad">Margins</label
               ><select id="pngPad">
-                <option value="0">Без полей</option>
-                <option selected="selected" value="40">Обычные</option>
-                <option value="90">Широкие</option>
+                <option value="0">None</option>
+                <option selected="selected" value="40">Standard</option>
+                <option value="90">Wide</option>
               </select>
             </div>
           </div>
           <label class="check"
             ><input checked="checked" id="pngMarkers" type="checkbox" />
-            Маркеры</label
+            Markers</label
           >
           <label class="check"
-            ><input checked="checked" id="pngNumbers" type="checkbox" /> Номера
-            маркеров</label
+            ><input checked="checked" id="pngNumbers" type="checkbox" /> Marker numbers</label
           >
           <div class="save-grid" style="margin-top: 8px">
             <button class="primary" id="exportPngBtn">
-              Экспортировать PNG
+              Export PNG
             </button>
           </div>
         </div>
@@ -7679,32 +7658,32 @@
           <h3>PDF</h3>
           <div class="row">
             <div class="field">
-              <label for="pdfScope">Что</label
+              <label for="pdfScope">Scope</label
               ><select id="pdfScope">
-                <option value="all">Все этажи</option>
-                <option value="current">Текущий этаж</option>
+                <option value="all">All floors</option>
+                <option value="current">Current floor</option>
               </select>
             </div>
             <div class="field">
-              <label for="pdfFormat">Страница</label
+              <label for="pdfFormat">Page</label
               ><select id="pdfFormat">
                 <option selected="selected" value="a4">A4</option>
                 <option value="a3">A3</option>
-                <option value="fit">По размеру плана</option>
+                <option value="fit">Fit to plan</option>
               </select>
             </div>
           </div>
           <div class="row">
             <div class="field">
-              <label for="pdfOrient">Ориентация</label
+              <label for="pdfOrient">Orientation</label
               ><select id="pdfOrient">
-                <option selected="selected" value="auto">Авто</option>
-                <option value="landscape">Альбомная</option>
-                <option value="portrait">Книжная</option>
+                <option selected="selected" value="auto">Auto</option>
+                <option value="landscape">Landscape</option>
+                <option value="portrait">Portrait</option>
               </select>
             </div>
             <div class="field">
-              <label for="pdfScale">Качество</label
+              <label for="pdfScale">Quality</label
               ><select id="pdfScale">
                 <option value="1">1×</option>
                 <option selected="selected" value="2">2×</option>
@@ -7714,86 +7693,83 @@
           </div>
           <label class="check"
             ><input checked="checked" id="pdfTitles" type="checkbox" />
-            Заголовок с названием и номером этажа</label
+            Heading with palace name and floor number</label
           >
           <label class="check"
-            ><input checked="checked" id="pdfMarkers" type="checkbox" /> Маркеры
-            с номерами</label
+            ><input checked="checked" id="pdfMarkers" type="checkbox" /> Numbered markers</label
           >
           <div class="save-grid" style="margin-top: 8px">
             <button class="primary" id="exportPdfBtn">
-              Экспортировать PDF
+              Export PDF
             </button>
           </div>
         </div>
         <div style="text-align: right">
-          <button id="backToSaveModal">Назад</button>
-          <button id="closeExportModal">Закрыть</button>
+          <button id="backToSaveModal">Back</button>
+          <button id="closeExportModal">Close</button>
         </div>
       </div>
     </div>
     <div class="modal" id="modal">
       <div class="dialog wide">
-        <h2 id="modalTitle">Новый дворец</h2>
+        <h2 id="modalTitle">New palace</h2>
         <p class="small" id="planHint">
-          Вставьте данные: планы этажей и, при желании, ссылку на 3D-тур.
+          Add floor plans and, optionally, a 3D tour URL.
         </p>
         <div class="field">
-          <label for="wizardTourUrl">Ссылка на 3D-тур (любой сервис)</label>
+          <label for="wizardTourUrl">3D tour URL (any provider)</label>
           <input
             id="wizardTourUrl"
             placeholder="https://… Matterport, iGUIDE, Kuula, CloudPano…"
           />
         </div>
         <p class="small">
-          Этажи можно менять местами перетаскиванием. Вставка плана из буфера:
-          Ctrl+V. Обрезка — ✂ с изменением размера рамки.
+          Drag floors to reorder them. Paste a plan with Ctrl+V. Crop with the resizable frame.
         </p>
         <div id="pending"></div>
         <div class="drop" id="drop" tabindex="0">
-          Вставить данные<br />перетащите сюда или выберите файлы
+          Add files<br />drop files here or choose files
         </div>
         <div style="text-align: right">
-          <button id="closeModal">Отмена</button>
-          <button class="primary" id="applyPlans">Создать / добавить</button>
+          <button id="closeModal">Cancel</button>
+          <button class="primary" id="applyPlans">Create / add</button>
         </div>
       </div>
     </div>
     <div class="modal" id="cropModal">
       <div class="dialog wide">
-        <h2>Обрезать изображение</h2>
+        <h2>Crop image</h2>
         <p class="small">
-          Перемещайте рамку и тяните за углы/края, чтобы изменить область ·
-          затем «Применить»
+          Move the frame and drag its corners or edges to select an area, then click Apply
         </p>
         <div class="crop-stage" id="cropStage"></div>
         <div style="text-align: right; margin-top: 10px">
-          <button id="cropCancel">Отмена</button>
-          <button class="primary" id="cropApply">Применить</button>
+          <button id="cropCancel">Cancel</button>
+          <button class="primary" id="cropApply">Apply</button>
         </div>
       </div>
     </div>
     <div class="modal" id="askModal">
       <div class="dialog narrow">
-        <h2 id="askTitle">Подтверждение</h2>
+        <h2 id="askTitle">Confirmation</h2>
         <p id="askText" style="margin: 6px 0 10px"></p>
         <input id="askInput" hidden="" type="text" />
         <div style="text-align: right">
-          <button id="askNo">Отмена</button>
-          <button class="primary" id="askYes">Да</button>
+          <button id="askNo">Cancel</button>
+          <button class="primary" id="askYes">Yes</button>
         </div>
       </div>
     </div>
     <div class="modal" id="reviewSummaryModal">
       <div class="dialog narrow">
-        <h2 id="reviewSummaryTitle">Повторение завершено</h2>
+        <h2 id="reviewSummaryTitle">Review complete</h2>
         <div
           id="reviewSummaryBody"
           class="small"
           style="line-height: 1.7"
         ></div>
         <div style="text-align: right; margin-top: 14px">
-          <button class="primary" id="reviewSummaryClose">Понятно</button>
+          <button class="primary" id="reviewSummaryClose">OK</button>
         </div>
       </div>
     </div>

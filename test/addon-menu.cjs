@@ -13,6 +13,6 @@ for(const [name,options]of profiles)test(`${name}: inline addon upload, cancel, 
  assert.equal(await page.locator('#addonUploader').isVisible(),false);assert.equal(await page.locator('.addon-card').count(),1);
  const addonLayout=await page.locator('#settingsModal > .dialog').evaluate(el=>{const r=el.getBoundingClientRect();return {within:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,overflow:el.scrollWidth>el.clientWidth}});assert.deepEqual(addonLayout,{within:true,overflow:false});
  await page.locator('#addonsClose').click();await page.locator('#toolsSettingsOpen').click();await page.locator('#toolsCategory').selectOption('system');assert.ok(await page.locator('[data-tool-key^="system."]').count()>0);assert.equal(await page.locator('[data-tool-key^="addon."]').count(),0);
- await page.locator('#toolsCategory').selectOption('addons');assert.equal(await page.locator('[data-tool-key^="system."]').count(),0);await page.locator('#toolsCategory').selectOption('all');await page.locator('#toolsFilter').fill('Увеличить');assert.ok(await page.locator('[data-tool-key="system.zoomIn"]').count()>0);
+ await page.locator('#toolsCategory').selectOption('addons');assert.equal(await page.locator('[data-tool-key^="system."]').count(),0);await page.locator('#toolsCategory').selectOption('all');await page.locator('#toolsFilter').fill("Zoom in");assert.ok(await page.locator('[data-tool-key="system.zoomIn"]').count()>0);
  assert.equal(await page.locator('#settingsModal > .dialog').evaluate(el=>el.scrollWidth>el.clientWidth),false);
 });
