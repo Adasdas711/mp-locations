@@ -22,7 +22,7 @@ function validateAddon(manifest,files){
  if(!/^\d+\.\d+\.\d+$/.test(manifest.version||''))throw new Error('Укажите version в формате 1.0.0.');
  if(manifest.apiVersion!==1)throw new Error('Поддерживается apiVersion: 1.');
  if(!safeAddonPath(manifest.main)||!manifest.main.endsWith('.js')||typeof files[manifest.main]!=='string')throw new Error('Главный JS-файл не найден.');
- if(!Array.isArray(manifest.permissions)||manifest.permissions.some(p=>!['project.read','markers.write','metadata.write','plan.read','plan.write','tour.read','tour.write','view.control','ui.control','ui.contribute'].includes(p)))throw new Error('Неизвестное разрешение.');
+ if(!Array.isArray(manifest.permissions)||manifest.permissions.some(p=>!['project.read','markers.write','metadata.write','plan.read','plan.write','tour.read','tour.write','view.control','ui.control','ui.contribute','archive.read','archive.write','keybindings.write'].includes(p)))throw new Error('Неизвестное разрешение.');
  const c=manifest.contributes||{},commands=c.commands||[],panels=c.panels||[],activity=c.activityBar||[],toolbars=c.toolbars||[];
  if([commands,panels,activity,toolbars].some(items=>!Array.isArray(items))||commands.length+panels.length+activity.length+toolbars.length>60)throw new Error('Не более 60 элементов интерфейса.');
  const ids=new Set();
@@ -58,14 +58,16 @@ window.addEventListener('error',event=>{event.preventDefault();send('error',{mes
 window.addEventListener('unhandledrejection',event=>{event.preventDefault();send('error',{message:String(event.reason?.message||event.reason)})});
 function rpc(method,args){return new Promise((resolve,reject)=>{const id=++seq;const timeout=setTimeout(()=>{pending.delete(id);reject(new Error('API timeout'))},10000);pending.set(id,{resolve,reject,timeout});send('rpc',{id,method,args})})}
 const api=Object.freeze({
- version:'1.2.0',
+ version:'1.3.0',
  commands:{register(id,handler){if(typeof handler!=='function')throw new Error('Command requires a handler');handlers.set(id,handler);send('register',{id});return {dispose(){handlers.delete(id);send('unregister',{id})}}}},
  project:{read:()=>rpc('project.read'),updateMetadata:patch=>rpc('metadata.write',patch)},
  markers:{add:input=>rpc('markers.add',input),remove:input=>rpc('markers.remove',input),update:input=>rpc('markers.update',input)},
  plan:{read:level=>rpc('plan.read',level),add:input=>rpc('plan.add',input),remove:level=>rpc('plan.remove',level),rename:input=>rpc('plan.rename',input),select:level=>rpc('plan.select',level),move:input=>rpc('plan.move',input),merge:input=>rpc('plan.merge',input),split:level=>rpc('plan.split',level),transform:input=>rpc('plan.transform',input),walls:{add:input=>rpc('plan.wallAdd',input),remove:input=>rpc('plan.wallRemove',input)}},
  view:{read:()=>rpc('view.read'),set:input=>rpc('view.set',input)},
- tour:{read:()=>rpc('tour.read'),select:id=>rpc('tour.select',id),pose:input=>rpc('tour.pose',input),update:input=>rpc('tour.update',input),connect:input=>rpc('tour.connect',input),setStart:id=>rpc('tour.start',id)},
+ tour:{add:input=>rpc('tour.add',input),remove:id=>rpc('tour.remove',id),loadPanorama:input=>rpc('tour.loadPanorama',input),read:()=>rpc('tour.read'),select:id=>rpc('tour.select',id),pose:input=>rpc('tour.pose',input),update:input=>rpc('tour.update',input),connect:input=>rpc('tour.connect',input),setStart:id=>rpc('tour.start',id)},
  ui:{registerAppearance:input=>rpc('ui.appearance.register',input),removeAppearance:()=>rpc('ui.appearance.remove'),iconThemes:()=>rpc('ui.iconThemes'),iconTheme:id=>rpc('ui.iconTheme',id),tools:()=>rpc('ui.tools'),setToolVisible:(id,visible)=>rpc('ui.visibility',{id,visible}),themes:()=>rpc('ui.themes'),commands:()=>rpc('ui.commands'),execute:id=>rpc('ui.execute',id),theme:id=>rpc('ui.theme',id),scale:size=>rpc('ui.scale',size),overlay:input=>rpc('ui.overlay',input),showMessage:text=>rpc('ui.message',text),async showPanel(id,html){await rpc('ui.panel',{id,html});document.getElementById('panel').innerHTML=html}},
+ archive:{list:()=>rpc('archive.list'),read:input=>rpc('archive.read',input),write:input=>rpc('archive.write',input),remove:path=>rpc('archive.remove',path),export:()=>rpc('archive.export'),download:()=>rpc('archive.download'),meta:{read:()=>rpc('archive.meta.read'),write:value=>rpc('archive.meta.write',value)}},
+ keybindings:{register:input=>rpc('keybindings.register',input),unregister:id=>rpc('keybindings.unregister',id),list:()=>rpc('keybindings.list')},
  theme:{read:()=>rpc('theme.read')},
  storage:{get:key=>rpc('storage.get',key),set:(key,value)=>rpc('storage.set',{key,value})},
  assets:{read(path){if(!(path in data.files))throw new Error('Asset not found');return data.files[path]}},

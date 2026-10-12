@@ -100,6 +100,7 @@ openAnyArchiveBuffer = async function(buffer, name) {
   try {
     await editorOpenArchive(buffer, name);
     archiveContext = context;
+    resetHistory();
     archiveAssetDirty = true;
   } finally {
     recoveryLoading = false;
@@ -122,7 +123,7 @@ function applyMeta() {
   try {
     const text = parseMeta();
     if (!archiveContext) throw new Error('Сначала откройте архив .3dview или .mpalace.');
-    if (archiveContext.metaText !== text) { archiveContext.metaText = text; touch(); }
+    if (archiveContext.metaText !== text) { requireEditing(); flushHistorySoft(); archiveContext.metaText = text; touch(); }
     document.querySelector('#metaError').textContent = '';
     status('meta.json применён · сохраните архив, чтобы получить файл с изменениями');
     return true;
@@ -147,7 +148,8 @@ document.querySelector('#metaDownload').addEventListener('click', async event =>
   try {
     const context = archiveContext;
     const zip = await JSZip.loadAsync(context.buffer);
-    zip.file('meta.json', context.metaText);
+    applyArchivePatches(zip, context);
+    if(context.metaText != null) zip.file('meta.json', context.metaText); else zip.remove('meta.json');
     const blob = await zip.generateAsync({type: 'blob', compression: 'DEFLATE', compressionOptions: {level: 6}});
     const name = context.name.replace(/(\.[^.]+)$/, '-meta$1');
     downloadBlob(blob, name === context.name ? name + '-meta.zip' : name);
@@ -197,7 +199,7 @@ async function saveRecovery() {
     const record = {
       saved: new Date().toISOString(),
       state: structuredClone(state),
-      archive: context ? {id: context.id, name: context.name, metaText: context.metaText} : null,
+      archive: context ? {id: context.id, name: context.name, metaText: context.metaText, patches: structuredClone(context.patches || {})} : null,
       model: DHM ? {meta: structuredClone(DHM.meta), bin: DHM.bin.slice(0), tex: [...DHM.tex].map(([name, value]) => [name, {bytes: value.bytes}])} : null
     };
     const tx = db.transaction(['versions', 'archives'], 'readwrite');

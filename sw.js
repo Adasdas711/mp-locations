@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-b78dd60f7ea7f8dc';
+const CACHE = 'palace-offline-8708ebd5b7446edb';
 const ASSETS = [
   "./",
   "addons.js",
@@ -10,6 +10,7 @@ const ASSETS = [
   "app.js",
   "appearance.js",
   "camera-editor.js",
+  "extension-operations.js",
   "icons/apple-touch-icon.png",
   "icons/icon-192.png",
   "icons/icon-512.png",
