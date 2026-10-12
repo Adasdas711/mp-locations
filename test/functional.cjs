@@ -71,7 +71,7 @@ for(const [profile,options]of profiles){
  });
  test(`${profile}: image import, rotate, flip, brightness, crop and PDF import`,async t=>{
   const {page}=await openSession(browser,t,options,{empty:true});
-  if(await page.locator('#abUpload').isVisible())await page.locator('#abUpload').click();else if(await page.locator('#uploadBtn').isVisible())await page.locator('#uploadBtn').click();else{await page.locator('#mobileMore').click();await page.locator('.ctx-item').filter({hasText:'Загрузить планы'}).click()};const image=fs.readFileSync(path.join(__dirname,'../icons/icon-192.png'));
+  await page.locator('#floorOverlay .add').click();const image=fs.readFileSync(path.join(__dirname,'../icons/icon-192.png'));
   const chooser=page.waitForEvent('filechooser');await page.locator('#drop').click();await(await chooser).setFiles({name:'plan.png',mimeType:'image/png',buffer:image});
   await page.waitForFunction(()=>pending.length===1);
   await page.locator('#pending [data-act="rotate"]').click();await page.waitForFunction(()=>pending[0].rotation===90);
@@ -80,16 +80,16 @@ for(const [profile,options]of profiles){
   await page.locator('#pending [data-act="crop"]').click();await page.locator('#cropBox').waitFor();await page.locator('#cropApply').click();await page.waitForFunction(()=>cropState===null);
   await page.locator('#applyPlans').click();await page.waitForFunction(()=>state.levels.length===1&&state.levels[0].w===154);
   const waiting=page.waitForEvent('download');await page.evaluate(()=>exportPdf());const pdf=fs.readFileSync(await(await waiting).path());
-  if(await page.locator('#abUpload').isVisible())await page.locator('#abUpload').click();else if(await page.locator('#uploadBtn').isVisible())await page.locator('#uploadBtn').click();else{await page.locator('#mobileMore').click();await page.locator('.ctx-item').filter({hasText:'Загрузить планы'}).click()};const chooser2=page.waitForEvent('filechooser');await page.locator('#drop').click();await(await chooser2).setFiles({name:'import.pdf',mimeType:'application/pdf',buffer:pdf});
+  await page.locator('#floorOverlay .add').click();const chooser2=page.waitForEvent('filechooser');await page.locator('#drop').click();await(await chooser2).setFiles({name:'import.pdf',mimeType:'application/pdf',buffer:pdf});
   await page.waitForFunction(()=>pending.length===1);await page.locator('#applyPlans').click();assert.equal(await page.evaluate(()=>state.levels.length),2);
  });
  test(`${profile}: hotkey filtering, rebinding, reset and safe new-project confirmation`,async t=>{
   const {page}=await openSession(browser,t,options);
-  if(await page.locator('#abHotkeys').isVisible())await page.locator('#abHotkeys').click();else{await page.locator('#mobileMore').click();await page.locator('.ctx-item').filter({hasText:'Горячие клавиши'}).click()};await page.locator('#hkFilter').fill('Маркер');assert.equal(await page.locator('#hkList .hk-row:not(.fixed)').count(),1);
+  await page.locator('#toolsSettingsOpen').click();await page.locator('#abHotkeys').click();await page.locator('#hkFilter').fill('Маркер');assert.equal(await page.locator('#hkList .hk-row:not(.fixed)').count(),1);
   await page.locator('.hk-key[data-id="tool.marker"]').click();await page.keyboard.press('Alt+y');assert.equal(await page.evaluate(()=>hkBinding('tool.marker')),'Alt+KeyY');
   await page.locator('.hk-reset[data-id="tool.marker"]').click();assert.equal(await page.evaluate(()=>hkBinding('tool.marker')),'KeyM');await page.locator('#hkClose').click();
-  await page.locator('#palaceName').fill('Keep this');await page.locator('#palaceName').press('Tab');await page.locator('#newBtn').click();await page.locator('#askNo').click();assert.equal(await page.evaluate(()=>state.name),'Keep this');
-  await page.locator('#newBtn').click();await page.locator('#askYes').click();assert.equal(await page.evaluate(()=>state.levels.length),0);
+  await page.locator('#palaceName').fill('Keep this');await page.locator('#palaceName').press('Tab');await page.locator('#menuFile').click();await page.locator('#newBtn').click();await page.locator('#askNo').click();assert.equal(await page.evaluate(()=>state.name),'Keep this');
+  await page.locator('#menuFile').click();await page.locator('#newBtn').click();await page.locator('#askYes').click();assert.equal(await page.evaluate(()=>state.levels.length),0);
  });
  for(let mode=1;mode<=5;mode++)test(`${profile}: review mode ${mode} scoring, next round and exit`,async t=>{
   const {page}=await openSession(browser,t,options);

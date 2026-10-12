@@ -1,7 +1,7 @@
 const {test,before,after}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {launchBrowser}=require('./support/browser.cjs'),{profiles,openSession}=require('./support/fixtures.cjs');
 let browser;before(async()=>browser=await launchBrowser());after(async()=>browser?.close());
-async function install(page){await page.locator('#addonsOpen').click();await page.locator('#addonFile').setInputFiles(path.join(__dirname,'../addons/appearance.palace-addon'));await page.locator('#addonInstall').click();await page.waitForFunction(()=>addonHosts.get('palace.appearance')?.ready)}
+async function install(page){await page.locator('#toolsSettingsOpen').click();await page.locator('#addonsOpen').click();await page.locator('#addonFile').setInputFiles(path.join(__dirname,'../addons/appearance.palace-addon'));await page.locator('#addonInstall').click();await page.waitForFunction(()=>addonHosts.get('palace.appearance')?.ready)}
 async function open(page){await page.locator('[data-command="palace.appearance.open"]').click();return page.frameLocator('#addonPanelFrames iframe')}
 for(const [name,options]of profiles)test(`${name}: separate appearance addon installs themes/icons, imports JSON, persists and cleans up`,async t=>{
  const {page}=await openSession(browser,t,options,{offlineCache:true});
@@ -14,7 +14,7 @@ for(const [name,options]of profiles)test(`${name}: separate appearance addon ins
  assert.notEqual(await page.locator('#i-camera').innerHTML(),original);
  await frame.locator('#appearanceTheme').selectOption('palace.appearance.paper');await page.waitForFunction(()=>getTheme()==='palace.appearance.paper');
  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme),'light');
- await page.locator('#addonPanelClose').click();await page.locator('#addonsOpen').click();await page.locator('[data-addon="palace.appearance"] [data-action="toggle"]').click();
+ await page.locator('#addonPanelClose').click();await page.locator('#toolsSettingsOpen').click();await page.locator('#addonsOpen').click();await page.locator('[data-addon="palace.appearance"] [data-action="toggle"]').click();
  await page.waitForFunction(()=>!addonHosts.has('palace.appearance'));
  assert.equal(await page.evaluate(()=>getTheme()),'github-dark-default');assert.equal(await page.locator('#i-camera').innerHTML(),original);
  assert.equal(await page.evaluate(()=>PALACE_THEMES.some(t=>t.id.startsWith('palace.appearance.'))),false);
@@ -31,10 +31,10 @@ for(const [name,options]of profiles)test(`${name}: separate appearance addon ins
  assert.equal(await page.evaluate(()=>getTheme()),'palace.appearance.custom');
  assert.equal(await page.evaluate(()=>PALACE_THEMES.some(t=>t.id==='palace.appearance.bad')),false);
  await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>addonHosts.get('palace.appearance')?.ready&&getTheme()==='palace.appearance.custom'&&document.documentElement.dataset.iconTheme==='palace.appearance.custom-icons');
- await page.locator('#addonsOpen').click();const afterReload=await open(page);
+ await page.locator('#toolsSettingsOpen').click();await page.locator('#addonsOpen').click();const afterReload=await open(page);
  await afterReload.locator('#appearanceRemoveCustom').click();await afterReload.locator('#appearanceMessage').filter({hasText:'наборы удалены'}).waitFor();
  assert.equal(await page.evaluate(()=>getTheme()),'darcula');assert.equal(await page.locator('#i-camera').innerHTML(),original);
- await afterReload.locator('#appearanceReset').click();await page.locator('#addonPanelClose').click();await page.locator('#addonsOpen').click();
+ await afterReload.locator('#appearanceReset').click();await page.locator('#addonPanelClose').click();await page.locator('#toolsSettingsOpen').click();await page.locator('#addonsOpen').click();
  await page.locator('[data-addon="palace.appearance"] [data-action="remove"]').click();await page.waitForFunction(()=>!addonPackages.has('palace.appearance'));
  assert.equal(await page.locator('[data-addon-owner="palace.appearance"]').count(),0);
  assert.equal(await page.evaluate(()=>PALACE_THEMES.some(t=>t.id.startsWith('palace.appearance.'))),false);

@@ -32,7 +32,6 @@ const mobileMoreButton=document.createElement('button');mobileMoreButton.type='b
 document.querySelector('#abHotkeys').before(mobileMoreButton);
 const mobileControlsStyle=document.createElement('style');mobileControlsStyle.textContent='#mobileMore{display:none}html.touch #mobileMore{display:inline-flex}';document.head.appendChild(mobileControlsStyle);
 mobileMoreButton.onclick=()=>{const box=mobileMoreButton.getBoundingClientRect();showCtxMenu(box.left,Math.max(0,box.top-200),[
- {label:'Загрузить планы',icon:'upload',disabled:!canEditPlan(),run:()=>openPlansModal()},
  {label:'Горячие клавиши',icon:'keyboard',run:()=>openHotkeys()},
  {label:'Повернуть план…',icon:'rotate',disabled:!canEditPlan(),run:()=>ask('Угол поворота в градусах',value=>{const angle=Number(value);if(Number.isFinite(angle))applyRotation(angle)},{input:String(state.rotation),yes:'Применить'})},
  {label:'Размер локусов…',icon:'pin',disabled:!canEditPlan(),run:()=>ask('Размер локусов: 20–100',value=>{const size=Number(value);if(!Number.isFinite(size))return;state.markerSize=Math.max(20,Math.min(100,Math.round(size)));touch();render()},{input:String(markerSize()),yes:'Применить'})}
