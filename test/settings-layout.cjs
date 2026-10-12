@@ -11,9 +11,9 @@ for(const [name,options]of profiles){
   assert.deepEqual(await page.evaluate(()=>[1,2,5,21].map(n=>plural(n,'locus','loci','loci'))),['1 locus','2 loci','5 loci','21 loci']);
   await page.locator('#toolsSettingsOpen').click();
   assert.deepEqual(await page.locator('.settings-nav-group>h3').allTextContents(),['Options','Core plugins','Community plugins']);
-  assert.deepEqual(await page.locator('.settings-nav-group').first().locator('.settings-nav-item span').allTextContents(),['General','Appearance','Interface','Editor','Files and links','Hotkeys','Keychain','Core plugins','Community plugins']);
+  assert.deepEqual(await page.locator('.settings-nav-group').first().locator('.settings-nav-item span').allTextContents(),['General','Appearance','Interface','Editor','Files and links','Hotkeys','Core plugins','Community plugins']);
   assert.equal(await page.locator('#settingsNav').evaluate(el=>getComputedStyle(el).display),'flex','Navigation remains a vertical list on every screen');
-  for(const id of ['app','appearance','tools','editor','files','hotkeys','security','core','addons','canvas','cameras','viewer','minimap']){
+  for(const id of ['app','appearance','tools','editor','files','hotkeys','core','addons','canvas','cameras','viewer','minimap']){
    await section(page)(id);
    const text=await page.locator(`.settings-pane[data-settings-page="${id}"]`).innerText();assert.equal(/[А-Яа-яЁё]/.test(text),false,`${id} uses English`);
    assert.equal(await page.getByRole('dialog').count(),1);

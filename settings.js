@@ -12,7 +12,7 @@ for (const title of ['Options', 'Core plugins', 'Community plugins']) {
  section.append(heading,items);settingsNav.append(section);settingsSections.set(title,items);
 }
 function arrangeSettingsNavigation(){
- const order=['app','appearance','tools','editor','files','hotkeys','security','core','addons'];
+ const order=['app','appearance','tools','editor','files','hotkeys','core','addons'];
  for(const id of order){const page=settingsPages.get(id);if(page)settingsSections.get('Options').append(page.button)}
  for(const id of ['canvas','cameras','viewer','minimap','history']){const page=settingsPages.get(id);if(page)settingsSections.get('Core plugins').append(page.button)}
 }
@@ -65,8 +65,6 @@ const filesSettings=newSettingsPane('Files and links',`<div class="settings-card
  ${settingsRow('Local snapshots','Manage versions stored in this browser. Export important palaces to a file.','<button type="button" id="settingsRecovery">Manage</button>')}
  </div>`);
 settingsPage('files','Files and links','folder',filesSettings);
-const securitySettings=newSettingsPane('Keychain',`<p class="settings-description">PALACE works locally without an account or a stored password. Plugin access is controlled by the permissions you approve during installation.</p><div class="settings-card">${settingsRow('Plugin permissions','Review each installed plugin’s access before enabling it.','<button id="settingsPermissions" type="button">Manage plugins</button>')}</div>`);
-settingsPage('security','Keychain','key',securitySettings);
 const coreDefinitions={
  core:{title:'Core plugins',icon:'folder',keys:null},
  canvas:{title:'Canvas',icon:'plan',keys:['system.abPlan','system.floorOverlay','system.compass','system.planDarkFloor','system.markerCtl']},
@@ -155,10 +153,9 @@ document.querySelector('#settingsWallsReset').onclick=()=>{document.querySelecto
 document.querySelector('#settingsFiles').onclick=()=>{closeSettings();openSaveModal()};
 document.querySelector('#settingsMetadata').onclick=()=>{closeSettings();document.querySelector('#metaOpen').click()};
 document.querySelector('#settingsRecovery').onclick=()=>{closeSettings();document.querySelector('#recoveryOpen').click()};
-document.querySelector('#settingsPermissions').onclick=()=>openSettingsPage('addons');
 document.querySelector('#settingsSearch').oninput=event=>{
  const query=event.target.value.trim().toLowerCase(),matches=[];
- const extra={editor:'marker size floor plan background walls',files:'files links archives metadata snapshots autosaves',security:'permissions access security',core:'built-in features',canvas:'canvas rotation plan',cameras:'camera connections editing',viewer:'panoramas tour 3d',minimap:'minimap navigation',app:"install PWA offline application home screen",appearance:"theme color interface size "+PALACE_THEMES.map(t=>t.name).join(' '),tools:"system tools "+[...palaceTools.values()].map(t=>t.label).join(' '),hotkeys:"keyboard shortcuts "+HOTKEYS.map(k=>k.label).join(' '),addons:"extensions installation "+[...addonPackages.values()].map(p=>p.manifest.name).join(' ')};
+ const extra={editor:'marker size floor plan background walls',files:'files links archives metadata snapshots autosaves',core:'built-in features',canvas:'canvas rotation plan',cameras:'camera connections editing',viewer:'panoramas tour 3d',minimap:'minimap navigation',app:"install PWA offline application home screen",appearance:"theme color interface size "+PALACE_THEMES.map(t=>t.name).join(' '),tools:"system tools "+[...palaceTools.values()].map(t=>t.label).join(' '),hotkeys:"keyboard shortcuts "+HOTKEYS.map(k=>k.label).join(' '),addons:"extensions installation "+[...addonPackages.values()].map(p=>p.manifest.name).join(' ')};
  for(const [id,page]of settingsPages){const matched=!query||(page.title+' '+(extra[id]||'')).toLowerCase().includes(query);page.button.hidden=!matched;if(matched)matches.push(id)}
  if(!query){document.querySelector('#toolsFilter').value='';document.querySelector('#addonSearch').value='';document.querySelector('#hkFilter').value='';renderToolSettings();renderAddons();renderHotkeys()}
  if(query&&matches.length===1){const id=matches[0];openSettingsPage(id);if(id==='tools'){document.querySelector('#toolsFilter').value=[...palaceTools.values()].some(t=>(t.label+' '+t.owner).toLowerCase().includes(query))?query:'';renderToolSettings()}if(id==='addons'){document.querySelector('#addonSearch').value=[...addonPackages.values()].some(p=>(p.id+' '+p.manifest.name+' '+(p.manifest.contributes?.commands||[]).map(c=>c.title).join(' ')).toLowerCase().includes(query))?query:'';renderAddons()}if(id==='hotkeys'){document.querySelector('#hkFilter').value=HOTKEYS.some(k=>k.label.toLowerCase().includes(query))?query:'';renderHotkeys()}}
