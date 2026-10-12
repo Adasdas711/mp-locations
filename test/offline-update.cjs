@@ -7,7 +7,8 @@ test('old offline cache updates without closing tabs; saved versions stay closed
  const root=path.resolve(__dirname,'..');let legacy=true;
  const html=await fs.readFile(path.join(root,'index.html'),'utf8');
  const persistence=await fs.readFile(path.join(root,'persistence.js'),'utf8');
- const oldWorker=`self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open('palace-offline-legacy');await c.put('./index.html',new Response(${JSON.stringify(html)},{headers:{'Content-Type':'text/html'}}));await c.put('./persistence.js',new Response(${JSON.stringify(persistence+'\nshowRecovery(true);')},{headers:{'Content-Type':'text/javascript'}}));await self.skipWaiting()})()));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{if(e.request.method==='GET')e.respondWith((async()=>{const c=await caches.open('palace-offline-legacy');return await c.match(e.request.mode==='navigate'?'./index.html':e.request)||fetch(e.request)})())});`;
+ const legacyPersistence=persistence.replace(/  if \(!event\?\.isTrusted[^\n]+\n/, '');
+ const oldWorker=`self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open('palace-offline-legacy');await c.put('./index.html',new Response(${JSON.stringify(html)},{headers:{'Content-Type':'text/html'}}));await c.put('./persistence.js',new Response(${JSON.stringify(legacyPersistence+'\nshowRecovery(true);')},{headers:{'Content-Type':'text/javascript'}}));await self.skipWaiting()})()));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{if(e.request.method==='GET')e.respondWith((async()=>{const c=await caches.open('palace-offline-legacy');return await c.match(e.request.mode==='navigate'?'./index.html':e.request)||fetch(e.request)})())});`;
  const server=http.createServer(async(req,res)=>{
   try{const name=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
    if(name==='sw.js'&&legacy){res.setHeader('Content-Type','text/javascript');res.end(oldWorker);return}
@@ -28,7 +29,7 @@ test('old offline cache updates without closing tabs; saved versions stay closed
  legacy=false;
  await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update()});
  await page.waitForFunction(async()=>!(await caches.keys()).includes('palace-offline-legacy'),null,{timeout:30000});
- await page.waitForFunction(()=>document.querySelector('#recoveryModal')?.hidden===true,null,{timeout:30000});
+ await page.waitForFunction(()=>!document.querySelector('#recoveryModal'),null,{timeout:30000});
  assert.equal(await page.locator('#recoveryModal').isVisible(),false);
  await page.locator('#abSave').click();await page.locator('#recoveryOpen').click();await page.locator('#recoveryList button').first().click();
  await page.waitForFunction(()=>state.name==='Retained recovery');

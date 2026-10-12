@@ -62,13 +62,18 @@ function showPersistenceModal(el) {
   el.querySelector('textarea,button')?.focus();
 }
 function closePersistenceModal(el) {
+  if (!el) return;
   el.classList.remove('show');
   el.hidden = true;
   persistenceReturnFocus?.focus();
 }
-const recoveryModal = persistenceModal('recoveryModal', 'Локальные автосохранения', `
+let recoveryModal = null;
+function createRecoveryModal() {
+  recoveryModal = persistenceModal('recoveryModal', 'Локальные автосохранения', `
 <p>Последние ${RECOVERY_LIMIT} версий хранятся в этом браузере вместе с изображениями и панорамами. Очистка данных сайта удалит их. Экспортируйте важные дворцы в файл.</p>
 <div id="recoveryList"></div><div class="persistence-actions"><button id="recoveryClose">Закрыть</button></div>`);
+  document.querySelector('#recoveryClose').addEventListener('click', () => closePersistenceModal(recoveryModal));
+}
 const metaModal = persistenceModal('metaModal', 'Метаданные архива — meta.json', `
 <p id="metaArchiveName"></p><p>Изменения войдут в следующий экспорт дворца. «Скачать исходный архив» создаёт копию открытого файла с новым meta.json, сохраняя остальные файлы. Для применения служебных полей к туру откройте эту копию заново.</p>
 <label for="metaEditor">JSON-объект метаданных</label><textarea id="metaEditor" spellcheck="false"></textarea>
@@ -151,8 +156,6 @@ document.querySelector('#metaDownload').addEventListener('click', async event =>
   finally { event.target.disabled = false; }
 });
 document.querySelector('#metaClose').addEventListener('click', () => closePersistenceModal(metaModal));
-document.querySelector('#recoveryClose').addEventListener('click', () => closePersistenceModal(recoveryModal));
-
 function recoveryDB() {
   return recoveryDatabase ||= new Promise((resolve, reject) => {
     const request = indexedDB.open('palace-recovery', 1);
@@ -248,8 +251,9 @@ async function restoreRecovery(record) {
   scheduleRecovery();
   status('Восстановлено автосохранение от ' + new Date(record.saved).toLocaleString());
 }
-async function showRecovery(manual = false) {
-  if (manual !== true) return;
+async function showRecovery(event) {
+  if (!event?.isTrusted || event.currentTarget !== document.querySelector('#recoveryOpen') || !document.querySelector('#saveModal').classList.contains('show')) return;
+  if (!recoveryModal) createRecoveryModal();
   const list = document.querySelector('#recoveryList');
   list.textContent = 'Загрузка…';
   showPersistenceModal(recoveryModal);
@@ -274,7 +278,7 @@ async function showRecovery(manual = false) {
     }
   } catch (error) { list.textContent = 'Хранилище недоступно: ' + error.message; }
 }
-document.querySelector('#recoveryOpen').addEventListener('click', () => showRecovery(true));
+document.querySelector('#recoveryOpen').addEventListener('click', showRecovery);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveRecovery(); });
 window.addEventListener('pagehide', saveRecovery);
 (async () => {

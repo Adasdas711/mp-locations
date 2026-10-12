@@ -48,9 +48,9 @@ for(const [profile,options]of profiles)test(`${profile}: recovery, archive metad
     await page.locator('#palaceName').fill('Recovered palace'); await page.locator('#palaceName').press('Tab');
     await page.waitForFunction(() => document.querySelector('#recoveryStatus').textContent.startsWith('Автосохранено'), {timeout:15000});
     await page.reload({waitUntil:'networkidle'});
-    await page.evaluate(()=>showRecovery());
+    await page.evaluate(async()=>{await showRecovery();await showRecovery(true);document.querySelector('#recoveryOpen').click()});
     assert.equal(await page.locator('#recoveryModal').isVisible(), false, 'Recovery picker must stay closed on startup, including programmatic calls');
-    assert.equal(await page.locator('#recoveryModal').evaluate(el=>el.hidden),true);
+    assert.equal(await page.locator('#recoveryModal').count(),0,'Recovery dialog must not exist before a manual click');
     await page.locator('#abSave').click(); await page.locator('#recoveryOpen').click();
     await page.locator('#recoveryModal.show').waitFor();
     await page.locator('#recoveryList button').first().click();
@@ -114,9 +114,9 @@ for(const [profile,options]of profiles)test(`${profile}: recovery, archive metad
     await page.evaluate(() => saveRecovery());
     await context.setOffline(true);
     await page.reload({waitUntil:'networkidle'});
-    await page.evaluate(()=>showRecovery());
+    await page.evaluate(async()=>{await showRecovery();await showRecovery(true);document.querySelector('#recoveryOpen').click()});
     assert.equal(await page.locator('#recoveryModal').isVisible(), false, 'Recovery picker must stay closed on startup, including programmatic calls');
-    assert.equal(await page.locator('#recoveryModal').evaluate(el=>el.hidden),true);
+    assert.equal(await page.locator('#recoveryModal').count(),0,'Recovery dialog must not exist before a manual click');
     await page.locator('#abSave').click(); await page.locator('#recoveryOpen').click();
     await page.locator('#recoveryModal.show').waitFor(); await page.locator('#recoveryList button').first().click();
     await page.waitForFunction(() => archiveContext?.name === 'nested.3dview');
