@@ -58,3 +58,14 @@ test('existing initial-camera badge cannot overlap +/- when entering editing wit
  assert.equal(await page.locator('#plan .cam-start').count(),0);
  assert.equal(await page.locator('[data-pano="b"] [data-action="set-start"]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(245, 179, 1)');
 });
+for(const [name,options]of profiles)test(`${name}: editor cameras keep equal sizes without 3D active styling`,async t=>{
+ const {page}=await openSession(browser,t,options);
+ await page.evaluate(()=>{state.layout='split';applyLayout();setActiveLocalPano('a',false);drawPlan()});
+ await page.locator('[data-tool="camera"]').click();
+ let sizes=await page.locator('#plan .plan-cam').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().width));assert.ok(Math.abs(sizes[0]-sizes[1])<.01);
+ assert.equal(await page.locator('#plan .plan-cam.active').count(),0);
+ await page.locator('#plan .plan-cam[data-pano="b"]').click();assert.equal(await page.locator('#plan .plan-cam[data-pano="b"]').evaluate(node=>node.classList.contains('camera-edit-selected')),true);
+ assert.equal(await page.locator('#plan .plan-cam[data-pano="a"]').evaluate(node=>node.classList.contains('camera-edit-selected')),false);
+ sizes=await page.locator('#plan .plan-cam').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().width));assert.ok(Math.abs(sizes[0]-sizes[1])<.01);
+ await page.evaluate(()=>{state.tool='select';state.layout='split';applyLayout();drawPlan()});assert.equal(await page.locator('#plan .plan-cam[data-pano="a"]').evaluate(node=>node.classList.contains('active')),true);
+});

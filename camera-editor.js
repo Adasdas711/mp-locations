@@ -5,7 +5,8 @@ cameraStyle.textContent = `
 #plan .plan-cam .cam-start{inset:auto auto -12% -12%;width:34%;height:34%;min-width:0;min-height:0}
 .tool-camera #plan .cam-start{display:none}
 .camera-action:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.tool-camera #plan .plan-cam{cursor:grab}.tool-camera #plan .plan-cam.dragging{cursor:grabbing}
+.tool-camera #plan .plan-cam{cursor:grab;transition:none}
+.tool-camera #plan .plan-cam.active{transform:translate(-50%,-50%) rotate(var(--mrot,0deg))}.tool-camera #plan .plan-cam.dragging{cursor:grabbing}
 .tool-camera #plan .plan-cam.camera-edit-selected{outline:3px solid var(--blue)!important;outline-offset:4px;background:var(--vscode-button-bg)!important;color:#fff!important;z-index:5}
 .tool-camera #plan .plan-cam.camera-edit-connected{outline:2px solid var(--blue)!important;outline-offset:2px;box-shadow:0 0 0 5px color-mix(in srgb,var(--blue) 20%,transparent)!important;z-index:4}
 #plan .plan-cam .camera-action{box-sizing:border-box;position:absolute;right:-12%;top:-12%;display:flex;align-items:center;justify-content:center;width:34%;height:34%;min-width:0;min-height:0;padding:0;border:calc(var(--camera-marker-size,68px)*.022) solid var(--panel);border-radius:50%;background:var(--vscode-button-bg);color:#fff;font:700 calc(var(--camera-marker-size,68px)*.24)/1 system-ui;cursor:pointer;z-index:8;transform:rotate(var(--mrot,0deg));transform-origin:center}
@@ -47,6 +48,7 @@ function refreshCameraEditor() {
   }
   document.querySelectorAll('#plan .plan-cam').forEach(node=>{
     const id=node.dataset.pano,selected=editing&&id===editedCameraId,connected=editing&&!!editedCameraId&&id!==editedCameraId&&(linkedCamera(editedCameraId,id)||linkedCamera(id,editedCameraId));
+    node.classList.toggle('active',!editing&&id===activeLocalPano);
     node.classList.toggle('camera-edit-selected',selected);node.classList.toggle('camera-edit-connected',connected);node.setAttribute('aria-pressed',String(selected));
     const base=Math.max(20,Math.round(1.24*markerSize()));
     node.style.width=node.style.height=base+'px';
