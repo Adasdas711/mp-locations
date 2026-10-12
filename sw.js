@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-d327eda4a75fcbd3';
+const CACHE = 'palace-offline-eec3bf995167edca';
 const ASSETS = [
   "./",
   "icons/apple-touch-icon.png",
@@ -9,6 +9,7 @@ const ASSETS = [
   "index.html",
   "manifest.webmanifest",
   "persistence.js",
+  "transitions.js",
   "vendor/README.md",
   "vendor/eng-LICENSE",
   "vendor/eng.traineddata.gz",

@@ -2,7 +2,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {createHash}=require('node:crypto');
 const root=path.resolve(__dirname,'..');
-const assets=['./','index.html','persistence.js','manifest.webmanifest',...['vendor','icons'].flatMap(dir=>fs.readdirSync(path.join(root,dir)).filter(file=>fs.statSync(path.join(root,dir,file)).isFile()).map(file=>dir+'/'+file))].sort();
+const assets=['./','index.html','persistence.js','transitions.js','manifest.webmanifest',...['vendor','icons'].flatMap(dir=>fs.readdirSync(path.join(root,dir)).filter(file=>fs.statSync(path.join(root,dir,file)).isFile()).map(file=>dir+'/'+file))].sort();
 const hash=createHash('sha256');
 for(const file of assets)if(file!=='./')hash.update(fs.readFileSync(path.join(root,file)));
 const version=hash.digest('hex').slice(0,16);

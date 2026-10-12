@@ -1,4 +1,4 @@
-/* Run: NODE_PATH=/path/to/node_modules node tests/persistence.cjs */
+/* Run: NODE_PATH=/path/to/node_modules node test/persistence.cjs */
 const {chromium} = require('playwright-core');
 const JSZip = require('../vendor/jszip.min.js');
 const assert = require('node:assert/strict');
