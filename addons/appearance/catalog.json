@@ -1,0 +1,187 @@
+{
+  "themes": [
+    {
+      "id": "palace.appearance.ocean",
+      "title": "Океан",
+      "base": "darcula",
+      "mode": "dark",
+      "colors": {
+        "chrome": "#101d2b",
+        "editor": "#101d2b",
+        "widget": "#21354a",
+        "dialog": "#21354a",
+        "border": "#21354a",
+        "widgetBorder": "#21354a",
+        "fg": "#e7f2ff",
+        "fgStrong": "#e7f2ff",
+        "fgDim": "#e7f2ff",
+        "fgMute": "#e7f2ff",
+        "input": "#21354a",
+        "inputBorder": "#21354a",
+        "btn": "#168a9c",
+        "btnHover": "#168a9c",
+        "btnFg": "#ffffff",
+        "btn2": "#21354a",
+        "btn2Hover": "#21354a",
+        "accent": "#168a9c",
+        "focus": "#168a9c",
+        "sel": "#168a9c",
+        "status": "#101d2b",
+        "statusFg": "#e7f2ff",
+        "statusItem": "#168a9c",
+        "statusItemFg": "#ffffff",
+        "activityFg": "#e7f2ff",
+        "activityInactive": "#e7f2ff"
+      },
+      "canvas": {
+        "bg": "#101d2b",
+        "walls": "#168a9c"
+      }
+    },
+    {
+      "id": "palace.appearance.violet",
+      "title": "Фиолетовый",
+      "base": "darcula",
+      "mode": "dark",
+      "colors": {
+        "chrome": "#201b2e",
+        "editor": "#201b2e",
+        "widget": "#322841",
+        "dialog": "#322841",
+        "border": "#322841",
+        "widgetBorder": "#322841",
+        "fg": "#f1eafa",
+        "fgStrong": "#f1eafa",
+        "fgDim": "#f1eafa",
+        "fgMute": "#f1eafa",
+        "input": "#322841",
+        "inputBorder": "#322841",
+        "btn": "#9462d9",
+        "btnHover": "#9462d9",
+        "btnFg": "#ffffff",
+        "btn2": "#322841",
+        "btn2Hover": "#322841",
+        "accent": "#9462d9",
+        "focus": "#9462d9",
+        "sel": "#9462d9",
+        "status": "#201b2e",
+        "statusFg": "#f1eafa",
+        "statusItem": "#9462d9",
+        "statusItemFg": "#ffffff",
+        "activityFg": "#f1eafa",
+        "activityInactive": "#f1eafa"
+      },
+      "canvas": {
+        "bg": "#201b2e",
+        "walls": "#9462d9"
+      }
+    },
+    {
+      "id": "palace.appearance.paper",
+      "title": "Светлая бумага",
+      "base": "darcula",
+      "mode": "light",
+      "colors": {
+        "chrome": "#f5f3ed",
+        "editor": "#f5f3ed",
+        "widget": "#e2e0d8",
+        "dialog": "#e2e0d8",
+        "border": "#e2e0d8",
+        "widgetBorder": "#e2e0d8",
+        "fg": "#292b32",
+        "fgStrong": "#292b32",
+        "fgDim": "#292b32",
+        "fgMute": "#292b32",
+        "input": "#e2e0d8",
+        "inputBorder": "#e2e0d8",
+        "btn": "#4267ad",
+        "btnHover": "#4267ad",
+        "btnFg": "#ffffff",
+        "btn2": "#e2e0d8",
+        "btn2Hover": "#e2e0d8",
+        "accent": "#4267ad",
+        "focus": "#4267ad",
+        "sel": "#4267ad",
+        "status": "#f5f3ed",
+        "statusFg": "#292b32",
+        "statusItem": "#4267ad",
+        "statusItemFg": "#ffffff",
+        "activityFg": "#292b32",
+        "activityInactive": "#292b32"
+      },
+      "canvas": {
+        "bg": "#f5f3ed",
+        "walls": "#4267ad"
+      }
+    }
+  ],
+  "iconThemes": [
+    {
+      "id": "palace.appearance.angular",
+      "title": "Угловые иконки",
+      "icons": {
+        "i-camera": [
+          {
+            "d": "M2 5H5L6 3H10L11 5H14V13H2Z M11 9A3 3 0 1 1 5 9A3 3 0 1 1 11 9"
+          }
+        ],
+        "i-pin": [
+          {
+            "d": "M8 14L3 7V2H13V7Z M6 5H10"
+          }
+        ],
+        "i-plan": [
+          {
+            "d": "M2 2H14V14H2Z M8 2V9H14 M2 8H8V14"
+          }
+        ],
+        "i-folder": [
+          {
+            "d": "M2 3H6L8 5H14V13H2Z"
+          }
+        ],
+        "i-save": [
+          {
+            "d": "M2 2H12L14 4V14H2Z M5 2V6H11V2 M5 14V9H11V14"
+          }
+        ],
+        "i-gear": [
+          {
+            "d": "M8 2L10 4H13V7L15 9L13 11V14H10L8 16L6 14H3V11L1 9L3 7V4H6Z M10 9A2 2 0 1 1 6 9A2 2 0 1 1 10 9"
+          }
+        ]
+      }
+    },
+    {
+      "id": "palace.appearance.round",
+      "title": "Округлые иконки",
+      "icons": {
+        "i-camera": [
+          {
+            "d": "M3 5Q2 5 2 7V11Q2 13 4 13H12Q14 13 14 11V7Q14 5 13 5H11L10 3H6L5 5Z M10 9A2 2 0 1 1 6 9A2 2 0 1 1 10 9"
+          }
+        ],
+        "i-pin": [
+          {
+            "d": "M8 14Q3 9 3 6A5 5 0 0 1 13 6Q13 9 8 14Z M9 6A1 1 0 1 1 7 6A1 1 0 1 1 9 6"
+          }
+        ],
+        "i-folder": [
+          {
+            "d": "M3 3Q2 3 2 5V12Q2 14 4 14H12Q14 14 14 12V6Q14 4 12 4H8L6 3Z"
+          }
+        ],
+        "i-save": [
+          {
+            "d": "M4 2H11Q14 4 14 6V12Q14 14 12 14H4Q2 14 2 12V4Q2 2 4 2Z M5 2V6H10V2 M5 13V9H11V13"
+          }
+        ],
+        "i-plan": [
+          {
+            "d": "M4 2H12Q14 2 14 4V12Q14 14 12 14H4Q2 14 2 12V4Q2 2 4 2Z M8 3V8H13 M3 8H8V13"
+          }
+        ]
+      }
+    }
+  ]
+}

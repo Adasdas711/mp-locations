@@ -1,0 +1,11 @@
+<style>
+body{background:#20242c;color:#f1f4fa;font:14px/1.5 system-ui}h2{margin:0 0 8px}label{display:block;margin:16px 0 6px}select,button{background:#303745;color:inherit;border:1px solid #586579;border-radius:8px;padding:9px;max-width:100%;font:inherit}select{width:100%}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}#appearanceMessage{min-height:24px;margin-top:12px}small{color:#b9c4d6}input{max-width:100%}
+</style>
+<h2>Темы и иконки</h2><small>Выбирайте тему и набор иконок независимо. Настройки сохраняются в этом браузере.</small>
+<label for="appearanceTheme">Цветовая тема</label><select id="appearanceTheme"></select>
+<label for="appearanceIcons">Иконки интерфейса</label><select id="appearanceIcons"></select>
+<div class="actions"><button id="appearanceReset">Системное оформление</button></div>
+<label for="appearanceImport">Установить свой набор из JSON</label><input id="appearanceImport" type="file" accept=".json,application/json">
+<small>Формат: themes и iconThemes. ID должен начинаться с palace.appearance. Пример есть в catalog.json пакета.</small>
+<div class="actions"><button id="appearanceRemoveCustom">Удалить импортированные наборы</button><button id="appearanceExport">Показать пример JSON</button></div>
+<p id="appearanceMessage" role="status"></p>

@@ -1,0 +1,50 @@
+const {test,before,after}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {launchBrowser}=require('./support/browser.cjs'),{profiles,openSession}=require('./support/fixtures.cjs');
+let browser;before(async()=>browser=await launchBrowser());after(async()=>browser?.close());
+async function install(page){await page.locator('#addonsOpen').click();await page.locator('#addonFile').setInputFiles(path.join(__dirname,'../addons/appearance.palace-addon'));await page.locator('#addonInstall').click();await page.waitForFunction(()=>addonHosts.get('palace.appearance')?.ready)}
+async function open(page){await page.locator('[data-command="palace.appearance.open"]').click();return page.frameLocator('#addonPanelFrames iframe')}
+for(const [name,options]of profiles)test(`${name}: separate appearance addon installs themes/icons, imports JSON, persists and cleans up`,async t=>{
+ const {page}=await openSession(browser,t,options,{offlineCache:true});
+ await page.evaluate(()=>applyTheme('github-dark-default'));
+ const original=await page.locator('#i-camera').innerHTML();
+ await install(page);const frame=await open(page);
+ await frame.locator('#appearanceTheme').selectOption('palace.appearance.ocean');await page.waitForFunction(()=>getTheme()==='palace.appearance.ocean');
+ assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--vscode-editor-bg').trim()),'#101d2b');
+ await frame.locator('#appearanceIcons').selectOption('palace.appearance.round');await page.waitForFunction(()=>document.documentElement.dataset.iconTheme==='palace.appearance.round');
+ assert.notEqual(await page.locator('#i-camera').innerHTML(),original);
+ await frame.locator('#appearanceTheme').selectOption('palace.appearance.paper');await page.waitForFunction(()=>getTheme()==='palace.appearance.paper');
+ assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme),'light');
+ await page.locator('#addonPanelClose').click();await page.locator('#addonsOpen').click();await page.locator('[data-addon="palace.appearance"] [data-action="toggle"]').click();
+ await page.waitForFunction(()=>!addonHosts.has('palace.appearance'));
+ assert.equal(await page.evaluate(()=>getTheme()),'github-dark-default');assert.equal(await page.locator('#i-camera').innerHTML(),original);
+ assert.equal(await page.evaluate(()=>PALACE_THEMES.some(t=>t.id.startsWith('palace.appearance.'))),false);
+ await page.locator('[data-addon="palace.appearance"] [data-action="toggle"]').click();await page.waitForFunction(()=>addonHosts.get('palace.appearance')?.ready);
+ const panel=await open(page);
+ const custom={themes:[{id:'palace.appearance.custom',title:'Custom mint',base:'darcula',colors:{editor:'#102a22'}}],iconThemes:[{id:'palace.appearance.custom-icons',title:'Custom icons',icons:{'i-camera':[{d:'M2 2H14V14H2Z'}]}}]};
+ await panel.locator('#appearanceImport').setInputFiles({name:'custom.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(custom))});
+ await panel.locator('#appearanceMessage').filter({hasText:'Набор установлен'}).waitFor();
+ await panel.locator('#appearanceTheme').selectOption('palace.appearance.custom');await panel.locator('#appearanceIcons').selectOption('palace.appearance.custom-icons');
+ await page.waitForFunction(()=>getTheme()==='palace.appearance.custom'&&document.documentElement.dataset.iconTheme==='palace.appearance.custom-icons');
+ const invalid={themes:[{id:'palace.appearance.bad',title:'Bad',base:'darcula',colors:{editor:'red;display:none'}}]};
+ await panel.locator('#appearanceImport').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});
+ await panel.locator('#appearanceMessage').filter({hasText:'формат #RRGGBB'}).waitFor();
+ assert.equal(await page.evaluate(()=>getTheme()),'palace.appearance.custom');
+ assert.equal(await page.evaluate(()=>PALACE_THEMES.some(t=>t.id==='palace.appearance.bad')),false);
+ await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>addonHosts.get('palace.appearance')?.ready&&getTheme()==='palace.appearance.custom'&&document.documentElement.dataset.iconTheme==='palace.appearance.custom-icons');
+ await page.locator('#addonsOpen').click();const afterReload=await open(page);
+ await afterReload.locator('#appearanceRemoveCustom').click();await afterReload.locator('#appearanceMessage').filter({hasText:'наборы удалены'}).waitFor();
+ assert.equal(await page.evaluate(()=>getTheme()),'darcula');assert.equal(await page.locator('#i-camera').innerHTML(),original);
+ await afterReload.locator('#appearanceReset').click();await page.locator('#addonPanelClose').click();await page.locator('#addonsOpen').click();
+ await page.locator('[data-addon="palace.appearance"] [data-action="remove"]').click();await page.waitForFunction(()=>!addonPackages.has('palace.appearance'));
+ assert.equal(await page.locator('[data-addon-owner="palace.appearance"]').count(),0);
+ assert.equal(await page.evaluate(()=>PALACE_THEMES.some(t=>t.id.startsWith('palace.appearance.'))),false);
+});
+test('appearance API enforces ownership, permission and SVG validation without partial changes',async t=>{
+ const {page}=await openSession(browser,t,profiles[0][1],{offlineCache:true});await install(page);
+ assert.equal(await page.evaluate(async()=>{const host=addonHosts.get('palace.appearance');host.record.manifest.permissions=[];try{await addonRPC(host,'ui.appearance.register',{themes:[]});return false}catch(e){return e.message.includes('ui.contribute')}}),true);
+ assert.equal(await page.evaluate(async()=>{const host=addonHosts.get('palace.appearance');try{await addonRPC(host,'ui.iconTheme','system.default');return false}catch(e){return e.message.includes('ui.control')}}),true);
+ assert.equal(await page.evaluate(()=>{const record={...addonHosts.get('palace.appearance').record,id:'palace'};try{registerAddonAppearance({record},{themes:[{id:'palace.appearance.ocean',title:'Takeover',base:'darcula'}]});return false}catch{return true}}),true);
+ assert.equal(await page.evaluate(()=>{const record={...addonHosts.get('palace.appearance').record,id:'system'};try{registerAddonAppearance({record},{iconThemes:[{id:'system.default',title:'Takeover',icons:{}}]});return false}catch{return true}}),true);
+ assert.equal(await page.evaluate(()=>{const host=addonHosts.get('palace.appearance');try{registerAddonAppearance(host,{themes:[{id:'other.owner',title:'Bad',base:'darcula'}]});return false}catch{return true}}),true);
+ assert.equal(await page.evaluate(()=>{const host=addonHosts.get('palace.appearance');try{registerAddonAppearance(host,{themes:[{id:'palace.appearance.test',title:'Test',base:'darcula'}],iconThemes:[{id:'palace.appearance.bad',title:'Bad',icons:{'i-camera':[{d:'<script>bad</script>'}]}}]});return false}catch{return !PALACE_THEMES.some(t=>t.id==='palace.appearance.test')}}),true);
+});

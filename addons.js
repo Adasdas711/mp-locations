@@ -58,14 +58,14 @@ window.addEventListener('error',event=>{event.preventDefault();send('error',{mes
 window.addEventListener('unhandledrejection',event=>{event.preventDefault();send('error',{message:String(event.reason?.message||event.reason)})});
 function rpc(method,args){return new Promise((resolve,reject)=>{const id=++seq;const timeout=setTimeout(()=>{pending.delete(id);reject(new Error('API timeout'))},10000);pending.set(id,{resolve,reject,timeout});send('rpc',{id,method,args})})}
 const api=Object.freeze({
- version:'1.1.0',
+ version:'1.2.0',
  commands:{register(id,handler){if(typeof handler!=='function')throw new Error('Command requires a handler');handlers.set(id,handler);send('register',{id});return {dispose(){handlers.delete(id);send('unregister',{id})}}}},
  project:{read:()=>rpc('project.read'),updateMetadata:patch=>rpc('metadata.write',patch)},
  markers:{add:input=>rpc('markers.add',input),remove:input=>rpc('markers.remove',input),update:input=>rpc('markers.update',input)},
  plan:{read:level=>rpc('plan.read',level),add:input=>rpc('plan.add',input),remove:level=>rpc('plan.remove',level),rename:input=>rpc('plan.rename',input),select:level=>rpc('plan.select',level),move:input=>rpc('plan.move',input),merge:input=>rpc('plan.merge',input),split:level=>rpc('plan.split',level),transform:input=>rpc('plan.transform',input),walls:{add:input=>rpc('plan.wallAdd',input),remove:input=>rpc('plan.wallRemove',input)}},
  view:{read:()=>rpc('view.read'),set:input=>rpc('view.set',input)},
  tour:{read:()=>rpc('tour.read'),select:id=>rpc('tour.select',id),pose:input=>rpc('tour.pose',input),update:input=>rpc('tour.update',input),connect:input=>rpc('tour.connect',input),setStart:id=>rpc('tour.start',id)},
- ui:{tools:()=>rpc('ui.tools'),setToolVisible:(id,visible)=>rpc('ui.visibility',{id,visible}),themes:()=>rpc('ui.themes'),commands:()=>rpc('ui.commands'),execute:id=>rpc('ui.execute',id),theme:id=>rpc('ui.theme',id),scale:size=>rpc('ui.scale',size),overlay:input=>rpc('ui.overlay',input),showMessage:text=>rpc('ui.message',text),async showPanel(id,html){await rpc('ui.panel',{id,html});document.getElementById('panel').innerHTML=html}},
+ ui:{registerAppearance:input=>rpc('ui.appearance.register',input),removeAppearance:()=>rpc('ui.appearance.remove'),iconThemes:()=>rpc('ui.iconThemes'),iconTheme:id=>rpc('ui.iconTheme',id),tools:()=>rpc('ui.tools'),setToolVisible:(id,visible)=>rpc('ui.visibility',{id,visible}),themes:()=>rpc('ui.themes'),commands:()=>rpc('ui.commands'),execute:id=>rpc('ui.execute',id),theme:id=>rpc('ui.theme',id),scale:size=>rpc('ui.scale',size),overlay:input=>rpc('ui.overlay',input),showMessage:text=>rpc('ui.message',text),async showPanel(id,html){await rpc('ui.panel',{id,html});document.getElementById('panel').innerHTML=html}},
  theme:{read:()=>rpc('theme.read')},
  storage:{get:key=>rpc('storage.get',key),set:(key,value)=>rpc('storage.set',{key,value})},
  assets:{read(path){if(!(path in data.files))throw new Error('Asset not found');return data.files[path]}},

@@ -1,0 +1,34 @@
+{
+  "id": "palace.appearance",
+  "name": "Темы и иконки",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "main": "main.js",
+  "description": "Установка тем и наборов иконок: готовые варианты, импорт своего JSON, независимый выбор и сброс оформления.",
+  "permissions": [
+    "ui.control",
+    "ui.contribute"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "palace.appearance.open",
+        "title": "Темы и иконки: открыть каталог"
+      }
+    ],
+    "panels": [
+      {
+        "id": "palace.appearance.panel",
+        "title": "Темы и иконки"
+      }
+    ],
+    "activityBar": [
+      {
+        "id": "palace.appearance.activity",
+        "title": "Темы и иконки",
+        "icon": "palette",
+        "command": "palace.appearance.open"
+      }
+    ]
+  }
+}
