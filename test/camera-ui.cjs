@@ -16,18 +16,18 @@ for(const [name,options]of profiles)test(`${name}: compact camera panel, full da
  assert.equal(await page.locator('.camera-link-lines line.selected').count(),13,'Other cameras’ connections are visible without selection');
  assert.equal(await page.locator('.camera-link-lines line[data-to="upstairs"]').count(),0);
  assert.equal(await page.locator('.camera-link-lines line[data-to="missing"]').count(),0);
- if(!await page.locator('#cameraEditorConnections').evaluate(el=>el.open))await page.locator('#cameraEditorConnections summary').click();
- const layout=await page.locator('#cameraEditor').evaluate(el=>{const panel=el.getBoundingClientRect(),stage=document.querySelector('#stage').getBoundingClientRect(),links=document.querySelector('#cameraEditorLinks');return {width:panel.width,height:panel.height,stageWidth:stage.width,stageHeight:stage.height,within:panel.left>=stage.left&&panel.right<=stage.right&&panel.top>=stage.top&&panel.bottom<=stage.bottom,direction:getComputedStyle(el).flexDirection,scroll:links.scrollHeight>links.clientHeight,overflow:el.scrollWidth>el.clientWidth}});
- assert.equal(layout.direction,'column');assert.equal(layout.within,true);assert.equal(layout.overflow,false);assert.equal(layout.scroll,true);assert.ok(layout.width<=Math.min(400,layout.stageWidth));assert.ok(layout.height<layout.stageHeight*.55);
+ const layout=await page.locator('#cameraEditor').evaluate(el=>{const panel=el.getBoundingClientRect(),stage=document.querySelector('#stage').getBoundingClientRect();return {width:panel.width,height:panel.height,stageWidth:stage.width,stageHeight:stage.height,within:panel.left>=stage.left&&panel.right<=stage.right&&panel.top>=stage.top&&panel.bottom<=stage.bottom,direction:getComputedStyle(el).flexDirection,overflow:el.scrollWidth>el.clientWidth}});
+ assert.equal(await page.locator('#cameraEditorLinks').count(),0);
+ assert.equal(layout.direction,'column');assert.equal(layout.within,true);assert.equal(layout.overflow,false);assert.ok(layout.width<=Math.min(400,layout.stageWidth));assert.ok(layout.height<layout.stageHeight*.55);
  const dash=await page.locator('.camera-link-lines line').first().evaluate(el=>({dash:getComputedStyle(el).strokeDasharray,pointer:getComputedStyle(el.parentElement).pointerEvents,z:getComputedStyle(el.parentElement).zIndex}));
  assert.notEqual(dash.dash,'none');assert.equal(dash.pointer,'none');assert.equal(dash.z,'1');
  await page.locator('#cameraEditorCollapse').click();assert.equal(await page.locator('#cameraEditorContent').isVisible(),false);assert.equal(await page.locator('#cameraEditorCollapse').getAttribute('aria-expanded'),'false');assert.equal(await page.locator('#cameraEditorCollapse').getAttribute('aria-label'),'Развернуть панель');
  await page.locator('#cameraEditorCollapse').click();assert.equal(await page.locator('#cameraEditorContent').isVisible(),true);
  await page.locator('#cameraEditorLink').click();await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>cameraLinkSource),null);
- await page.locator('#cameraEditorConnections summary').click();assert.equal(await page.locator('#cameraEditorLinks').isVisible(),false);await page.locator('#cameraEditorConnections summary').click();
- await page.locator('#cameraEditorLinks button[data-target="b"]').click();assert.equal(await page.locator('.camera-link-lines line').count(),13);
+ await page.evaluate(()=>{changeCameraTransition('a','b',false)});
  await page.keyboard.press('Control+z');assert.equal(await page.locator('.camera-link-lines line').count(),14);
  await page.locator('#floorOverlay button[data-li="1"]').click();assert.equal(await page.locator('.camera-link-lines line').count(),0);
+ await page.locator('#cameraEditorSelect').selectOption('b');assert.equal(await page.locator('#cameraEditorSelect').inputValue(),'b');assert.equal(await page.evaluate(()=>state.active),0);
  await page.locator('#cameraEditorClose').click();assert.equal(await page.locator('#cameraEditor').isVisible(),false);assert.equal(await page.evaluate(()=>state.tool),'select');
 });
 

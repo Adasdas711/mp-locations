@@ -1,0 +1,28 @@
+const {test,before,after}=require('node:test'),assert=require('node:assert/strict');
+const {profiles,openSession}=require('./support/fixtures.cjs'),{launchBrowser}=require('./support/browser.cjs');let browser;
+before(async()=>browser=await launchBrowser());after(async()=>browser?.close());
+for(const [name,options]of profiles)test(`${name}: cone exits with 3D; camera tool shows selected graph and direct +/- controls`,async t=>{
+ const {page}=await openSession(browser,t,options);
+ await page.evaluate(()=>{state.layout='split';applyLayout();setActiveLocalPano('a',false);drawPlan();if(!document.querySelector('#plan .plan-view-cone'))renderPlanViewCone(document.querySelector('#plan'),state.panoramas.a)});
+ await page.waitForFunction(()=>document.querySelectorAll('#plan .plan-view-cone').length===1);
+ if(await page.evaluate(()=>state.layout==='split')&&await page.locator('#btnSplit').isVisible())await page.locator('#btnSplit').click();else await page.evaluate(()=>{state.layout='plan';applyLayout()});
+ await page.waitForFunction(()=>state.layout==='plan');
+ assert.equal(await page.locator('#plan .plan-view-cone').count(),0);assert.equal(await page.evaluate(()=>planCone.el),null);
+ await page.evaluate(()=>{state.panoramas.c={...state.panoramas.b,room:'Camera C',planPx:{x:160,y:30},destinations:[]};resetHistory()});
+ await page.locator('#abTour').click();await page.waitForFunction(()=>state.layout==='tour');await page.keyboard.press('c');await page.waitForFunction(()=>state.layout==='plan'&&state.tool==='camera');
+ await page.waitForFunction(()=>document.querySelectorAll('.camera-link-lines line.selected').length===1);
+ assert.equal(await page.locator('#plan .plan-cam[data-pano="a"]').evaluate(el=>el.classList.contains('camera-edit-selected')),true);
+ assert.equal(await page.locator('#plan .plan-cam[data-pano="b"]').evaluate(el=>el.classList.contains('camera-edit-connected')),true);
+ assert.equal(await page.locator('#cameraEditorLink').innerText(),'Добавить связи');assert.equal(await page.locator('#cameraEditorStart').innerText(),'Начало');
+ assert.equal(await page.locator('#cameraEditorLinks').count(),0);
+ const plus=page.locator('#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]');
+ const badge=await plus.boundingBox();assert.ok(badge.width>=20&&badge.width<=30,'Corner actions keep a usable screen size at the current zoom');
+ await plus.click();await page.waitForFunction(()=>state.panoramas.a.destinations.some(d=>d.panoId==='c'));
+ assert.equal(await page.locator('.camera-link-lines line.selected').count(),2);
+ assert.equal(await page.locator('#plan .plan-cam.camera-edit-connected').count(),2);
+ await page.locator('#plan .plan-cam[data-pano="c"] .camera-action[data-action="remove-link"]').click();
+ assert.equal(await page.locator('.camera-link-lines line.selected').count(),1);assert.equal(await page.locator('#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]').count(),1);
+ await page.locator('#cameraEditorStart').click();assert.equal(await page.evaluate(()=>state.startPano),'a');
+ await page.locator('#cameraEditorDelete').click();await page.locator('#askNo').click();assert.equal(await page.evaluate(()=>!!state.panoramas.a),true);
+ await page.locator('#cameraEditorDelete').click();await page.locator('#askYes').click();await page.keyboard.press('Control+z');await page.waitForFunction(()=>!!state.panoramas.a&&state.startPano==='a');
+});
