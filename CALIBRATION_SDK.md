@@ -1,6 +1,6 @@
 # PALACE SDK 1.7 — Spherical spatial calibration core
 
-Calibration lives in the **application core**, not in an addon. It is available through `api.tour.world.calibration` in community sandboxes and the same contract at `window.PalaceAPI.tour.world.calibration` for trusted system modules. No calibration UI or system-addon menu was added. The existing World Space UI and SDK 1.5/1.6 APIs remain available.
+Calibration lives in the **application core**, not in an addon. It is available through `api.tour.world.calibration` in community sandboxes and the same contract at `window.PalaceAPI.tour.world.calibration` for trusted system modules. The bundled [Panorama calibration system addon](PANORAMA_CALIBRATION.md) uses this contract for its paired matching UI. The existing World Space UI and SDK 1.5/1.6 APIs remain available.
 
 Runtime `api.version` is `1.7.0`; manifest `apiVersion` remains `1`. Full declarations: [palace-sdk.d.ts](docs/addons/palace-sdk.d.ts). [General guide](ADDONS_AI_GUIDE.md), [World SDK](WORLD_SDK.md), [code-only example](docs/addons/calibration-example.js).
 

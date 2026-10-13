@@ -80,7 +80,7 @@ test('invalid sparse arrays and restored frame backups are rejected before mutat
 
 test('code-only calibration example runs in the real addon sandbox and disposes its listeners without UI',async t=>{
  const {page,frame}=await setup(t,profiles[0][1]),data=fixture(3,24),before=await page.evaluate(()=>JSON.stringify(worldData()));
- const result=await frame.evaluate(landmarks=>runExample({cameraIds:['c0','c1','c2'],landmarks,timeoutMs:10000}),data.landmarks);assert.equal(await frame.evaluate(()=>sdk.version),'1.7.0');assert.ok((await frame.evaluate(()=>templateMarker)).includes("version:'1.3.0'"));assert.equal(result.session.status,'solved');assert.equal(result.session.applied,null);assert.equal(result.preview.wholeWorld,false);assert.equal(await page.evaluate(()=>JSON.stringify(worldData())),before);await page.waitForFunction(()=>addonHosts.get('test.calibration').calibrationSubscriptions.size===6);assert.equal(await page.locator('[data-settings-page="calibration"]').count(),0);
+ const result=await frame.evaluate(landmarks=>runExample({cameraIds:['c0','c1','c2'],landmarks,timeoutMs:10000}),data.landmarks);assert.equal(await frame.evaluate(()=>sdk.version),'1.7.0');assert.ok((await frame.evaluate(()=>templateMarker)).includes("version:'1.3.0'"));assert.equal(result.session.status,'solved');assert.equal(result.session.applied,null);assert.equal(result.preview.wholeWorld,false);assert.equal(await page.evaluate(()=>JSON.stringify(worldData())),before);await page.waitForFunction(()=>addonHosts.get('test.calibration').calibrationSubscriptions.size===6);assert.equal(await page.locator('#calibrationWorkspace').isVisible(),false);
 });
 
 test('registered numeric world baselines allow relative geometry checks without pretending to know meters',async t=>{

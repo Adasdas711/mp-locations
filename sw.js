@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-689322e62908f6f1';
+const CACHE = 'palace-offline-7ffccd4769c77231';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -10,8 +10,10 @@ const ASSETS = [
   "app-api.js",
   "app.js",
   "appearance.js",
+  "calibration-addon.js",
   "calibration-core.js",
   "calibration-math.js",
+  "calibration-preview.js",
   "calibration-worker.js",
   "camera-editor.js",
   "command-palette.js",
@@ -25,6 +27,7 @@ const ASSETS = [
   "manifest.webmanifest",
   "mobile-controls.js",
   "mobile.js",
+  "panorama-surface.js",
   "persistence.js",
   "pwa.js",
   "scene-camera.js",

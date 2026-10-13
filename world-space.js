@@ -49,6 +49,19 @@ function worldConfigure(input){requireEditing();if(!input||typeof input!=='objec
 function worldSetOcclusion(mode){requireEditing();if(!['none','geometry','depth-map'].includes(mode))throw sceneError('INVALID_ARGUMENT','Occlusion must be none, geometry or depth-map.');if(mode==='geometry'&&(!worldData().geometry||worldData().geometry.source==='dollhouse'&&!DHM))throw sceneError('GEOMETRY_UNAVAILABLE','Register world geometry first.');if(mode==='depth-map'){worldGetCamera();if(!state.sceneConfigurations?.[activeLocalPano]?.depthMap)throw sceneError('DEPTH_UNAVAILABLE','The active registered panorama has no depth map.')}worldCommit({...worldData(),occlusion:mode});return mode}
 function worldEventAllowed(host,event){return sceneHasPermission(host,event==='WorldCameraChanged'?'camera.control':'anchors.read')}
 function worldEmit(event,payload){for(const host of addonHosts.values())if(!host.error&&worldEventAllowed(host,event))for(const[id,name]of host.worldSubscriptions||[])if(name===event)host.frame.contentWindow?.postMessage({channel:host.channel,type:'worldEvent',id,event,payload},'*')}
+function createWorldObjectVisual(object,{selected=false,onLoad=()=>{},isCurrent=()=>true}={}){
+  const root=new THREE.Group();root.userData.worldObjectId=object.id;root.position.set(object.position.x,object.position.y,object.position.z);root.quaternion.set(object.rotation.x,object.rotation.y,object.rotation.z,object.rotation.w);root.scale.set(object.scale.x,object.scale.y,object.scale.z);
+  const s=object.style,material=new THREE.MeshLambertMaterial({color:s.color,opacity:s.opacity,transparent:s.opacity<1,depthTest:true,depthWrite:true});let mesh;
+  if(s.type==='sphere')mesh=new THREE.Mesh(new THREE.SphereGeometry(s.size,20,16),material);
+  else if(s.type==='cube')mesh=new THREE.Mesh(new THREE.BoxGeometry(s.size*2,s.size*2,s.size*2),material);
+  else if(s.type==='model'){mesh=new THREE.Mesh(sceneBufferGeometry(s.model),material);mesh.scale.setScalar(s.size)}
+  else if(s.type==='sprite'){material.dispose();mesh=new THREE.Sprite(new THREE.SpriteMaterial({map:sceneLabelTexture(object),transparent:true,opacity:s.opacity,depthTest:true,depthWrite:false,sizeAttenuation:true}));mesh.scale.set(s.size*4,s.size,1)}
+  else {mesh=new THREE.Mesh(new THREE.PlaneGeometry(s.size*4,s.size),material);material.side=THREE.DoubleSide;material.transparent=true;material.map=sceneLabelTexture(object);mesh.userData.worldBillboard=true}
+  mesh.renderOrder=5;root.add(mesh);
+  if(s.icon){const image=new Image();image.onload=()=>{if(!isCurrent(root))return;const factor=Math.min(1,512/image.naturalWidth,512/image.naturalHeight),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*factor));canvas.height=Math.max(1,Math.round(image.naturalHeight*factor));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);mesh.material.map?.dispose();mesh.material.map=new THREE.CanvasTexture(canvas);mesh.material.needsUpdate=true;onLoad()};image.src=s.icon}
+  if(selected){const halo=new THREE.Mesh(new THREE.SphereGeometry(s.size*1.2,16,12),new THREE.MeshBasicMaterial({color:'#ffd740',wireframe:true,depthTest:true}));halo.renderOrder=6;root.add(halo)}
+ return root;
+}
 function worldSync(force=false){
  if(!window.THREE||!localViewer.scene||!localViewer.camera)return;
  const data=worldData(),id=localViewer.currentId,registration=data.cameras[id],mode=worldEffectiveMode(),key=JSON.stringify([id,data,mode,state.sceneConfigurations?.[id],worldRuntime.selected]);
@@ -65,16 +78,7 @@ function worldSync(force=false){
   else {const mesh=new THREE.Mesh(sceneBufferGeometry(g),material());mesh.renderOrder=-9998;geometry.add(mesh)}
  }
  for(const object of Object.values(data.objects).filter(o=>o.visible)){
-  const root=new THREE.Group();root.userData.worldObjectId=object.id;root.position.set(object.position.x,object.position.y,object.position.z);root.quaternion.set(object.rotation.x,object.rotation.y,object.rotation.z,object.rotation.w);root.scale.set(object.scale.x,object.scale.y,object.scale.z);group.add(root);
-  const s=object.style,material=new THREE.MeshLambertMaterial({color:s.color,opacity:s.opacity,transparent:s.opacity<1,depthTest:true,depthWrite:true});let mesh;
-  if(s.type==='sphere')mesh=new THREE.Mesh(new THREE.SphereGeometry(s.size,20,16),material);
-  else if(s.type==='cube')mesh=new THREE.Mesh(new THREE.BoxGeometry(s.size*2,s.size*2,s.size*2),material);
-  else if(s.type==='model'){mesh=new THREE.Mesh(sceneBufferGeometry(s.model),material);mesh.scale.setScalar(s.size)}
-  else if(s.type==='sprite'){material.dispose();mesh=new THREE.Sprite(new THREE.SpriteMaterial({map:sceneLabelTexture(object),transparent:true,opacity:s.opacity,depthTest:true,depthWrite:false,sizeAttenuation:true}));mesh.scale.set(s.size*4,s.size,1)}
-  else {mesh=new THREE.Mesh(new THREE.PlaneGeometry(s.size*4,s.size),material);material.side=THREE.DoubleSide;material.transparent=true;material.map=sceneLabelTexture(object);mesh.userData.worldBillboard=true}
-  mesh.renderOrder=5;root.add(mesh);worldRuntime.meshes.set(object.id,root);
-  if(s.icon){const image=new Image();image.onload=()=>{if(worldRuntime.meshes.get(object.id)!==root)return;const factor=Math.min(1,512/image.naturalWidth,512/image.naturalHeight),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*factor));canvas.height=Math.max(1,Math.round(image.naturalHeight*factor));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);mesh.material.map?.dispose();mesh.material.map=new THREE.CanvasTexture(canvas);mesh.material.needsUpdate=true;localViewer.requestRender()};image.src=s.icon}
-  if(worldRuntime.selected===object.id){const halo=new THREE.Mesh(new THREE.SphereGeometry(s.size*1.2,16,12),new THREE.MeshBasicMaterial({color:'#ffd740',wireframe:true,depthTest:true}));halo.renderOrder=6;root.add(halo)}
+  const root=createWorldObjectVisual(object,{selected:worldRuntime.selected===object.id,onLoad:()=>localViewer.requestRender(),isCurrent:root=>worldRuntime.meshes.get(object.id)===root});group.add(root);worldRuntime.meshes.set(object.id,root);
  }
  group.traverse(node=>node.layers.set(7));geometry.traverse(node=>node.layers.set(7));group.updateMatrixWorld(true);geometry.updateMatrixWorld(true);localViewer.requestRender();worldRefreshUI();
 }
