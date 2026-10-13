@@ -6,7 +6,7 @@ export type CalibrationState = 'collecting' | 'insufficient_data' | 'degenerate'
 export interface CalibrationObservation { panoId: string; yaw: number; pitch: number; verified: boolean; }
 export interface CalibrationLandmark { id: string; label: string; observations: CalibrationObservation[]; enabled: boolean; worldPosition?: Point3D; }
 export interface CalibrationDistance { type: 'cameras' | 'landmarks'; from: string; to: string; distance: number; }
-export interface CalibrationConfig { automaticSolve?: boolean; requireVerified?: boolean; referenceCameraId?: string; distances?: CalibrationDistance[]; minCorrespondences?: number; ransacThresholdDeg?: number; ransacIterations?: number; minParallaxDeg?: number; bundleIterations?: number; seed?: number; timeoutMs?: number; }
+export interface CalibrationConfig { automaticSolve?: boolean; requireVerified?: boolean; referenceCameraId?: string; distances?: CalibrationDistance[]; orientationModel?: 'free' | 'upright'; minCorrespondences?: number; ransacThresholdDeg?: number; ransacIterations?: number; minParallaxDeg?: number; bundleIterations?: number; seed?: number; timeoutMs?: number; }
 export interface CalibrationCreateConfig extends CalibrationConfig {id?: string; label?: string; cameraIds?: string[];}
 export interface CalibrationMetricScale { known: boolean; units: 'relative' | 'meters'; factor: number; worldMetersPerUnit?: number | null; coordinateFactor?: number; constraintCount?: number; relativeSpread?: number; }
 export interface CalibrationQuality {

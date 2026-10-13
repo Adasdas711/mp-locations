@@ -7,10 +7,10 @@ The **Panorama calibration** crosshair button sits below **3D tour** in the far-
 1. Open an imported project in **Edit** mode. Select the reference panorama on the left and the connecting panorama on the right. Cameras without imported images are omitted. Options have unique numbered labels in archive order; the default pair uses a tour connection when available.
 2. Click a directly visible landmark on the left to create a numbered control point. Alternatively, select an existing numbered marker or choose it under **Points & settings**.
 3. Click the same physical location on the right. This adds an observation to the **same landmark ID**.
-4. Confirm **Visible in both panoramas** only when true. The optional **Nearby point with clear parallax** confirmation reminds you to choose useful geometry. Observations can be saved without either confirmation.
+4. Placing the same visible feature on the right confirms both observations. The caption states this confirmation; **Visible in both** can revoke or reconfirm the selected match. The optional **Nearby point with clear parallax** confirmation reminds you to choose useful geometry. Observations can be saved without either confirmation.
 5. Choose **Next panorama** whenever you want. A/B becomes B/C; the selected point is retained if it is observed on B. Match that point in C or create another one. Navigation has no per-pair point quota or predetermined camera count.
 
-Drag each panorama independently to rotate it. Scroll or use its FOV slider to zoom. Markers are projected from stored spherical yaw/pitch, so changing the view does not change measurements. A focused panorama supports arrow keys and +/-.
+Use **New point** before adding a feature near an existing marker. During placement old markers become translucent and stop intercepting taps; the same applies while matching a new point on the right. Drag each panorama independently to rotate it. Scroll or use its FOV slider to zoom. Markers are projected from stored spherical yaw/pitch, so changing the view does not change measurements. A focused panorama supports arrow keys and +/-.
 
 ## Correct and extend observations
 
@@ -63,7 +63,7 @@ Preview never changes project transformations. **Apply calibration**, after conf
 
 Relative reconstruction does not claim real meters. Diagnostics optionally accept a known physical distance between the current cameras; remove incorrect measurements. Known world units and distance constraints govern application to metric projects.
 
-The solver needs at least eight suitable correspondences for an initial pair. One correspondence per consecutive pair can be collected, but does not determine every 6DoF pose. Multiple pairs need shared multi-view tracks or suitable distances to connect relative scales. Pure rotation, weak parallax, wrong matches or insufficient constraints may produce no reconstruction. See [calibration core documentation](CALIBRATION_SDK.md) for the numerical model and SDK.
+**Four** suitable matches are sufficient in the default **Level panorama horizons** mode. This assumes the source panoramas are upright; rotating the viewport does not change that assumption. Disable the option for source panoramas with tilt/roll, which uses unrestricted eight-point registration. One correspondence per consecutive pair can be collected, but does not determine every 6DoF pose. Multiple pairs need shared multi-view tracks or suitable distances to connect relative scales. Pure rotation, weak parallax, wrong matches or insufficient constraints may produce no reconstruction. See [calibration core documentation](CALIBRATION_SDK.md) for the numerical model and SDK.
 
 No automatic image matching, feature detection or dense depth reconstruction is added. External-only tours without imported images cannot be calibrated here. Point placement requires a successfully decoded panorama.
 
@@ -80,3 +80,7 @@ No automatic image matching, feature detection or dense depth reconstruction is 
 `test/calibration-real-archives.cjs` is an opt-in suite for private `.3dview` files. Set `PALACE_REAL_ARCHIVES_DIR` to a directory of archives; files are discovered recursively and are never added to the repository. It imports real AVIF panoramas, checks paired layout and linked default cameras, delays a core mutation to verify rapid pointer taps are queued, switches every panorama on desktop and repeats switching on mobile, protects active texture sources from cache eviction, verifies FOV invariance and close/reopen persistence. Run it with `PALACE_TEST_FILES=calibration-real-archives.cjs PALACE_REAL_ARCHIVES_DIR=/path/to/private/files npm test`.
 
 The independent-group regression constructs a closed interior group and a separate street group with an additional unobserved panorama. The interior solves/applies without the street; the street solves independently, keeps the interior unchanged, previews without fake global placement, and restores both group selections.
+
+The four-point photographic regression replays features selected by hand on the supplied 24/36-panorama archives: door-trim corners and a lamp apex, and the four corners of a framed picture on a planar wall. `test/calibration-manual-replay.cjs` clicks the photographs through the UI on desktop, Android, iPhone and iPad, requires a stable four-match solution, previews/applies/reverts, checks unregistered cameras remain unassigned, and saves/reopens full projects on desktop. It blocks the external worker-script URL to verify the self-contained worker. No synthetic observations are seeded into these runs.
+
+Pending UI groups saved before four-point support migrate to upright four-point configuration once. Applied groups and explicit later free-orientation choices retain their configuration. Opening a workspace while an import is running is blocked until import completion. Calculation errors show their actual worker or geometric reason and retain observations.

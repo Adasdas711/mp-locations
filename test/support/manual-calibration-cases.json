@@ -1,0 +1,156 @@
+[
+  {
+    "panoramaCount": 24,
+    "cameraIds": [
+      "52aa4eb33a",
+      "a59ca22d46"
+    ],
+    "features": [
+      {
+        "label": "double-door upper left trim",
+        "observations": [
+          {
+            "panoId": "52aa4eb33a",
+            "yaw": 21.59738675615995,
+            "pitch": 12.627202567411047,
+            "verified": true
+          },
+          {
+            "panoId": "a59ca22d46",
+            "yaw": 181.21765136040676,
+            "pitch": 15.484555682705372,
+            "verified": true
+          }
+        ]
+      },
+      {
+        "label": "double-door upper right trim",
+        "observations": [
+          {
+            "panoId": "52aa4eb33a",
+            "yaw": 354.83045089226016,
+            "pitch": 13.493601168599819,
+            "verified": true
+          },
+          {
+            "panoId": "a59ca22d46",
+            "yaw": 159.974635567498,
+            "pitch": 11.66108738469453,
+            "verified": true
+          }
+        ]
+      },
+      {
+        "label": "single-door upper right trim",
+        "observations": [
+          {
+            "panoId": "52aa4eb33a",
+            "yaw": 25.01988675916732,
+            "pitch": 13.527225078275237,
+            "verified": true
+          },
+          {
+            "panoId": "a59ca22d46",
+            "yaw": 184.46493082410598,
+            "pitch": 15.910072362682605,
+            "verified": true
+          }
+        ]
+      },
+      {
+        "label": "lamp shade apex",
+        "observations": [
+          {
+            "panoId": "52aa4eb33a",
+            "yaw": 23.408233949185387,
+            "pitch": 0.7261939660835214,
+            "verified": true
+          },
+          {
+            "panoId": "a59ca22d46",
+            "yaw": 158.7273180067558,
+            "pitch": 0.6117953100995562,
+            "verified": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "panoramaCount": 36,
+    "cameraIds": [
+      "c6e1412691",
+      "6362847ff1"
+    ],
+    "features": [
+      {
+        "label": "picture frame upper left",
+        "observations": [
+          {
+            "panoId": "c6e1412691",
+            "yaw": 100.09365026577933,
+            "pitch": 24.24454760858381,
+            "verified": true
+          },
+          {
+            "panoId": "6362847ff1",
+            "yaw": 216.54702652873948,
+            "pitch": 18.86337985179163,
+            "verified": true
+          }
+        ]
+      },
+      {
+        "label": "picture frame upper right",
+        "observations": [
+          {
+            "panoId": "c6e1412691",
+            "yaw": 85.83043259653562,
+            "pitch": 27.0944906987957,
+            "verified": true
+          },
+          {
+            "panoId": "6362847ff1",
+            "yaw": 204.89151593992813,
+            "pitch": 18.814640389670696,
+            "verified": true
+          }
+        ]
+      },
+      {
+        "label": "picture frame lower right",
+        "observations": [
+          {
+            "panoId": "c6e1412691",
+            "yaw": 85.3289583989503,
+            "pitch": 5.736781120461614,
+            "verified": true
+          },
+          {
+            "panoId": "6362847ff1",
+            "yaw": 205.02751374264676,
+            "pitch": 4.018010994392145,
+            "verified": true
+          }
+        ]
+      },
+      {
+        "label": "picture frame lower left",
+        "observations": [
+          {
+            "panoId": "c6e1412691",
+            "yaw": 99.6073136872032,
+            "pitch": 4.531402400979755,
+            "verified": true
+          },
+          {
+            "panoId": "6362847ff1",
+            "yaw": 216.4393438274035,
+            "pitch": 4.637609528019753,
+            "verified": true
+          }
+        ]
+      }
+    ]
+  }
+]

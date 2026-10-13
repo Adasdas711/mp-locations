@@ -4,6 +4,7 @@ const calibrationUI = {
   enabled: false,
   open: false,
   generation: 0,
+  importing: 0,
   session: null,
   views: {},
   subscriptions: [],
@@ -11,6 +12,7 @@ const calibrationUI = {
   saveTimer: null,
   actionTail: Promise.resolve(),
   drag: null,
+  placingNew: false,
   busy: false,
   preview: null,
   spatial: null,
@@ -19,6 +21,7 @@ const calibrationUI = {
 function calibrationUIBlank() {
   return {
     version: 1,
+    modelDefaultsVersion: 1,
     sessionId: null,
     left: null,
     right: null,
@@ -119,6 +122,12 @@ function calibrationUINormalize(input) {
       result.groupViews[id] = record;
     }
   }
+  if (
+    input.modelDefaultsVersion != null &&
+    ![0, 1].includes(input.modelDefaultsVersion)
+  )
+    throw new Error("Invalid calibration model version.");
+  result.modelDefaultsVersion = input.modelDefaultsVersion ?? 0;
   result.visibleConfirmed = input.visibleConfirmed === true;
   result.parallaxConfirmed = input.parallaxConfirmed === true;
   sceneJSON(result, 2 * 1024 * 1024);
@@ -241,7 +250,7 @@ calibrationUIStyle.textContent = `
 .calibration-hint{font-size:12px;color:var(--muted);flex-shrink:0;min-height:18px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .calibration-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;flex:1;min-height:0;order:1}.calibration-pane{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.calibration-pane[data-awaiting=true]{border-color:var(--blue)}.calibration-pane>header{display:flex;align-items:center;gap:10px;padding:8px 10px;flex-shrink:0}.calibration-pane>header>label:first-child{flex:1;min-width:0;color:var(--muted);font-size:11px}.calibration-pane select{display:block;width:100%;margin-top:3px}.calibration-fov{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}.calibration-fov input{width:66px;min-width:0}
 .calibration-viewport{position:relative;flex:1;min-height:0;overflow:hidden;background:#111}.calibration-viewport canvas{width:100%;height:100%;position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}.calibration-step{position:absolute;top:10px;left:10px;z-index:2;border:1px solid #ffffff40;border-radius:6px;padding:3px 7px;background:#181818ab;color:#fff;font-size:11px;pointer-events:none}.calibration-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#151515e6;color:#ddd;font-size:13px;z-index:4}.calibration-viewport:has(canvas[aria-busy=true]) .calibration-loading{display:flex}.calibration-loading::before{content:'';width:14px;height:14px;border:2px solid #ffffff35;border-top-color:var(--blue);border-radius:50%;margin-right:9px;animation:calibration-spin 1s linear infinite}@keyframes calibration-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.calibration-loading::before{animation:none}}
-.calibration-observations{position:absolute;inset:0;pointer-events:none;z-index:3}#calibrationWorkspace .calibration-observation{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;min-height:0;padding:0;border-radius:50%;border:2px solid #fff;color:#fff;background:var(--vscode-button-bg);box-shadow:0 1px 6px #000a;pointer-events:auto;touch-action:none;user-select:none;font-size:12px;font-weight:700}#calibrationWorkspace .calibration-observation.selected{background:#f5b301;color:#17130a;outline:2px solid var(--blue);outline-offset:3px}#calibrationWorkspace .calibration-observation.excluded{opacity:.55;border-style:dashed}.calibration-view-error{position:absolute;bottom:8px;left:10px;right:10px;margin:0;color:#eee;background:#111c;padding:6px;border-radius:5px;font-size:12px;pointer-events:none;z-index:5}.calibration-view-error:empty{display:none}
+.calibration-observations{position:absolute;inset:0;pointer-events:none;z-index:3}#calibrationWorkspace .calibration-observation{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;min-height:0;padding:0;border-radius:50%;border:2px solid #fff;color:#fff;background:var(--vscode-button-bg);box-shadow:0 1px 6px #000a;pointer-events:auto;touch-action:none;user-select:none;font-size:12px;font-weight:700}#calibrationWorkspace .calibration-observation.selected{background:#f5b301;color:#17130a;outline:2px solid var(--blue);outline-offset:3px}#calibrationWorkspace .calibration-observation.excluded{opacity:.55;border-style:dashed}.calibration-view-error{position:absolute;bottom:8px;left:10px;right:10px;margin:0;color:#eee;background:#111c;padding:6px;border-radius:5px;font-size:12px;pointer-events:none;z-index:5}.calibration-view-error:empty{display:none}.calibration-observations[data-place-new=true] .calibration-observation{pointer-events:none!important;opacity:.35}
 .calibration-matchbar,.calibration-navigation,.calibration-summary,.calibration-result-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}.calibration-matchbar{order:2}.calibration-confirm{display:flex;gap:6px;align-items:center;font-size:12px}.calibration-summary{order:3;color:var(--muted);font-size:12px;min-height:18px}#calibrationStatus{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.calibration-navigation{order:4;padding-top:8px;border-top:1px solid var(--line)}.calibration-navigation>span{flex:1}#calibrationPairStatus{margin-left:auto;color:var(--muted);font-size:12px}
 .calibration-details{position:absolute;top:16px;right:58px;z-index:6;font-size:12px;width:155px}.calibration-details>summary{list-style:none;cursor:pointer;display:block;padding:8px 10px;border:1px solid var(--line);border-radius:7px;text-align:center;background:var(--panel)}.calibration-details>summary::-webkit-details-marker{display:none}.calibration-details[open]{right:16px;top:60px;bottom:16px;width:340px;padding:12px;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;background:var(--vscode-editor-bg);box-shadow:0 12px 35px #0006;overflow:auto}.calibration-details[open]>summary{text-align:left;margin-bottom:12px}.calibration-details[open]>summary::after{content:'×';float:right;font-size:17px;line-height:17px}.calibration-session-controls{display:flex;align-items:end;gap:6px;margin-bottom:12px}.calibration-session-label{flex:1;min-width:0;color:var(--muted)}.calibration-session-label select{display:block;width:100%;margin-top:4px}.calibration-detail-body{display:flex;flex-direction:column;gap:12px}.calibration-landmarks{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow:auto}.calibration-landmarks button{text-align:left}.calibration-landmarks button[aria-pressed=true]{outline:1px solid var(--blue)}.calibration-inspector{border-top:1px solid var(--line);padding-top:12px}.calibration-inspector label{display:flex;align-items:center;gap:5px;margin:8px 0}.calibration-inspector label input[type=text]{min-width:0;flex:1}.calibration-point-actions,.calibration-distance{display:flex;gap:6px;flex-wrap:wrap}.calibration-distance label{display:block;width:100%}.calibration-distance input{display:block;width:100%;margin-top:4px}.calibration-guidance,#calibrationQuality,#calibrationObservedOn,#calibrationPointQuality,#calibrationProgress{color:var(--muted)}#calibrationProgress{display:block;margin:12px 0}.calibration-result-actions{order:3;padding-top:8px;border-top:1px solid var(--line)}
 .calibration-camera-panel{position:absolute;z-index:7;inset:60px 16px 16px;border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--vscode-editor-bg);box-shadow:0 8px 32px #0005;overflow:auto}.calibration-camera-panel header,#calibrationPreviewPanel header{display:flex;align-items:center;gap:10px;justify-content:space-between}#calibrationCameraList{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:12px}.calibration-empty{padding:12px;border:1px dashed var(--line);border-radius:8px;color:var(--muted);flex-shrink:0}
@@ -274,7 +283,7 @@ calibrationHint.className = "calibration-hint";
 calibrationHint.append(document.querySelector("#calibrationMessage"));
 calibrationHeader.after(calibrationHint);
 calibrationWorkspace.querySelector(".calibration-caption").textContent =
-  "Match the same physical landmark in both panoramas";
+  "Click the same visible landmark on both sides · matching confirms visibility";
 calibrationWorkspace
   .querySelector(".calibration-summary")
   .after(document.querySelector(".calibration-navigation"));
@@ -307,6 +316,24 @@ calibrationScope.textContent = "Use only observed cameras";
 calibrationScope.title =
   "Remove unobserved cameras from this group without deleting them from the project.";
 calibrationSessionControls.after(calibrationScope);
+const calibrationOrientation = document.createElement("label");
+calibrationOrientation.className = "calibration-confirm";
+calibrationOrientation.innerHTML =
+  '<input id="calibrationUpright" type="checkbox">Level panorama horizons · 4 points';
+calibrationOrientation.title =
+  "Use four-point registration only when both source panoramas have level horizons. Uncheck for unrestricted orientation (eight points).";
+calibrationScope.after(calibrationOrientation);
+document.querySelector("#calibrationUpright").onchange = (event) => {
+  const upright = event.target.checked;
+  calibrationUIAction(() =>
+    calibrationUIAPI().updateSession(calibrationUI.session.id, {
+      config: {
+        orientationModel: upright ? "upright" : "free",
+        minCorrespondences: upright ? 4 : 8,
+      },
+    }),
+  );
+};
 
 document.querySelector("#calibrationPrevious").textContent = "← Previous";
 document.querySelector("#calibrationBack").textContent = "↶ Back";
@@ -330,6 +357,13 @@ function calibrationUIFitLayout() {
       calibrationWorkspace.clientHeight - pair.offsetTop - pair.offsetHeight,
     ) + "px";
 }
+calibrationDetails
+  .querySelector("summary")
+  .addEventListener("click", (event) => {
+    event.preventDefault();
+    calibrationDetails.open = !calibrationDetails.open;
+    calibrationUIFitLayout();
+  });
 calibrationDetails.addEventListener("toggle", calibrationUIFitLayout);
 const calibrationUILayoutObserver = new ResizeObserver(calibrationUIFitLayout);
 calibrationUILayoutObserver.observe(
@@ -535,7 +569,17 @@ function calibrationUIRenderStatus() {
   };
   document.querySelector("#calibrationStatus").textContent = session?.pending
     ? "Calculating in the background…"
-    : messages[session?.status] || "Create or select a session.";
+    : (session?.status === "failed"
+        ? "Calculation could not run: " +
+          (session.error?.message ||
+            quality?.edges.find((e) => e.reason)?.reason ||
+            "See diagnostics.") +
+          " Saved observations are kept."
+        : session?.status === "degenerate"
+          ? "Check matches: " +
+            (quality?.edges.find((e) => e.reason)?.reason ||
+              messages.degenerate)
+          : messages[session?.status]) || "Create or select a session.";
   document.querySelector("#calibrationProgress").textContent =
     `${ids.length} panoramas · ${observed.size} with observations · ${registered.length} registered candidates · ${Object.keys(worldData().cameras).filter((id) => ids.includes(id)).length} world poses · ${(session?.cameraIds || []).filter((id) => !registered.includes(id)).length} unresolved in group · ${ids.filter((id) => !session?.cameraIds.includes(id)).length} outside group`;
   const pairStatus = !pair.length
@@ -558,7 +602,7 @@ function calibrationUIRenderStatus() {
               ? "Preliminary solution"
               : "Correspondences added";
   document.querySelector("#calibrationPairStatus").textContent =
-    `${pair.length}/${session?.config.minCorrespondences || 8} initial matches · ${pairStatus}`;
+    `${pair.length}/${session?.config.minCorrespondences || 4} matches · ${session?.config.orientationModel === "upright" ? "level horizons · " : ""}${pairStatus}`;
   document.querySelector("#calibrationVisibility").checked =
     saved.visibleConfirmed;
   document.querySelector("#calibrationParallax").checked =
@@ -587,6 +631,9 @@ function calibrationUIRenderStatus() {
   calibrationWorkspace.querySelector(".calibration-result-actions").hidden =
     !session?.solution && !session?.applied;
   document.querySelector("#calibrationSolve").disabled = !session;
+  document.querySelector("#calibrationUpright").checked =
+    session?.config.orientationModel === "upright";
+  document.querySelector("#calibrationUpright").disabled = !session;
   const format = (value) => (value == null ? "—" : value.toFixed(3));
   document.querySelector("#calibrationQuality").textContent = quality
     ? `${quality.observationCount} observations · ${quality.verifiedCorrespondences} confirmed pairs · ${quality.inliers} inliers / ${quality.outliers} outliers · mean ${format(quality.meanAngularErrorDeg)}° / median ${format(quality.medianAngularErrorDeg)}° error · parallax ${format(quality.medianParallaxDeg)}° · ${quality.metricScale.known ? "metric scale" : "relative scale; units are not meters"}${quality.degeneracy.length ? " · " + quality.degeneracy.join(", ") : ""}${session.error ? " · " + session.error.message : ""}`
@@ -608,6 +655,15 @@ function calibrationUIRenderMarkers(side) {
       ".calibration-pane[data-side=" + side + "] .calibration-observations",
     );
   if (!view) return;
+  const selected = calibrationUI.session?.landmarks.find(
+    (point) => point.id === saved.selected,
+  );
+  const placing =
+    side === "left"
+      ? calibrationUI.placingNew
+      : !!selected?.observations.some((o) => o.panoId === saved.left) &&
+        !selected.observations.some((o) => o.panoId === saved.right);
+  layer.dataset.placeNew = String(placing);
   const buttons = new Map(
     [...layer.children].map((button) => [button.dataset.landmark, button]),
   );
@@ -660,6 +716,7 @@ function calibrationUIRenderMarkers(side) {
     if (!wanted.has(button.dataset.landmark)) button.remove();
 }
 function calibrationUISelectPoint(id) {
+  calibrationUI.placingNew = false;
   const saved = calibrationUIState();
   saved.selected = id;
   const point = calibrationUI.session?.landmarks.find((l) => l.id === id);
@@ -824,6 +881,7 @@ async function calibrationUIPlace(side, x, y, captured) {
       observations: [{ panoId: saved.left, ...angles, verified: false }],
     });
     saved.selected = point.id;
+    calibrationUI.placingNew = false;
     calibrationUIMessage(
       "Point saved on the reference panorama. Click its corresponding location on the right.",
     );
@@ -835,21 +893,23 @@ async function calibrationUIPlace(side, x, y, captured) {
       !landmark.observations.some((o) => o.panoId === saved.left)
     )
       throw new Error("Place the selected point on the left panorama first.");
+    const confirmed = side === "right" || saved.visibleConfirmed;
     const observation = {
       panoId: saved[side],
       ...angles,
-      verified: saved.visibleConfirmed,
+      verified: confirmed,
     };
     if (landmark.observations.some((o) => o.panoId === saved[side]))
       await api.updateObservation(session.id, landmark.id, saved[side], {
         ...angles,
-        verified: saved.visibleConfirmed,
+        verified: confirmed,
       });
     else await api.addObservation(session.id, landmark.id, observation);
-    if (side === "right" && saved.visibleConfirmed)
+    if (side === "right")
       await api.updateObservation(session.id, landmark.id, saved.left, {
         verified: true,
       });
+    if (side === "right") saved.visibleConfirmed = true;
     calibrationUIMessage(
       "Correspondence saved. Add more points, or continue to the next panorama.",
     );
@@ -963,6 +1023,10 @@ function calibrationUIHidePreview() {
     }
 }
 async function openPanoramaCalibration() {
+  if (calibrationUI.importing) {
+    notify("Wait for the project import to finish.");
+    return;
+  }
   if (!calibrationUI.enabled) {
     notify("Enable Panorama calibration in Core plugins.");
     return;
@@ -1086,6 +1150,37 @@ async function openPanoramaCalibration() {
     );
   await Promise.all(calibrationUI.subscriptions.map((sub) => sub.ready));
   const sessions = await api.listSessions();
+  if (saved.modelDefaultsVersion !== 1) {
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i];
+      if (
+        /^Panorama (group|calibration)/.test(session.label) &&
+        !session.applied &&
+        session.config.orientationModel !== "upright"
+      ) {
+        const cameraIds = [
+          ...new Set(
+            session.landmarks.flatMap((point) =>
+              point.observations.map((o) => o.panoId),
+            ),
+          ),
+        ];
+        sessions[i] = await api.updateSession(session.id, {
+          cameraIds,
+          config: {
+            orientationModel: "upright",
+            minCorrespondences: 4,
+            referenceCameraId: cameraIds.includes(
+              session.config.referenceCameraId,
+            )
+              ? session.config.referenceCameraId
+              : null,
+          },
+        });
+      }
+    }
+    saved.modelDefaultsVersion = 1;
+  }
   if (!calibrationUI.open || generation !== calibrationUI.generation) return;
   if (!sessions.some((s) => s.id === saved.sessionId)) {
     saved.sessionId = sessions[0]?.id || null;
@@ -1093,6 +1188,8 @@ async function openPanoramaCalibration() {
       const session = await api.createSession({
         label: "Panorama group 1",
         cameraIds: [],
+        orientationModel: "upright",
+        minCorrespondences: 4,
       });
       if (!calibrationUI.open || generation !== calibrationUI.generation)
         return;
@@ -1118,6 +1215,7 @@ function closePanoramaCalibration({ restore = true } = {}) {
   for (const view of Object.values(calibrationUI.views)) view.destroy();
   calibrationUI.views = {};
   calibrationUI.drag = null;
+  calibrationUI.placingNew = false;
   calibrationWorkspace.hidden = true;
   document.querySelector("#appRoot").classList.remove("calibration-open");
   calibrationTool.setAttribute("aria-pressed", "false");
@@ -1193,6 +1291,7 @@ document.querySelector("#calibrationBack").onclick = () =>
       });
   });
 document.querySelector("#calibrationNewPoint").onclick = () => {
+  calibrationUI.placingNew = true;
   calibrationUIState().selected = null;
   calibrationUIState().visibleConfirmed = false;
   calibrationUIState().parallaxConfirmed = false;
@@ -1331,6 +1430,8 @@ async function calibrationUINewGroup({ skip = false } = {}) {
     ids = calibrationUIIds(),
     previous = saved.left;
   const session = await calibrationUIAPI().createSession({
+    orientationModel: "upright",
+    minCorrespondences: 4,
     label:
       "Panorama group " +
       ((await calibrationUIAPI().listSessions()).length + 1),
@@ -1641,11 +1742,18 @@ loadMplaceBuffer = async function (buffer) {
     file = zip.file("palace.json"),
     raw = file ? JSON.parse(await file.async("string")) : null,
     ui = calibrationUINormalize(raw?.calibrationUI);
+  calibrationUI.importing++;
+  calibrationTool.disabled = true;
   closePanoramaCalibration({ restore: false });
-  const result = await calibrationUILoad(buffer);
-  state.calibrationUI = ui;
-  resetHistory();
-  return result;
+  try {
+    const result = await calibrationUILoad(buffer);
+    state.calibrationUI = ui;
+    resetHistory();
+    return result;
+  } finally {
+    calibrationUI.importing--;
+    calibrationTool.disabled = calibrationUI.importing > 0;
+  }
 };
 const calibrationUIReset = resetPalace;
 resetPalace = function (...args) {

@@ -41,7 +41,7 @@ The uncertainty estimate is a first-order geometric estimate using the configure
 9. Known camera/landmark distance constraints participate in optimization, with a final consistent scale estimate and spread check. Contradictory or unresolved scale constraints remain provisional.
 10. Evaluate angular errors, inlier/outlier/unresolved observations, parallax, visibility and registration completeness. Publish a candidate for the exact input revision; never automatically change the main world.
 
-This is a real eight-point spherical SfM solver, not a five-point minimal solver, feature detector, image matcher, visual-inertial system, dense depth reconstruction or certified photogrammetry package. Eight is its implemented minimal pair size; more well-distributed observations improve robustness. Multi-view geometry still has genuine degeneracies and uncertain scale. Incorrect `verified` flags cannot substitute for correct physical correspondences.
+The default free-orientation solver uses eight-point spherical SfM. With `orientationModel: 'upright'`, the core also implements four-point registration: it searches relative yaw and the translation direction from spherical epipolar constraints, resolves cheirality/parallax, performs four-sample robust consensus and restricts camera bundle-adjustment rotation to yaw. This uses a real additional gravity constraint; four arbitrary correspondences cannot determine an unrestricted relative pose. Upright planar-wall points are supported; collinear/clustered points, ambiguous poses and pure rotation remain degenerate. More well-distributed observations improve robustness. Multi-view geometry still has genuine degeneracies and uncertain scale. Incorrect `verified` flags cannot substitute for correct physical correspondences.
 
 ## Background execution and automatic updates
 
@@ -75,7 +75,8 @@ Project state contains `calibrationSessions`, keyed by ID. A session includes:
 | automaticSolve | true | Debounced recalculation after edits. |
 | requireVerified | true | Unverified inlier visibility without usable depth makes candidate provisional. |
 | referenceCameraId | first observed registered camera, otherwise first observed camera | Stored when calculation is first scheduled. Explicit reference must belong to the current project; a disconnected reference cannot be silently replaced. |
-| minCorrespondences | 8 | Integer 8..100 per pair. |
+| orientationModel | free | `free` estimates unrestricted orientation; `upright` assumes both source panorama +Y axes follow gravity. |
+| minCorrespondences | 8 in free / 4 in upright | Integer 8..100 in free or 4..100 in upright. |
 | ransacThresholdDeg | .6 | .01..5 spherical angular tolerance. |
 | ransacIterations | 512 | Integer 32..4000 maximum. |
 | minParallaxDeg | .75 | .05..20 effective angle; excludes near 0° and 180° lines. |
@@ -165,3 +166,15 @@ Errors reject with an Error message prefixed by code. Custom Error.code is not t
 `test/calibration-math.cjs` uses synthetic ground-truth 3D geometry with explicit tolerances: two/multiple cameras, a 64-camera chain, full-sphere/rear observations, noise/outliers, loop refinement, insufficient pairs, pure rotation/weak parallax, coplanar/collinear/anti-parallel degeneracy, independent scales, camera/landmark metric constraints, contradiction handling and both native model binary formats. The noisy-loop test checks an actual decrease in the global objective.
 
 `test/calibration-integration.cjs` exercises real sandbox SDK calls and real browser workers: automatic revision calculation, events/disposal, unchanged world until apply, apply/revert/Undo, projection compatibility, archive reload, stale jobs/project replacement, camera deletion, malformed import, permissions/View mode, world-frame scaling/re-solving, occlusion validation, system API and main-thread responsiveness. Mobile profiles use Chromium emulation; this does not claim Safari or physical device testing.
+
+## Four-point example
+
+```js
+const group = await api.tour.world.calibration.createSession({
+  orientationModel: 'upright', minCorrespondences: 4, cameraIds: []
+});
+// Add four distinct physical landmarks observed on two level source panoramas.
+// Arbitrary viewing yaw/pitch/FOV do not change the source horizon assumption.
+```
+
+The browser worker executes a self-contained copy of the loaded numerical factory through a Blob URL. It does not fetch a separate worker/math script, so a missing relative worker URL cannot break an otherwise loaded app. Worker URLs are revoked on completion, cancellation, project changes and construction failures. Node mathematical tests continue using `calibration-worker.js`. CSP must allow `worker-src blob:`; an unavailable worker remains an explicit error with observations retained.
