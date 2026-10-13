@@ -1,0 +1,23 @@
+{
+  "id": "ai.starter",
+  "name": "AI starter",
+  "description": "Working SDK 1.4 example: overview panel, loci, settings, storage and a shortcut.",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "engines": {"palace": ">=1.4.0 <2.0.0"},
+  "main": "main.js",
+  "permissions": ["project.read", "markers.write", "ui.contribute", "keybindings.write"],
+  "contributes": {
+    "commands": [
+      {"id": "ai.starter.open", "title": "Open AI starter"},
+      {"id": "ai.starter.center", "title": "Add locus at center"}
+    ],
+    "panels": [{"id": "ai.starter.panel", "title": "AI starter"}],
+    "activityBar": [{"id": "ai.starter.activity", "title": "AI starter", "icon": "icon.svg", "command": "ai.starter.open"}],
+    "toolbars": [{"id": "ai.starter.center-tool", "title": "Add locus at center", "icon": "pin", "location": "plan", "command": "ai.starter.center"}],
+    "settings": [
+      {"key": "note", "title": "Default note", "description": "Text saved in a newly created locus.", "type": "string", "default": "Created by AI starter"},
+      {"key": "showCount", "title": "Show locus count", "type": "boolean", "default": true}
+    ]
+  }
+}
