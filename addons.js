@@ -63,6 +63,7 @@ async function readAddon(file){
  const manifest=validateAddon(JSON.parse(files['manifest.json']),files);
  return {id:manifest.id,manifest,files,enabled:true};
 }
+function rewriteAddonHostApi(source,rewrite){const boundary=source.indexOf('\nconst api=Object.freeze({');if(boundary<0)throw new Error('SDK host boundary missing.');return source.slice(0,boundary+1)+rewrite(source.slice(boundary+1))}
 function addonHostDocument(record,channel){
  const payload=JSON.stringify({files:record.files,main:record.manifest.main,channel}).replace(/</g,'\\u003c');
  const source = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{margin:0;padding:14px;background:#1f1f1f;color:#ccc;font:14px/1.5 system-ui}button,input{font:inherit}button{padding:6px 12px}</style></head><body><div id="panel"></div><script>

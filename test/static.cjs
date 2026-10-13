@@ -10,7 +10,7 @@ test('all inline and standalone application scripts parse',()=>{
   let index=0;
   for(const [,source]of html.matchAll(/<script>(.*?)<\/script>/gs))new vm.Script(source,{filename:`index.html inline ${++index}`});
   assert.ok(index>0);
-  for(const file of ['app.js','themes.js','theme-picker.js','mobile.js','mobile-controls.js','app-api.js','addons.js','interfaces.js','appearance.js','extension-operations.js','persistence.js','transitions.js','camera-editor.js','settings.js','pwa.js','addon-management.js','system-addons.js','history-addon.js','command-palette.js','workspace-presets.js','ui-controls.js','scene-sdk.js','scene-camera.js','world-space.js','world-ui.js','sw.js'])new vm.Script(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
+  for(const file of ['app.js','themes.js','theme-picker.js','mobile.js','mobile-controls.js','app-api.js','addons.js','interfaces.js','appearance.js','extension-operations.js','persistence.js','transitions.js','camera-editor.js','settings.js','pwa.js','addon-management.js','system-addons.js','history-addon.js','command-palette.js','workspace-presets.js','ui-controls.js','scene-sdk.js','scene-camera.js','world-space.js','world-ui.js','calibration-math.js','calibration-core.js','calibration-worker.js','sw.js'])new vm.Script(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 });
 test('offline cache covers existing app assets and has a matching version',()=>{
   const worker=fs.readFileSync(path.join(root,'sw.js'),'utf8');

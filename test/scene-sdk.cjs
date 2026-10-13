@@ -11,7 +11,7 @@ async function ready(page,frame,id='a'){await page.evaluate(id=>{state.layout='t
 for(const[name,options]of profiles){
  test(`${name}: 3D anchors persist, move, interact and remain fixed when the camera rotates`,async t=>{
   const {page}=await openSession(browser,t,options,{offlineCache:true}),frame=await install(page);await ready(page,frame);
-  assert.equal(await frame.evaluate(()=>sdk.version),'1.6.0');
+  assert.equal(await frame.evaluate(()=>sdk.version),'1.7.0');
   await frame.evaluate(()=>sdk.tour.camera.setPose({yaw:0,pitch:0,roll:0,fov:75}));
   const anchor=await frame.evaluate(()=>sdk.tour.anchors.create({id:'locus-a',panoId:'a',position:{x:0,y:0,z:-10},label:'Anchor A',style:{type:'sphere',color:'#ff0000',size:1},metadata:{nested:{answer:42}}}));assert.equal(anchor.id,'locus-a');
   assert.equal(await page.evaluate(()=>sceneRuntime.group.parent===localViewer.scene&&sceneRuntime.meshes.get('locus-a').children[0].isMesh),true,'Anchor belongs to the Three.js scene');
@@ -62,12 +62,12 @@ test('scene permission denial, legacy permissions, invalid data, view-mode safet
  await frame.evaluate(()=>sdk.tour.playback.start({stops:[{panoId:'a',duration:500,hold:5000}],loop:true}));await page.evaluate(()=>stopAddon('test.scene'));assert.equal(await page.evaluate(()=>scenePlayback.status),'stopped');assert.equal(await page.evaluate(()=>sceneCameraAnimation),null);assert.equal(await page.evaluate(()=>!!state.sceneAnchors['legacy-anchor']),true,'Anchors are project data, not temporary addon overlays');
 });
 
-test('SDK 1.6 declaration surface, mesh styles, hidden-anchor raycast and failed readiness',async t=>{
+test('SDK 1.7 declaration surface, mesh styles, hidden-anchor raycast and failed readiness',async t=>{
  const {page}=await openSession(browser,t,profiles[0][1],{offlineCache:true}),frame=await install(page);await ready(page,frame);
  const methods=await frame.evaluate(()=>{const paths=[];function walk(obj,prefix=''){for(const[k,v]of Object.entries(obj)){const path=prefix?prefix+'.'+k:k;if(typeof v==='function')paths.push(path);else if(v&&typeof v==='object')walk(v,path)}}walk(sdk);return paths.sort()});
  const ast=require('prettier/plugins/typescript').parsers.typescript.parse(fs.readFileSync(require('node:path').join(__dirname,'../docs/addons/palace-sdk.d.ts'),'utf8'));
  const declaration=ast.body.map(n=>n.declaration||n).find(n=>n.id?.name==='PalaceSDK'),declared=[];
- function scan(members,prefix=''){for(const member of members){const name=member.key?.name||member.key?.value;if(!name)continue;const path=prefix?prefix+'.'+name:name;if(member.type==='TSMethodSignature')declared.push(path);else if(member.typeAnnotation?.typeAnnotation?.type==='TSTypeLiteral')scan(member.typeAnnotation.typeAnnotation.members,path)}}scan(declaration.body.body);assert.deepEqual(methods,declared.sort());assert.equal(methods.length,114);
+ function scan(members,prefix=''){for(const member of members){const name=member.key?.name||member.key?.value;if(!name)continue;const path=prefix?prefix+'.'+name:name;if(member.type==='TSMethodSignature')declared.push(path);else if(member.typeAnnotation?.typeAnnotation?.type==='TSTypeLiteral')scan(member.typeAnnotation.typeAnnotation.members,path)}}scan(declaration.body.body);assert.deepEqual(methods,declared.sort());assert.equal(methods.length,137);
  for(const type of ['billboard','sprite','model'])await frame.evaluate(type=>sdk.tour.anchors.create({id:type,panoId:'a',position:{x:0,y:0,z:-10},label:type,style:{type,...(type==='model'?{model:{positions:[-1,-1,0,1,-1,0,0,1,0]}}:{})}}),type);
  assert.deepEqual(await page.evaluate(()=>Object.fromEntries([...sceneRuntime.meshes].map(([id,root])=>[id,!!root.children.length]))),{billboard:true,sprite:true,model:true});
  await frame.evaluate(()=>sdk.tour.camera.setPose({yaw:0,pitch:0}));assert.equal((await frame.evaluate(()=>sdk.tour.scene.raycast({screenPosition:{x:.5,y:.5},includeAnchors:true}))).synthetic,false);

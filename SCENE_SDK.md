@@ -1,6 +1,6 @@
 # PALACE Addon SDK 1.6 — 3D anchors, scenes, camera and playback
 
-This supplements [ADDONS_AI_GUIDE.md](ADDONS_AI_GUIDE.md). Runtime API version is `1.6.0` (the local scene contract introduced in 1.5 remains compatible); manifest `apiVersion` remains the number `1`. CommonJS `exports.activate(api)` receives the SDK. All methods below return Promises except event subscription factories. Declarations: [palace-sdk.d.ts](docs/addons/palace-sdk.d.ts).
+This supplements [ADDONS_AI_GUIDE.md](ADDONS_AI_GUIDE.md). Runtime API version is `1.7.0` (the local scene contract introduced in 1.5 remains compatible); manifest `apiVersion` remains the number `1`. CommonJS `exports.activate(api)` receives the SDK. All methods below return Promises except event subscription factories. Declarations: [palace-sdk.d.ts](docs/addons/palace-sdk.d.ts).
 
 ## Permissions and compatibility
 
@@ -162,3 +162,7 @@ Regression coverage is in `test/scene-sdk.cjs`: real renderer objects, pointer/t
 ## SDK 1.6: shared world
 
 For explicitly registered panorama capture poses and objects shared across multiple cameras, see [WORLD_SDK.md](WORLD_SDK.md). Existing anchors, camera poses and scene projections remain panorama-local.
+
+## SDK 1.7: calibration and native model scale
+
+Core spatial calibration is documented in [CALIBRATION_SDK.md](CALIBRATION_SDK.md). Native dollhouse scene registration supports `geometry.scale`, which scales camera-local coordinates after the inverse capture transform; world registration scales model-to-world coordinates. Existing defaults remain scale 1.

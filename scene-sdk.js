@@ -45,6 +45,7 @@ function sceneConfiguration(value){
  if(value.geometry){
   const g=value.geometry;
   config.geometry=g.source==='dollhouse'?{source:'dollhouse',origin:scenePoint(g.origin,'geometry.origin'),rotation:scenePoint(g.rotation||{x:0,y:0,z:0},'geometry.rotation',Math.PI*100)}:sceneGeometryData(g);
+  if(g.source==='dollhouse')config.geometry.scale=sceneNumber(g.scale??1,'geometry.scale',.000001,1000000);
   config.geometry.render=g.render||'solid';if(!['solid','occlusion'].includes(config.geometry.render))throw sceneError('INVALID_ARGUMENT','Geometry render must be solid or occlusion.');
   config.geometry.color=g.color||'#777777';if(!/^#[0-9a-f]{6}$/i.test(config.geometry.color))throw sceneError('INVALID_ARGUMENT','Geometry color must be #RRGGBB.');
  }
@@ -113,7 +114,7 @@ function sceneSync(force=false){
  const geometryMaterial=solid=>new THREE.MeshBasicMaterial({color:config.geometry?.color||'#777777',side:THREE.DoubleSide,colorWrite:solid,depthWrite:true,depthTest:true});
  if(config.geometry){
   const g=config.geometry,solid=g.render==='solid';
-  if(g.source==='dollhouse'&&DHM){const inverse=new THREE.Matrix4().compose(new THREE.Vector3(g.origin.x,g.origin.y,g.origin.z),new THREE.Quaternion().setFromEuler(new THREE.Euler(g.rotation.x,g.rotation.y,g.rotation.z)),new THREE.Vector3(1,1,1)).invert();for(let i=0;i<DHM.meta.chunks.length;i++){const mesh=new THREE.Mesh(dhmGeometry(i,false).clone(),geometryMaterial(solid));mesh.applyMatrix4(inverse);geometry.add(mesh)}}
+  if(g.source==='dollhouse'&&DHM){const inverse=new THREE.Matrix4().compose(new THREE.Vector3(g.origin.x,g.origin.y,g.origin.z),new THREE.Quaternion().setFromEuler(new THREE.Euler(g.rotation.x,g.rotation.y,g.rotation.z)),new THREE.Vector3(1,1,1)).invert();inverse.premultiply(new THREE.Matrix4().makeScale(g.scale||1,g.scale||1,g.scale||1));for(let i=0;i<DHM.meta.chunks.length;i++){const mesh=new THREE.Mesh(dhmGeometry(i,false).clone(),geometryMaterial(solid));mesh.applyMatrix4(inverse);geometry.add(mesh)}}
   else if(g.positions)geometry.add(new THREE.Mesh(sceneBufferGeometry(g),geometryMaterial(solid)));
  }
  if(config.depthMap)geometry.add(new THREE.Mesh(sceneDepthGeometry(config.depthMap),geometryMaterial(false)));

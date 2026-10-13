@@ -1,0 +1,49 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),M=require('../calibration-math.js'),m=M.math;
+const {fixture}=require('./support/calibration-fixtures.cjs');
+
+test('spherical ray convention covers 360 degrees and both hemispheres',()=>{for(const yaw of [0,90,180,270,359])for(const pitch of [-89,-45,0,45,89]){const d=M.ray(yaw,pitch),a=M.angles(d);assert.ok(Math.abs(m.norm(d)-1)<1e-12);assert.ok(Math.abs(a.yaw-yaw)<1e-8);assert.ok(Math.abs(a.pitch-pitch)<1e-8)}});
+test('two calibrated spherical cameras recover rotation and translation direction',()=>{const f=fixture(2),r=M.solve(f.session);assert.equal(r.status,'solved');assert.ok(r.quality.medianAngularErrorDeg<1e-4);const c=r.solution.cameras.c1,expected=m.unit(f.cameras.c1.C);assert.ok(m.angle([c.position.x,c.position.y,c.position.z],expected)<1e-4);const actual=M.quaternionMatrix(c.rotation);for(let i=0;i<3;i++)for(let j=0;j<3;j++)assert.ok(Math.abs(actual[i][j]-f.cameras.c1.Q[i][j])<1e-4);assert.equal(r.quality.metricScale.known,false)});
+test('three cameras and a loop share a common scale, and metric camera/landmark distances resolve it',()=>{const f=fixture(4),r=M.solve(f.session);assert.equal(r.status,'solved');assert.equal(r.quality.registeredCameraIds.length,4);const scale=m.norm(f.cameras.c1.C);for(const[id,c]of Object.entries(r.solution.cameras))assert.ok(m.norm(m.sub([c.position.x,c.position.y,c.position.z],m.mul(f.cameras[id].C,1/scale)))<1e-3);f.session.config.distances=[{type:'cameras',from:'c0',to:'c1',distance:scale}];const metric=M.solve(f.session);assert.equal(metric.quality.metricScale.known,true);assert.ok(Math.abs(metric.solution.cameras.c3.position.x-3)<1e-3);assert.ok(metric.quality.bundleAdjustment.iterations>0)});
+test('large camera chain with overlapping three-view landmarks has no predetermined camera count',()=>{const f=fixture(64,1200,{chain:true}),r=M.solve(f.session);assert.equal(r.status,'solved');assert.equal(r.quality.registeredCameraIds.length,64);assert.ok(r.quality.medianAngularErrorDeg<.01);assert.ok(Math.abs(r.solution.cameras.c63.position.x-63/m.norm(f.cameras.c1.C))<.03)});
+test('one shared point and insufficient correspondences never fabricate 6DoF coordinates',()=>{for(const count of [1,4,7]){const r=M.solve(fixture(2,count).session);assert.equal(r.status,'insufficient_data');assert.equal(r.solution,null)}const f=fixture(8,7,{chain:true}),r=M.solve(f.session);assert.equal(r.status,'insufficient_data');assert.equal(r.solution,null)});
+test('RANSAC rejects false correspondences and bundle adjustment refines noisy spherical observations',()=>{const f=fixture(3,60,{noise:.03,outliers:10}),r=M.solve(f.session);assert.equal(r.status,'solved');assert.ok(r.quality.outliers>=10);assert.ok(r.quality.medianAngularErrorDeg<.1);assert.ok(Math.abs(r.solution.cameras.c2.position.x-2/m.norm(f.cameras[r.quality.gauge.baselineCameraId].C))<.06)});
+test('pure rotation and weak parallax are degenerate and do not produce a preview pose',()=>{for(const options of [{rotationOnly:true},{baseline:.0001}]){const r=M.solve(fixture(2,30,options).session);assert.equal(r.status,'degenerate');assert.equal(r.solution,null)}});
+test('editing/removing a control point changes the revision input and recalculates quality',()=>{const f=fixture(3),first=M.solve(f.session);f.session.landmarks[0].observations[1].yaw+=60;const edited=M.solve(f.session);assert.ok(edited.quality.outliers>first.quality.outliers);f.session.landmarks.splice(0,1);const removed=M.solve(f.session);assert.equal(removed.status,'solved');assert.equal(removed.quality.observationCount,117)});
+
+test('spherical reconstruction works with landmarks behind cameras and across image seams',()=>{
+ const f=fixture(2,60);for(let i=0;i<f.landmarks.length;i++){const p=[Math.sin(i*1.9)*3,Math.cos(i*.7)*2,(i%2?1:-1)*(2+i%7*.3)];for(const o of f.landmarks[i].observations){const c=f.cameras[o.panoId];Object.assign(o,M.angles(m.mv(m.transpose(c.Q),m.sub(p,c.C))))}}
+ const result=M.solve(f.session);assert.equal(result.status,'solved');assert.ok(result.quality.medianAngularErrorDeg<1e-3);
+});
+test('coplanar and collinear bearing constraints are reported as degenerate',()=>{
+ for(const collinear of [true,false]){const f=fixture(2,24);for(let i=0;i<f.landmarks.length;i++){const p=[Math.sin(i)*3,collinear?0:Math.cos(i)*2,-5];for(const o of f.landmarks[i].observations){const c=f.cameras[o.panoId];Object.assign(o,M.angles(m.mv(m.transpose(c.Q),m.sub(p,c.C))))}}const r=M.solve(f.session);assert.equal(r.status,'degenerate');assert.equal(r.solution,null)}
+});
+test('independent pair scales do not fabricate a third camera; known baselines can connect them',()=>{
+ const a=fixture(2,20),b=fixture(2,20);const tracks=[...a.landmarks,...b.landmarks.map((l,i)=>({...l,id:'q'+i,observations:l.observations.map(o=>({...o,panoId:o.panoId==='c0'?'c1':'c2'}))}))];const session={cameraIds:['c0','c1','c2'],landmarks:tracks,config:{referenceCameraId:'c0'}};
+ const relative=M.solve(session);assert.equal(relative.status,'provisional');assert.equal(relative.solution.cameras.c2,undefined);assert.ok(relative.quality.unresolvedObservations>0);session.config.distances=[{type:'cameras',from:'c0',to:'c1',distance:1},{type:'cameras',from:'c1',to:'c2',distance:1}];const metric=M.solve(session);assert.equal(metric.status,'solved');assert.equal(Object.keys(metric.solution.cameras).length,3);
+});
+test('point distance fixes metric scale and inconsistent measurements remain provisional',()=>{
+ const f=fixture(3),relative=M.solve(f.session),p=relative.solution.landmarks.p0,q=relative.solution.landmarks.p1,worldDistance=Math.hypot(p.x-q.x,p.y-q.y,p.z-q.z)*m.norm(f.cameras.c1.C);f.session.config.distances=[{type:'landmarks',from:'p0',to:'p1',distance:worldDistance}];const metric=M.solve(f.session);assert.equal(metric.status,'solved');assert.equal(metric.quality.metricScale.known,true);const mp=metric.solution.landmarks.p0,mq=metric.solution.landmarks.p1;assert.ok(Math.abs(Math.hypot(mp.x-mq.x,mp.y-mq.y,mp.z-mq.z)-worldDistance)<1e-4);
+ f.session.config.distances=[{type:'cameras',from:'c0',to:'c1',distance:1},{type:'cameras',from:'c0',to:'c2',distance:8}];const bad=M.solve(f.session);assert.equal(bad.status,'provisional');assert.ok(bad.quality.degeneracy.includes('inconsistent_scale_constraints'));
+});
+test('anti-parallel rays on the camera segment are ill-conditioned, not preferred exact triangulation',()=>{assert.equal(M.triangulate([0,0,0],[1,0,0],[1,0,0],[-1,0,0]),null)});
+
+test('native dollhouse geometry in both binary formats participates in worker visibility without a renderer',()=>{
+ const f=fixture(2,20);f.session.config.distances=[{type:'cameras',from:'c0',to:'c1',distance:m.norm(f.cameras.c1.C)}];
+ for(const format of [1,2]){
+  const vertices=[-20,-2,-20,20,-2,-20,20,-2,20,-20,-2,-20,20,-2,20,-20,-2,20],posBytes=format===1?72:36,bin=new ArrayBuffer(posBytes+(format===1?24:12));
+  if(format===1)new Float32Array(bin,0,18).set(vertices);else new Uint16Array(bin,0,18).set(vertices.map((v,i)=>Math.round((v-[-20,-2,-20][i%3])/.001)));
+  const idx=format===1?new Uint32Array(bin,posBytes,6):new Uint16Array(bin,posBytes,6);idx.set([0,1,2,3,4,5]);const model={meta:{format,chunks:[{vertices:6,triangles:2,pos:0,idx:posBytes,ib:2,pq:[-20,-2,-20,.001,.001,.001]}]},bin};
+  const result=M.calculate(f.session,{units:'meters',anchor:{position:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0,w:1}},geometry:{source:'dollhouse',origin:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0},scale:1},model});assert.equal(result.status,'provisional');assert.equal(result.quality.visibility.occluded.length,40);
+ }
+});
+test('Euler/quaternion composition preserves a rigid transformation of native geometry',()=>{for(let i=0;i<30;i++){const R=M.eulerMatrix({x:Math.sin(i)*2.8,y:Math.cos(i*.7)*1.5,z:Math.sin(i*1.3)*2.8}),T=M.rotationIncrement([.2,.4,-.1]),composed=m.mm(T,R),back=M.eulerMatrix(M.matrixEuler(composed));for(let a=0;a<3;a++)for(let b=0;b<3;b++)assert.ok(Math.abs(composed[a][b]-back[a][b])<1e-7)}});
+
+test('bundle adjustment reduces the global spherical objective for a noisy camera loop',()=>{const result=M.solve(fixture(4,60,{noise:.1}).session);assert.equal(result.status,'solved');assert.ok(result.quality.bundleAdjustment.cost<result.quality.bundleAdjustment.initialCost*.5);assert.ok(result.quality.medianAngularErrorDeg<.1)});
+
+test('changing the strongest baseline preserves existing world units and reference coordinates',()=>{
+ const f=fixture(3,40),origin={x:12,y:3,z:-7},position=m.add([origin.x,origin.y,origin.z],m.mul(f.cameras.c1.C,3)),context={units:'scene-units',cameras:{c0:{position:origin,rotation:{x:0,y:0,z:0,w:1}},c1:{position:{x:position[0],y:position[1],z:position[2]},rotation:M.matrixQuaternion(f.cameras.c1.Q)}}};
+ const first=M.calculate(f.session,context);assert.equal(first.status,'solved');assert.equal(first.quality.gauge.baselineCameraId,'c1');
+ for(const landmark of f.landmarks.slice(0,10))landmark.observations=landmark.observations.filter(o=>o.panoId!=='c1');
+ const changed=M.calculate(f.session,context);assert.equal(changed.status,'solved');assert.equal(changed.quality.gauge.baselineCameraId,'c2');assert.equal(changed.quality.gauge.worldScaleAnchored,true);assert.equal(changed.quality.metricScale.known,false);assert.ok(m.norm(m.sub(Object.values(changed.solution.cameras.c1.position),position))<1e-3);assert.deepEqual(changed.solution.cameras.c0.position,origin);
+ f.session.config.distances=[{type:'cameras',from:'c0',to:'c1',distance:m.norm(f.cameras.c1.C)}];const metric=M.calculate(f.session,context);assert.equal(metric.status,'solved');assert.ok(Math.abs(metric.quality.metricScale.worldMetersPerUnit-1/3)<1e-4);assert.ok(m.norm(m.sub(Object.values(metric.solution.cameras.c1.position),position))<1e-3);
+});

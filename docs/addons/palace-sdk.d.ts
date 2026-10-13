@@ -1,13 +1,36 @@
-/** PALACE community addon SDK 1.6.0; manifest apiVersion stays 1.
+/** PALACE community addon SDK 1.7.0; manifest apiVersion stays 1.
  * Development declarations only. The running API is passed to exports.activate(api).
  * Permission, mode, size and identifier rules are in ADDONS_AI_GUIDE.md.
  */
+export type CalibrationState = 'collecting' | 'insufficient_data' | 'degenerate' | 'provisional' | 'solved' | 'failed';
+export interface CalibrationObservation { panoId: string; yaw: number; pitch: number; verified: boolean; }
+export interface CalibrationLandmark { id: string; label: string; observations: CalibrationObservation[]; enabled: boolean; worldPosition?: Point3D; }
+export interface CalibrationDistance { type: 'cameras' | 'landmarks'; from: string; to: string; distance: number; }
+export interface CalibrationConfig { automaticSolve?: boolean; requireVerified?: boolean; referenceCameraId?: string; distances?: CalibrationDistance[]; minCorrespondences?: number; ransacThresholdDeg?: number; ransacIterations?: number; minParallaxDeg?: number; bundleIterations?: number; seed?: number; timeoutMs?: number; }
+export interface CalibrationCreateConfig extends CalibrationConfig {id?: string; label?: string; cameraIds?: string[];}
+export interface CalibrationMetricScale { known: boolean; units: 'relative' | 'meters'; factor: number; worldMetersPerUnit?: number | null; coordinateFactor?: number; constraintCount?: number; relativeSpread?: number; }
+export interface CalibrationQuality {
+ observationCount: number; verifiedCorrespondences: number; inliers: number; outliers: number; unresolvedObservations?: number;
+ meanAngularErrorDeg: number | null; medianAngularErrorDeg: number | null; medianParallaxDeg: number | null;
+ degeneracy: string[]; metricScale: CalibrationMetricScale; registeredCameraIds: string[]; unregisteredCameraIds: string[];
+ visibility: {checked: number; occluded: {landmarkId: string; panoId: string}[]; unknown: number; unverified?: number};
+ gauge?: {referenceCameraId: string; baselineCameraId: string; relativeBaselineLength: number; worldBaselineLength?: number; worldScaleAnchored?: boolean};
+ edges: {from: string; to: string; status: string; inliers: number; outliers: number; parallaxDeg: number; reason: string | null}[];
+ landmarks: {id: string; distances: {panoId: string; distance: number; distanceMeters?: number; angularErrorDeg: number}[]; segmentDistance: number | null; relativeSegmentDistance: number | null; triangulationAngleDeg: number; effectiveParallaxDeg: number; stable: boolean; preferredBetweenCameras: boolean; stability: {conditionNumber: number; estimatedPositionUncertainty: number; estimatedPositionUncertaintyMeters?: number; assumedAngularNoiseDeg: number}}[];
+ bundleAdjustment?: {iterations: number; initialCost: number; cost: number} | null;
+}
+export interface CalibrationSolution { referenceCameraId: string; cameras: Record<string, PanoramaCamera>; landmarks: Record<string, Point3D>; anchor?: PanoramaCamera; scale: CalibrationMetricScale; }
+export interface CalibrationSession { id: string; version: 1; label: string; landmarks: CalibrationLandmark[]; cameraIds: string[]; status: CalibrationState; revision: number; config: CalibrationConfig; pending: boolean; quality: CalibrationQuality | null; solution: CalibrationSolution | null; solvedRevision: number | null; preview: {id: string; revision: number; wholeWorld: boolean} | null; applied: {revision: number; wholeWorld: boolean} | null; error: {code: string; message: string} | null; [key: string]: unknown; }
+export interface CalibrationStatus { sessionId: string; revision: number; status: CalibrationState; pending: boolean; solvedRevision: number | null; appliedRevision: number | null; error: {code: string; message: string} | null; }
+export interface CalibrationPreview { previewId: string; sessionId: string; revision: number; status: CalibrationState; cameras: Record<string, PanoramaCamera>; landmarks: Record<string, Point3D>; objects: Record<string, WorldObject>; wholeWorld: boolean; objectsIncluded?: boolean; metricScale: CalibrationMetricScale; quality: CalibrationQuality; }
+export interface CalibrationEvent { sessionId: string; revision: number; landmarkId?: string; observation?: CalibrationObservation; quality?: CalibrationQuality; status?: CalibrationState; wholeWorld?: boolean; error?: {code: string; message: string}; [key: string]: unknown; }
+
 export interface Quaternion { x: number; y: number; z: number; w: number; }
 export interface PanoramaCamera { panoId: string; position: Point3D; rotation: Quaternion; fov: number; }
 export type WorldObjectInput = {id?: string; position: Point3D; rotation?: Quaternion; scale?: Point3D; label?: string; visible?: boolean; interactive?: boolean; style?: Omit<AnchorStyle, 'type'> & {type?: AnchorStyle['type'] | 'cube'}; metadata?: JsonObject | null};
 export interface WorldObject {id: string; type: 'world'; position: Point3D; rotation: Quaternion; scale: Point3D; label: string; visible: boolean; interactive: boolean; style: Omit<AnchorStyle, 'type' | 'color' | 'size' | 'opacity'> & {type: NonNullable<AnchorStyle['type']> | 'cube'; color: string; size: number; opacity: number}; metadata?: JsonObject;}
 export type OcclusionMode = 'none' | 'geometry' | 'depth-map';
-export interface WorldInfo { units: string; handedness: 'right'; axes: {x: string; y: string; z: string}; registered: boolean; panoId: string | null; occlusion: OcclusionMode; effectiveOcclusion: OcclusionMode; selectedObjectId: string | null; objectCount: number; cameraCount: number; }
+export interface WorldInfo { units: string; handedness: 'right'; axes: {x: string; y: string; z: string}; registered: boolean; metersPerUnit: number | null; panoId: string | null; occlusion: OcclusionMode; effectiveOcclusion: OcclusionMode; selectedObjectId: string | null; objectCount: number; cameraCount: number; }
 export interface WorldCameraEvent {panoId: string; camera: PanoramaCamera | null; active: boolean; reason: string; pose?: CameraPose3D; }
 export interface WorldObjectEvent {objectId: string; object: WorldObject; panoId: string | null; position?: Point3D; }
 
@@ -16,7 +39,7 @@ export interface GeometryData { positions: number[]; indices?: number[]; uvs?: n
 export interface AnchorStyle { type?: 'sphere' | 'billboard' | 'sprite' | 'model'; color?: string; size?: number; opacity?: number; icon?: string; model?: GeometryData; }
 export interface Anchor3D { id: string; panoId: string; position: Point3D; rotation: Point3D; scale: number; label: string; visible: boolean; interactive: boolean; style: AnchorStyle; metadata?: JsonObject; }
 export type AnchorInput = Pick<Anchor3D, 'position'> & Partial<Omit<Anchor3D, 'position'>>;
-export interface SceneConfiguration { units?: 'scene-units' | 'meters' | 'model-units'; geometry?: (GeometryData | {source: 'dollhouse'; origin: Point3D; rotation?: Point3D}) & {render?: 'solid' | 'occlusion'; color?: string}; depthMap?: {width: number; height: number; data: number[]}; }
+export interface SceneConfiguration { units?: 'scene-units' | 'meters' | 'model-units'; geometry?: (GeometryData | {source: 'dollhouse'; origin: Point3D; rotation?: Point3D; scale?: number}) & {render?: 'solid' | 'occlusion'; color?: string}; depthMap?: {width: number; height: number; data: number[]}; }
 export interface CameraPose3D { panoId: string; position: Point3D; yaw: number; pitch: number; roll: number; fov: number; }
 export interface CameraAnimation { duration?: number; easing?: 'linear' | 'easeInOut' | 'easeOut'; }
 export interface ScreenPosition { x: number; y: number; space?: 'normalized' | 'pixels'; }
@@ -165,12 +188,39 @@ export interface PalaceSDK {
   };
   tour: {
     world: {
+      calibration: {
+        createSession(config?: CalibrationCreateConfig): Promise<CalibrationSession>;
+        getSession(sessionId: string): Promise<CalibrationSession>;
+        listSessions(): Promise<CalibrationSession[]>;
+        updateSession(sessionId: string, patch: {label?: string; cameraIds?: string[]; config?: CalibrationConfig}): Promise<CalibrationSession>;
+        removeSession(sessionId: string): Promise<boolean>;
+        addLandmark(sessionId: string, data: {id?: string; label?: string; enabled?: boolean; observations?: CalibrationObservation[]}): Promise<CalibrationLandmark>;
+        updateLandmark(sessionId: string, landmarkId: string, patch: {label?: string; enabled?: boolean; observations?: CalibrationObservation[]}): Promise<CalibrationLandmark>;
+        removeLandmark(sessionId: string, landmarkId: string): Promise<true>;
+        addObservation(sessionId: string, landmarkId: string, data: CalibrationObservation): Promise<CalibrationObservation>;
+        updateObservation(sessionId: string, landmarkId: string, panoId: string, data: Partial<Pick<CalibrationObservation, 'yaw' | 'pitch' | 'verified'>>): Promise<CalibrationObservation>;
+        removeObservation(sessionId: string, landmarkId: string, panoId: string): Promise<boolean>;
+        /** Starts a background job; completion is reported by events/status, not by this receipt. */
+        solve(sessionId: string): Promise<{sessionId: string; revision: number; status: CalibrationState; queued: true}>;
+        getStatus(sessionId: string): Promise<CalibrationStatus>;
+        getQuality(sessionId: string): Promise<CalibrationQuality | null>;
+        preview(sessionId: string, options?: {worldTransform?: {position?: Point3D; rotation?: Quaternion; scale?: number; units?: 'scene-units' | 'meters' | 'model-units'}}): Promise<CalibrationPreview>;
+        apply(sessionId: string, options?: {previewId?: string}): Promise<{sessionId: string; revision: number; applied: true; wholeWorld: boolean}>;
+        revert(sessionId: string): Promise<{sessionId: string; reverted: true}>;
+        onObservationAdded(handler: (event: CalibrationEvent) => void): TourSubscription;
+        onObservationUpdated(handler: (event: CalibrationEvent) => void): TourSubscription;
+        onCalibrationStatusChanged(handler: (event: CalibrationEvent) => void): TourSubscription;
+        onCalibrationSolved(handler: (event: CalibrationEvent) => void): TourSubscription;
+        onCalibrationApplied(handler: (event: CalibrationEvent) => void): TourSubscription;
+        onCalibrationFailed(handler: (event: CalibrationEvent) => void): TourSubscription;
+      };
+
       getCameraTransform(panoId?: string): Promise<PanoramaCamera>;
       setCameraTransform(panoId: string, input: {position?: Point3D; rotation?: Quaternion; fov?: number}): Promise<PanoramaCamera>;
       removeCameraTransform(panoId: string): Promise<boolean>;
       listCameras(): Promise<PanoramaCamera[]>;
       getInfo(): Promise<WorldInfo>;
-      configure(input: {units?: 'scene-units' | 'meters' | 'model-units'; geometry?: SceneConfiguration['geometry'] | null}): Promise<WorldInfo>;
+      configure(input: {units?: 'scene-units' | 'meters' | 'model-units'; metersPerUnit?: number | null; geometry?: SceneConfiguration['geometry'] | null}): Promise<WorldInfo>;
       localToWorld(position: Point3D, panoId?: string): Promise<Point3D>;
       worldToLocal(position: Point3D, panoId?: string): Promise<Point3D>;
       project(position: Point3D): Promise<{panoId: string; x: number; y: number; depth: number; visible: boolean; occluded: boolean}>;
@@ -299,3 +349,6 @@ export interface PalaceExtension {
   activate(api: PalaceSDK): void | Promise<void>;
   deactivate?(): void;
 }
+
+/** Same calibration contract exposed to trusted system modules through window.PalaceAPI. */
+export type PalaceCalibrationAPI = PalaceSDK['tour']['world']['calibration'];

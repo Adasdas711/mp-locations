@@ -1,6 +1,6 @@
 # PALACE SDK 1.6 — Shared World Space
 
-This extends SDK 1.5 without changing local anchor or camera coordinate semantics. Manifest `apiVersion` stays `1`; runtime `api.version` is `1.6.0`. [Type declarations](docs/addons/palace-sdk.d.ts), [local scene API](SCENE_SDK.md), [general addon guide](ADDONS_AI_GUIDE.md).
+This extends SDK 1.5 without changing local anchor or camera coordinate semantics. Manifest `apiVersion` stays `1`; runtime `api.version` is `1.7.0`. [Type declarations](docs/addons/palace-sdk.d.ts), [local scene API](SCENE_SDK.md), [general addon guide](ADDONS_AI_GUIDE.md).
 
 ## One entity, many registered panoramic cameras
 
@@ -72,7 +72,7 @@ Complete normalized WorldObject: `{id,type:'world',position,rotation,scale,label
 
 Mutations require Edit mode. Visibility/interactivity false affects rendering/picking. Clicking selects the entity, draws a 3D highlight and emits ObjectClicked. API `update` or the UI's Move selected changes its world position for all cameras. Camera transform changes never modify object coordinates. Objects survive deleting/unregistering a camera and disabling their creating addon.
 
-Limits match local SDK where appropriate: 500 world objects and 500 registered cameras; positions ±100000; positive XYZ scale `.001..100`; FOV `30..150`; metadata 16384 serialized characters; label 500 characters; style size `.01..100`, opacity `0..1`; model ≤2048 vertices; raster data URLs ≤512 KiB characters, rendered ≤512px. World record ≤8 MiB serialized characters. ID validation and finite JSON rules are unchanged.
+Limits match local SDK where appropriate: 500 world objects; camera count is variable and limited by serialized project size; positions ±100000; positive XYZ scale `.001..100`; FOV `30..150`; metadata 16384 serialized characters; label 500 characters; style size `.01..100`, opacity `0..1`; model ≤2048 vertices; raster data URLs ≤512 KiB characters, rendered ≤512px. World record ≤8 MiB serialized characters. ID validation and finite JSON rules are unchanged.
 
 ## Occlusion and calibrated geometry
 
@@ -132,3 +132,7 @@ New error codes: `CAMERA_UNREGISTERED`, `OBJECT_NOT_FOUND`, `OBJECT_EXISTS`, `IN
 [Example source](docs/addons/world-example/main.js) and [manifest](docs/addons/world-example/manifest.json) implement a command that explicitly registers three user-confirmed demo capture poses, creates **one** world sphere, watches its clicks and provides commands to view it from each registered camera. Do not use these demo transforms for an unrelated real tour.
 
 `test/world-space.cjs` verifies a three-camera world, one persistent entity, quaternion changes, camera-position changes without moving objects, real perspective/FOV, active aspect ratio, occlusion in GPU pixels, door openings, missing-depth fallback, local coexistence, pointer/touch placement and movement, archive reload, Undo/Redo, camera deletion, malformed-import safety, legacy permissions, subscription cleanup and virtual-object depth ordering without physical depth. Desktop, Android, iPhone and iPad profiles run in Chromium; these are emulations, not claims of Safari or physical device testing.
+
+## SDK 1.7: spherical spatial calibration
+
+[CALIBRATION_SDK.md](CALIBRATION_SDK.md) documents the core SfM service, public `tour.world.calibration` API and its worker-based solver. WorldInfo now reports optional `metersPerUnit`; `world.configure` accepts this conversion, and registered native geometry accepts a positive `scale`. Camera-count caps are replaced by the existing serialized-size budget.
