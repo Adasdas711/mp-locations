@@ -1,0 +1,18 @@
+{
+  "id": "example.shared-world",
+  "name": "Shared World Demo",
+  "description": "One 3D sphere viewed from three explicitly calibrated demo cameras.",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "engines": {"palace": ">=1.6.0 <2.0.0"},
+  "main": "main.js",
+  "permissions": ["project.read", "tour.read", "view.control", "ui.control", "scene.read", "scene.write", "anchors.read", "anchors.write", "camera.control"],
+  "contributes": {
+    "commands": [
+      {"id": "example.shared-world.create", "title": "Demo: create/reset one shared sphere"},
+      {"id": "example.shared-world.a", "title": "Demo: view sphere from camera A"},
+      {"id": "example.shared-world.b", "title": "Demo: view sphere from camera B"},
+      {"id": "example.shared-world.c", "title": "Demo: view sphere from camera C"}
+    ]
+  }
+}

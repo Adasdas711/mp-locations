@@ -1,7 +1,16 @@
-/** PALACE community addon SDK 1.5.0; manifest apiVersion stays 1.
+/** PALACE community addon SDK 1.6.0; manifest apiVersion stays 1.
  * Development declarations only. The running API is passed to exports.activate(api).
  * Permission, mode, size and identifier rules are in ADDONS_AI_GUIDE.md.
  */
+export interface Quaternion { x: number; y: number; z: number; w: number; }
+export interface PanoramaCamera { panoId: string; position: Point3D; rotation: Quaternion; fov: number; }
+export type WorldObjectInput = {id?: string; position: Point3D; rotation?: Quaternion; scale?: Point3D; label?: string; visible?: boolean; interactive?: boolean; style?: Omit<AnchorStyle, 'type'> & {type?: AnchorStyle['type'] | 'cube'}; metadata?: JsonObject | null};
+export interface WorldObject {id: string; type: 'world'; position: Point3D; rotation: Quaternion; scale: Point3D; label: string; visible: boolean; interactive: boolean; style: Omit<AnchorStyle, 'type' | 'color' | 'size' | 'opacity'> & {type: NonNullable<AnchorStyle['type']> | 'cube'; color: string; size: number; opacity: number}; metadata?: JsonObject;}
+export type OcclusionMode = 'none' | 'geometry' | 'depth-map';
+export interface WorldInfo { units: string; handedness: 'right'; axes: {x: string; y: string; z: string}; registered: boolean; panoId: string | null; occlusion: OcclusionMode; effectiveOcclusion: OcclusionMode; selectedObjectId: string | null; objectCount: number; cameraCount: number; }
+export interface WorldCameraEvent {panoId: string; camera: PanoramaCamera | null; active: boolean; reason: string; pose?: CameraPose3D; }
+export interface WorldObjectEvent {objectId: string; object: WorldObject; panoId: string | null; position?: Point3D; }
+
 export interface Point3D { x: number; y: number; z: number; }
 export interface GeometryData { positions: number[]; indices?: number[]; uvs?: number[]; }
 export interface AnchorStyle { type?: 'sphere' | 'billboard' | 'sprite' | 'model'; color?: string; size?: number; opacity?: number; icon?: string; model?: GeometryData; }
@@ -155,6 +164,35 @@ export interface PalaceSDK {
     set(input: {layout?: Layout; planView?: PlanView; zoom?: number}): Promise<ViewState>;
   };
   tour: {
+    world: {
+      getCameraTransform(panoId?: string): Promise<PanoramaCamera>;
+      setCameraTransform(panoId: string, input: {position?: Point3D; rotation?: Quaternion; fov?: number}): Promise<PanoramaCamera>;
+      removeCameraTransform(panoId: string): Promise<boolean>;
+      listCameras(): Promise<PanoramaCamera[]>;
+      getInfo(): Promise<WorldInfo>;
+      configure(input: {units?: 'scene-units' | 'meters' | 'model-units'; geometry?: SceneConfiguration['geometry'] | null}): Promise<WorldInfo>;
+      localToWorld(position: Point3D, panoId?: string): Promise<Point3D>;
+      worldToLocal(position: Point3D, panoId?: string): Promise<Point3D>;
+      project(position: Point3D): Promise<{panoId: string; x: number; y: number; depth: number; visible: boolean; occluded: boolean}>;
+      raycast(input: {panoId?: string; screenX?: number; screenY?: number; screenPosition?: ScreenPosition; distance?: number}): Promise<{hit: boolean; position: Point3D | null; distance: number | null; source: 'geometry' | 'depth-map' | 'reference-distance' | 'none'; synthetic: boolean; panoId: string}>;
+      objects: {
+        create(input: WorldObjectInput): Promise<WorldObject>;
+        update(id: string, patch: Partial<Omit<WorldObjectInput, 'id'>>): Promise<WorldObject>;
+        remove(id: string): Promise<boolean>;
+        get(id: string): Promise<WorldObject>;
+        list(): Promise<WorldObject[]>;
+      };
+      occlusion: {
+        getMode(): Promise<OcclusionMode>;
+        setMode(mode: OcclusionMode): Promise<OcclusionMode>;
+      };
+      onCameraChanged(handler: (event: WorldCameraEvent) => void): TourSubscription;
+      onObjectCreated(handler: (event: WorldObjectEvent) => void): TourSubscription;
+      onObjectUpdated(handler: (event: WorldObjectEvent) => void): TourSubscription;
+      onObjectRemoved(handler: (event: WorldObjectEvent) => void): TourSubscription;
+      onObjectClicked(handler: (event: WorldObjectEvent) => void): TourSubscription;
+    };
+
     anchors: {
       create(input: AnchorInput): Promise<Anchor3D>;
       update(id: string, patch: Partial<Omit<Anchor3D, 'id'>>): Promise<Anchor3D>;

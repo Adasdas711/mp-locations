@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-39d413ef7bac7024';
+const CACHE = 'palace-offline-41f27ca8a8267d29';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -57,7 +57,9 @@ const ASSETS = [
   "vendor/three-LICENSE",
   "vendor/three.min.js",
   "vendor/worker.min.js",
-  "workspace-presets.js"
+  "workspace-presets.js",
+  "world-space.js",
+  "world-ui.js"
 ];
 const assetURLs = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
 self.addEventListener('install', event => {

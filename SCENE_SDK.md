@@ -1,6 +1,6 @@
-# PALACE Addon SDK 1.5 — 3D anchors, scenes, camera and playback
+# PALACE Addon SDK 1.6 — 3D anchors, scenes, camera and playback
 
-This supplements [ADDONS_AI_GUIDE.md](ADDONS_AI_GUIDE.md). Runtime API version is `1.5.0`; manifest `apiVersion` remains the number `1`. CommonJS `exports.activate(api)` receives the SDK. All methods below return Promises except event subscription factories. Declarations: [palace-sdk.d.ts](docs/addons/palace-sdk.d.ts).
+This supplements [ADDONS_AI_GUIDE.md](ADDONS_AI_GUIDE.md). Runtime API version is `1.6.0` (the local scene contract introduced in 1.5 remains compatible); manifest `apiVersion` remains the number `1`. CommonJS `exports.activate(api)` receives the SDK. All methods below return Promises except event subscription factories. Declarations: [palace-sdk.d.ts](docs/addons/palace-sdk.d.ts).
 
 ## Permissions and compatibility
 
@@ -158,3 +158,7 @@ Declare `example.place-anchor` in `contributes.commands`. A non-synthetic placem
 All RPC methods reject with Error whose message starts with a code. The sandbox does not preserve a custom Error.code field; parse/message-match only when needed. Common codes: `PERMISSION_DENIED`, `INVALID_ARGUMENT`, `LIMIT_EXCEEDED`, `PANORAMA_NOT_FOUND`, `ANCHOR_NOT_FOUND`, `ANCHOR_EXISTS`, `INVALID_GEOMETRY`, `INVALID_DEPTH_MAP`, `INVALID_PROJECT`, `GEOMETRY_UNAVAILABLE`, `PANORAMA_NOT_READY`, `PANORAMA_TIMEOUT`, `PANORAMA_LOAD_FAILED`, `PANORAMA_CHANGED`, `PROJECT_CHANGED`, `ANIMATION_CANCELLED`, `TRANSLATION_UNSUPPORTED`, `ADDON_STOPPED`, `REVIEW_ACTIVE`, `PLAYBACK_EMPTY`, `PLAYBACK_NOT_PAUSED`, `PLAYBACK_OWNED`. Edit-mode denial uses the existing editor error. Always catch camera cancellation promises. Scene/anchor mutations resolve after validation/state update; image icon decoding and browser display remain asynchronous. Camera/readiness RPCs have a 30-second transport timeout; other RPCs retain 10 seconds. Playback start does not wait for the entire tour: monitor events/getState.
 
 Regression coverage is in `test/scene-sdk.cjs`: real renderer objects, pointer/touch interactions, stable coordinates, mutations/Undo/Redo, archive round-trip, panorama cleanup, raycasting/projection, GPU depth occlusion, translation restrictions, camera cancellation/readiness, playback pause/resume/navigation, permissions, legacy compatibility, View-mode safety and owner shutdown across desktop/mobile Chromium profiles.
+
+## SDK 1.6: shared world
+
+For explicitly registered panorama capture poses and objects shared across multiple cameras, see [WORLD_SDK.md](WORLD_SDK.md). Existing anchors, camera poses and scene projections remain panorama-local.

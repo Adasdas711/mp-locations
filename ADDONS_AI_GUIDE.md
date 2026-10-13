@@ -2,9 +2,9 @@
 
 Сверено с исходным кодом 13 октября 2026 года, коммит `3afe41ffa4c5a9c212940b7becc6919d117ea37c` репозитория `Adasdas711/mp-locations`.
 
-Репозиторий: https://github.com/Adasdas711/mp-locations. Сверка с работающим sandbox подтвердила **92 публичных метода** SDK: все они перечислены в этой документации и сопровождающих типах. Рабочий шаблон проверен в desktop и мобильном профиле Chromium: установка, панель, настройки, локусы, Undo, параллельные команды, запрет записи в View, горячая клавиша и восстановление данных после перезагрузки.
+Репозиторий: https://github.com/Adasdas711/mp-locations. Сверка с работающим sandbox подтвердила **114 публичных методов** SDK: все они перечислены в этой документации и сопровождающих типах. Рабочий шаблон проверен в desktop и мобильном профиле Chromium: установка, панель, настройки, локусы, Undo, параллельные команды, запрет записи в View, горячая клавиша и восстановление данных после перезагрузки.
 
-**Текущий SDK: `api.version === '1.5.0'`. Формат пакета: `manifest.apiVersion === 1`.** Это разные версии. `1.5.0` нельзя записывать вместо числа `1` в `apiVersion`.
+**Текущий SDK: `api.version === '1.6.0'`. Формат пакета: `manifest.apiVersion === 1`.** Это разные версии. `1.6.0` нельзя записывать вместо числа `1` в `apiVersion`.
 
 Этот файл самодостаточен: его можно целиком передать другому ИИ. Старые `ADDONS.md` и `API_GUIDE.md` описывают развитие API по версиям и местами содержат прежние названия меню. При расхождениях используйте данную сверенную справку и текущий код.
 
@@ -675,7 +675,7 @@ PALACE_TEST_FILES=addons.cjs PALACE_PROFILES=Android npm test
 
 В комплекте этой документации:
 
-- `palace-sdk.d.ts` — типы всех публичных методов SDK 1.5.0; файл для разработки, не исполняемый SDK и не источник Node.js API.
+- `palace-sdk.d.ts` — типы всех публичных методов SDK 1.6.0; файл для разработки, не исполняемый SDK и не источник Node.js API.
 - `starter/manifest.json`, `starter/main.js`, `starter/icon.svg` — рабочий минимальный аддон с панелью, кнопками, локусом, настройками, storage и горячей клавишей.
 - `starter.palace-addon` — собранный тот же пример для установки в Community plugins.
 
@@ -842,7 +842,7 @@ globe radar transparent
 | `interfaces.js` | Планы/стены, просмотр/тур, кнопки, безопасные SVG-слои, видимость инструментов |
 | `appearance.js` | Валидированные темы и наборы SVG-путей, ownership/lifecycle оформления |
 | `extension-operations.js` | Камеры/панорамы, исходный архив/meta.json и пользовательские горячие клавиши |
-| `addon-management.js` | SDK 1.5, engines, объявленные настройки/события, обновления и журнал |
+| `addon-management.js` | SDK 1.6, engines, объявленные настройки/события, обновления и журнал |
 | `ui-controls.js` | Общие стили iframe и расширенный ThemeState |
 | `system-addons.js` | Доверенные системные модули; не community SDK |
 | `history-addon.js`, `command-palette.js`, `workspace-presets.js` | Реализации трёх встроенных модулей |
@@ -853,3 +853,7 @@ globe radar transparent
 ## SDK 1.5: 3D anchors, scenes, camera and playback
 
 Полное дополнение к этому руководству: [SCENE_SDK.md](SCENE_SDK.md). Типы всех новых API включены в `docs/addons/palace-sdk.d.ts`. Пять новых permissions: `scene.read`, `scene.write`, `camera.control`, `anchors.read`, `anchors.write`. Формат manifest.apiVersion остаётся 1.
+
+## SDK 1.6: World Space
+
+Полный контракт глобальных объектов и явно зарегистрированных камер — [WORLD_SDK.md](WORLD_SDK.md). Сохранены все локальные API SDK 1.5; новый `tour.world` добавляет 22 метода, включая CRUD, преобразования координат, окклюзию и события.
