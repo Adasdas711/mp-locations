@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-a910ddbf30330c13';
+const CACHE = 'palace-offline-39d413ef7bac7024';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -24,6 +24,8 @@ const ASSETS = [
   "mobile.js",
   "persistence.js",
   "pwa.js",
+  "scene-camera.js",
+  "scene-sdk.js",
   "settings.js",
   "system-addons.js",
   "theme-picker.js",

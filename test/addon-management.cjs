@@ -15,7 +15,7 @@ for(const [name,options]of profiles)test(`${name}: addon settings, logs, compati
 });
 test('manager validates engine ranges and setting values, and keeps the host enabled on storage failure',async t=>{
  const {page}=await openSession(browser,t,profiles[0][1],{offlineCache:true});await page.locator('#toolsSettingsOpen').click();await page.locator('#addonsOpen').click();await upload(page,await pkg());await page.locator('#addonInstall').click();await page.waitForFunction(()=>addonHosts.get('test.manager')?.ready);
- assert.deepEqual(await page.evaluate(()=>['^1.3.0','~1.4.0','>=1.3.0 <2.0.0','>=99.0.0','banana'].map(addonCompatible)),[true,true,true,false,false]);
+ assert.deepEqual(await page.evaluate(()=>['^1.3.0','~1.5.0','>=1.3.0 <2.0.0','>=99.0.0','banana'].map(addonCompatible)),[true,true,true,false,false]);
  assert.equal(await page.evaluate(async()=>{const host=addonHosts.get('test.manager');try{await addonRPC(host,'settings.update',{enabled:'wrong'});return false}catch{return addonSettings(host.record).enabled===true}}),true);
  await page.evaluate(()=>{window.originalManagerStore=storeAddon;storeAddon=async()=>{throw new Error('Simulated quota error')}});await page.locator('[data-addon="test.manager"] [data-action=toggle]').click();await page.locator('#addonStatus').filter({hasText:'Simulated quota error'}).waitFor();assert.equal(await page.evaluate(()=>addonPackages.get('test.manager').enabled&&addonHosts.get('test.manager').ready),true);await page.evaluate(()=>storeAddon=originalManagerStore);
 });

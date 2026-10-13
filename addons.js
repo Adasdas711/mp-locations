@@ -36,7 +36,7 @@ function validateAddon(manifest,files){
  if(!/^\d+\.\d+\.\d+$/.test(manifest.version||''))throw new Error("Specify version in the 1.0.0 format.");
  if(manifest.apiVersion!==1)throw new Error("Supported apiVersion: 1.");
  if(!safeAddonPath(manifest.main)||!manifest.main.endsWith('.js')||typeof files[manifest.main]!=='string')throw new Error("Main JavaScript file not found.");
- if(!Array.isArray(manifest.permissions)||manifest.permissions.some(p=>!['project.read','markers.write','metadata.write','plan.read','plan.write','tour.read','tour.write','view.control','ui.control','ui.contribute','archive.read','archive.write','keybindings.write'].includes(p)))throw new Error("Unknown permission.");
+ if(!Array.isArray(manifest.permissions)||manifest.permissions.some(p=>!['project.read','markers.write','metadata.write','plan.read','plan.write','tour.read','tour.write','view.control','ui.control','ui.contribute','archive.read','archive.write','keybindings.write','scene.read','scene.write','camera.control','anchors.read','anchors.write'].includes(p)))throw new Error("Unknown permission.");
  const c=manifest.contributes||{},commands=c.commands||[],panels=c.panels||[],activity=c.activityBar||[],toolbars=c.toolbars||[];
  if([commands,panels,activity,toolbars].some(items=>!Array.isArray(items))||commands.length+panels.length+activity.length+toolbars.length>60)throw new Error("A maximum of 60 interface contributions is allowed.");
  const ids=new Set();

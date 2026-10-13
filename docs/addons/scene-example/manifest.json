@@ -1,0 +1,28 @@
+{
+  "id": "example.scene",
+  "name": "3D Anchor Example",
+  "version": "1.0.0",
+  "description": "Create a persistent 3D locus and play a panorama tour.",
+  "apiVersion": 1,
+  "engines": {
+    "palace": ">=1.5.0 <2.0.0"
+  },
+  "main": "main.js",
+  "permissions": [
+    "tour.read",
+    "view.control",
+    "ui.control",
+    "scene.read",
+    "anchors.read",
+    "anchors.write",
+    "camera.control"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "example.place-anchor",
+        "title": "Create 3D anchor and play tour"
+      }
+    ]
+  }
+}

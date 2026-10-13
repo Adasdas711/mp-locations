@@ -1,7 +1,24 @@
-/** PALACE community addon SDK 1.4.0; manifest apiVersion stays 1.
+/** PALACE community addon SDK 1.5.0; manifest apiVersion stays 1.
  * Development declarations only. The running API is passed to exports.activate(api).
  * Permission, mode, size and identifier rules are in ADDONS_AI_GUIDE.md.
  */
+export interface Point3D { x: number; y: number; z: number; }
+export interface GeometryData { positions: number[]; indices?: number[]; uvs?: number[]; }
+export interface AnchorStyle { type?: 'sphere' | 'billboard' | 'sprite' | 'model'; color?: string; size?: number; opacity?: number; icon?: string; model?: GeometryData; }
+export interface Anchor3D { id: string; panoId: string; position: Point3D; rotation: Point3D; scale: number; label: string; visible: boolean; interactive: boolean; style: AnchorStyle; metadata?: JsonObject; }
+export type AnchorInput = Pick<Anchor3D, 'position'> & Partial<Omit<Anchor3D, 'position'>>;
+export interface SceneConfiguration { units?: 'scene-units' | 'meters' | 'model-units'; geometry?: (GeometryData | {source: 'dollhouse'; origin: Point3D; rotation?: Point3D}) & {render?: 'solid' | 'occlusion'; color?: string}; depthMap?: {width: number; height: number; data: number[]}; }
+export interface CameraPose3D { panoId: string; position: Point3D; yaw: number; pitch: number; roll: number; fov: number; }
+export interface CameraAnimation { duration?: number; easing?: 'linear' | 'easeInOut' | 'easeOut'; }
+export interface ScreenPosition { x: number; y: number; space?: 'normalized' | 'pixels'; }
+export interface SceneInfo { panoId: string; type: 'panorama' | '3d'; coordinateSystem: {units: string; [key: string]: unknown}; hasGeometry: boolean; hasDepthMap: boolean; unregisteredDollhouseAvailable: boolean; capabilities: {anchors: boolean; raycast: boolean; syntheticDistancePlacement: boolean; translation: boolean; occlusion: boolean; styles: string[]}; camera: CameraPose3D; [key: string]: unknown; }
+export interface PanoramaReady { panoId: string; ready: boolean; hasImage: boolean; scene: SceneInfo; }
+export interface RayHit { panoId: string; position: Point3D; distance: number; synthetic: boolean; source: string; anchorId?: string | null; }
+export interface PlaybackStop { panoId: string; anchorId?: string; duration?: number; hold?: number; easing?: CameraAnimation['easing']; pose?: Partial<Pick<CameraPose3D, 'yaw' | 'pitch' | 'roll' | 'fov'>>; }
+export interface PlaybackState { status: 'idle' | 'playing' | 'paused' | 'stopped' | 'completed' | 'error'; index: number; phase: string; stops: PlaybackStop[]; loop: boolean; error: string | null; [key: string]: unknown; }
+export interface TourSubscription extends Disposable { ready: Promise<{id: string; event: string}>; }
+export interface AnchorEvent { panoId: string; anchorId: string; anchor: Anchor3D; [key: string]: unknown; }
+
 export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject;
 export interface JsonObject { [key: string]: JsonValue; }
 export interface Disposable { dispose(): void; }
@@ -15,7 +32,8 @@ export type Permission =
   | 'project.read' | 'metadata.write' | 'markers.write'
   | 'plan.read' | 'plan.write' | 'tour.read' | 'tour.write'
   | 'view.control' | 'ui.control' | 'ui.contribute'
-  | 'archive.read' | 'archive.write' | 'keybindings.write';
+  | 'archive.read' | 'archive.write' | 'keybindings.write'
+  | 'scene.read' | 'scene.write' | 'camera.control' | 'anchors.read' | 'anchors.write';
 
 export interface Contribution { id: string; title: string; }
 export interface ActivityContribution extends Contribution { command: string; icon?: string; }
@@ -137,6 +155,46 @@ export interface PalaceSDK {
     set(input: {layout?: Layout; planView?: PlanView; zoom?: number}): Promise<ViewState>;
   };
   tour: {
+    anchors: {
+      create(input: AnchorInput): Promise<Anchor3D>;
+      update(id: string, patch: Partial<Omit<Anchor3D, 'id'>>): Promise<Anchor3D>;
+      remove(id: string): Promise<boolean>;
+      get(id: string): Promise<Anchor3D>;
+      list(panoId?: string): Promise<Anchor3D[]>;
+      clear(panoId: string): Promise<number>;
+    };
+    scene: {
+      getInfo(panoId?: string): Promise<SceneInfo>;
+      configure(panoId: string, input: SceneConfiguration | null): Promise<SceneInfo>;
+      raycast(input: {screenPosition?: ScreenPosition; origin?: Point3D; direction?: Point3D; distance?: number; includeAnchors?: boolean}): Promise<RayHit | null>;
+      project(position: Point3D): Promise<{x: number; y: number; depth: number; visible: boolean; occluded: boolean; panoId: string}>;
+      unproject(screenPosition: ScreenPosition, depth: number): Promise<Point3D>;
+    };
+    camera: {
+      getPose(): Promise<CameraPose3D>;
+      setPose(input: Partial<Omit<CameraPose3D, 'panoId'>> & CameraAnimation): Promise<CameraPose3D>;
+      lookAt(target: Point3D, options?: CameraAnimation): Promise<CameraPose3D>;
+      moveTo(target: {panoId?: string; anchorId?: string; position?: Point3D; pose?: Partial<CameraPose3D>} | Point3D, options?: CameraAnimation): Promise<{pose: CameraPose3D; mode: string; translated: boolean}>;
+      focusAnchor(anchorId: string, options?: CameraAnimation): Promise<CameraPose3D>;
+      stopAnimation(): Promise<boolean>;
+    };
+    playback: {
+      start(config: {stops: PlaybackStop[]; loop?: boolean}): Promise<PlaybackState>;
+      pause(): Promise<PlaybackState>;
+      resume(): Promise<PlaybackState>;
+      stop(): Promise<PlaybackState>;
+      next(): Promise<PlaybackState>;
+      previous(): Promise<PlaybackState>;
+      getState(): Promise<PlaybackState>;
+    };
+    waitForPanoramaReady(panoId?: string, options?: {timeout?: number}): Promise<PanoramaReady>;
+    onCameraChanged(handler: (pose: CameraPose3D) => void): TourSubscription;
+    onPanoramaReady(handler: (event: PanoramaReady) => void): TourSubscription;
+    onAnchorClick(handler: (event: AnchorEvent) => void): TourSubscription;
+    onAnchorHover(handler: (event: Omit<AnchorEvent, 'anchor'> & {anchor?: Anchor3D; hovered: boolean}) => void): TourSubscription;
+    onAnchorMoved(handler: (event: AnchorEvent) => void): TourSubscription;
+    onPlaybackChanged(handler: (event: PlaybackState) => void): TourSubscription;
+
     add(input: {id?: string; level?: number; room?: string; planPx?: Point; src?: string}): Promise<{id: string}>;
     remove(id: string): Promise<true>;
     loadPanorama(input: {id: string; src: string}): Promise<{id: string}>;
