@@ -1,6 +1,6 @@
 # Регрессия PALACE
 
-`npm test` запускает локальный сервер на свободном порту, все сценарии из `test/`, затем закрывает сервер и браузеры. Данные пользователя не используются. Каждый сценарий получает отдельный браузерный контекст. Параллелизм ограничен двумя файлами, чтобы 3D и OCR не перегружали машину.
+`npm test` запускает локальный сервер на свободном порту, все сценарии из `test/`, затем закрывает сервер и браузеры. По умолчанию используются синтетические фикстуры. Реальные пользовательские архивы проверяются отдельно при явно заданном `PALACE_REAL_ARCHIVES_DIR`. Каждый сценарий получает отдельный браузерный контекст. Параллелизм ограничен двумя файлами, чтобы 3D и OCR не перегружали машину.
 
 ```sh
 npm ci
@@ -91,3 +91,13 @@ PALACE_TEST_FILES=addons.cjs npm test
 `audit-regression.cjs` covers bugs reproduced in the comprehensive audit: palette shortcuts during text entry and metadata editing, shortcut ownership after re-enabling a system addon, failed plugin writes, concurrent settings/storage RPCs from an isolated plugin host and persistence after reload, retrying a failed 3D engine download, and cancelling pending plan additions/merges when another palace opens. These cases run on desktop, Android, iPhone and iPad; shortcut ownership also has a dedicated case.
 
 Plugin reload tests allow service workers. Playwright's `serviceWorkers: 'block'` injects a script that reads `navigator.serviceWorker` in every frame, which throws in opaque sandboxed plugin frames. The production sandbox keeps `allow-same-origin` disabled; tests continue asserting that the application has no uncaught JavaScript errors.
+
+## Реальные архивы калибровки
+
+```sh
+PALACE_TEST_FILES=calibration-real-archives.cjs PALACE_REAL_ARCHIVES_DIR=/path/to/private/files npm test
+```
+
+`calibration-real-archives.cjs` рекурсивно открывает `.3dview` из указанной папки на desktop, Android, iPhone и iPad. Проверяет внешнюю кнопку запуска, два видимых окна, исключение камер без изображений, уникальные названия, соседнюю стартовую пару, быстрые клики при задержке сохранения, подтверждение наблюдений, изменение FOV без изменения измерений, сохранность источников активных текстур при многократной смене камер, состояние после закрытия/открытия и сериализацию. На desktop декодируются все панорамы каждого архива. Изображения не хранятся в репозитории; без папки этот отдельный тест помечается skipped. Эти проверки не оценивают точность произвольных ручных соответствий на фотографиях: точность регистрации проверяют математические тесты с эталонными позами.
+
+Регрессия независимых групп проверяет дом и улицу без общих ориентиров: достаточная группа решается без остальных камер, «No overlap» сохраняет предыдущую группу, несвязанная группа не получает выдуманную привязку к общему миру, переключение групп сохраняет пары и выбранные точки.

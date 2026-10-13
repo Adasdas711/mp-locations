@@ -50,7 +50,7 @@ for(const [label,options] of [['desktop',{viewport:{width:1280,height:800}}],['m
     const page=await session(t,options);
     assert.equal(await page.locator('header #abUploadMenu').count(),0);
     await page.locator('#abPlan').click();
-    assert.deepEqual(await page.locator('#planTools [data-tool]').evaluateAll(tools=>tools.map(tool=>tool.dataset.tool)),['select','marker','camera','calibration']);
+    assert.deepEqual(await page.locator('#planTools [data-tool]').evaluateAll(tools=>tools.map(tool=>tool.dataset.tool)),['select','marker','camera']);
     for(const tool of await page.locator('#planTools [data-tool]').all())assert.equal(await tool.isVisible(),true);
     await page.locator('#modeBtn').click();
     assert.equal(await page.evaluate(()=>state.mode),'view');

@@ -235,4 +235,4 @@ exports.activate = async api => {
 
 Built-in system addons are a separate, trusted application module with `registerSystemAddon({id, title, description, activate, deactivate})` lifecycle hooks. They appear under **Core plugins** and are independent of the community modular-mode switch. The bundled `system.history` addon records local project versions; community packages retain their isolated sandbox and cannot register native system addons.
 
-The bundled `system.panorama-calibration` addon is enabled by default and opens paired panorama matching from the tool immediately below Camera editor. It uses the public calibration core API and retains sessions when disabled. See [Panorama calibration](PANORAMA_CALIBRATION.md) for workflow, lifecycle, persistence and renderer integration.
+The bundled `system.panorama-calibration` addon is enabled by default and opens paired panorama matching from the crosshair button below 3D tour in the far-left activity sidebar. It uses the public calibration core API and retains sessions when disabled. See [Panorama calibration](PANORAMA_CALIBRATION.md) for workflow, lifecycle, persistence and renderer integration.
