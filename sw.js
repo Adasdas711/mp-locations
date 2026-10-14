@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-27ca54723a8866d8';
+const CACHE = 'palace-offline-c2f0ad09086ce526';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -12,6 +12,7 @@ const ASSETS = [
   "appearance.js",
   "calibration-addon.js",
   "calibration-core.js",
+  "calibration-features.js",
   "calibration-math.js",
   "calibration-preview.js",
   "calibration-worker.js",

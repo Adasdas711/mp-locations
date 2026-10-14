@@ -17,6 +17,9 @@ const calibrationUI = {
   preview: null,
   spatial: null,
   previousView: null,
+  suggestions: null,
+  suggestionTimer: null,
+  lastGuidedMatch: null,
 };
 function calibrationUIBlank() {
   return {
@@ -283,7 +286,7 @@ calibrationHint.className = "calibration-hint";
 calibrationHint.append(document.querySelector("#calibrationMessage"));
 calibrationHeader.after(calibrationHint);
 calibrationWorkspace.querySelector(".calibration-caption").textContent =
-  "Click the same visible landmark on both sides · matching confirms visibility";
+  "Reference points are suggested automatically · match the yellow detail on the right";
 calibrationWorkspace
   .querySelector(".calibration-summary")
   .after(document.querySelector(".calibration-navigation"));
@@ -299,6 +302,41 @@ calibrationWorkspace.querySelector(
   "#calibrationVisibility",
 ).parentNode.lastChild.textContent = "Visible in both";
 document.querySelector("#calibrationAddLink").textContent = "Match point";
+document.querySelector("#calibrationAddLink").hidden = true;
+document.querySelector("#calibrationNewPoint").textContent = "Manual point";
+const calibrationSuggest = document.createElement("button");
+calibrationSuggest.id = "calibrationSuggest";
+calibrationSuggest.type = "button";
+calibrationSuggest.className = "primary";
+calibrationSuggest.textContent = "Find points";
+calibrationSuggest.title =
+  "Suggest distinctive corners in the current reference view.";
+document.querySelector("#calibrationNewPoint").before(calibrationSuggest);
+const calibrationSkip = document.createElement("button");
+calibrationSkip.id = "calibrationSkip";
+calibrationSkip.type = "button";
+calibrationSkip.textContent = "Skip point";
+calibrationSkip.hidden = true;
+calibrationSuggest.after(calibrationSkip);
+const calibrationAutoStatus = document.createElement("span");
+calibrationAutoStatus.id = "calibrationAutoStatus";
+calibrationAutoStatus.setAttribute("role", "status");
+calibrationWorkspace
+  .querySelector(".calibration-summary")
+  .prepend(calibrationAutoStatus);
+const calibrationSuggestionLayer = document.createElement("div");
+calibrationSuggestionLayer.className = "calibration-suggestions";
+calibrationWorkspace
+  .querySelector(".calibration-pane[data-side=left] .calibration-viewport")
+  .append(calibrationSuggestionLayer);
+calibrationUIStyle.textContent += `
+.calibration-suggestions{position:absolute;inset:0;pointer-events:none;z-index:4}
+#calibrationWorkspace .calibration-proposal{position:absolute;transform:translate(-50%,-50%);width:24px;height:24px;min-height:0;padding:0;border:2px solid #78d8ff;border-radius:50%;background:transparent;color:#78d8ff;pointer-events:auto;touch-action:manipulation;box-shadow:0 0 0 1px #1119}
+#calibrationWorkspace .calibration-proposal[aria-pressed=true]{border-color:#ffd43b;color:#ffd43b;box-shadow:0 0 0 3px #ffd43b55}
+.calibration-proposal span{position:absolute;bottom:20px;left:14px;padding:1px 4px;border-radius:4px;background:#121212dd;font-size:11px;white-space:nowrap}
+.calibration-proposal::after{content:'';position:absolute;left:9px;top:9px;width:2px;height:2px;background:currentColor;box-shadow:0 0 2px #000}
+#calibrationAutoStatus{color:var(--text);font-size:11px}
+`;
 document.querySelector("#calibrationNewSession").textContent = "New group";
 calibrationSessionControls.querySelector("label").firstChild.textContent =
   "Calibration group";
@@ -309,6 +347,17 @@ calibrationNoOverlap.textContent = "No overlap";
 calibrationNoOverlap.title =
   "Skip this pair and start a separate calibration group. No camera connection is invented.";
 document.querySelector("#calibrationAddLink").after(calibrationNoOverlap);
+const calibrationMatchActions = document.createElement("div");
+calibrationMatchActions.className = "calibration-match-actions";
+calibrationSuggest.before(calibrationMatchActions);
+calibrationMatchActions.append(
+  calibrationSuggest,
+  calibrationSkip,
+  document.querySelector("#calibrationNewPoint"),
+  document.querySelector("#calibrationAddLink"),
+  calibrationNoOverlap,
+);
+calibrationUIStyle.textContent += `.calibration-match-actions{display:flex;gap:6px;align-items:center;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}.calibration-match-actions button{flex:none;white-space:nowrap}html.phone #calibrationWorkspace .calibration-match-actions{width:100%}html.phone #calibrationWorkspace .calibration-summary{flex-wrap:nowrap}html.phone #calibrationAutoStatus{flex:none}html.phone #calibrationStatus{min-width:0}`;
 const calibrationScope = document.createElement("button");
 calibrationScope.id = "calibrationScope";
 calibrationScope.type = "button";
@@ -384,24 +433,271 @@ function calibrationUIUpdateGuide() {
       hasObservation = point?.observations.some(
         (o) => o.panoId === saved[side],
       );
+    const suggested = calibrationUI.suggestions?.points?.length;
     pane.dataset.awaiting = String(
-      side === "left" ? !point : !!point && !hasObservation,
+      side === "left"
+        ? !point && !suggested
+        : suggested || (!!point && !hasObservation),
     );
     pane.querySelector(".calibration-step").textContent =
-      side === "left" ? "1 · Reference" : "2 · Match";
+      side === "left"
+        ? suggested
+          ? "1 · Suggested point"
+          : "1 · Reference"
+        : "2 · Tap the same detail";
   }
 }
 function calibrationUIMessage(message) {
   document.querySelector("#calibrationMessage").textContent =
     message ||
-    "Drag to look around. Click a landmark on the left, then the same landmark on the right.";
+    "The app suggests reference points. Tap the same highlighted detail on the right, or skip a point you cannot see.";
   calibrationUIUpdateGuide();
+  calibrationUIRenderSuggestions();
 }
+function calibrationUIPairMatches() {
+  const saved = calibrationUIState();
+  return (calibrationUI.session?.landmarks || []).filter(
+    (p) =>
+      p.enabled &&
+      [saved.left, saved.right].every((id) =>
+        p.observations.some((o) => o.panoId === id),
+      ),
+  );
+}
+function calibrationUICurrentSuggestion() {
+  const auto = calibrationUI.suggestions;
+  return (
+    auto?.points.find((p) => p.id === auto.selected) || auto?.points[0] || null
+  );
+}
+function calibrationUIResetSuggestions(disabled = false) {
+  clearTimeout(calibrationUI.suggestionTimer);
+  calibrationUI.suggestions?.job?.cancel();
+  const saved = calibrationUIState();
+  calibrationUI.suggestions = {
+    key: [
+      calibrationUI.generation,
+      saved.sessionId,
+      saved.left,
+      saved.right,
+    ].join("|"),
+    points: [],
+    reserve: [],
+    selected: null,
+    disabled,
+    attempted: false,
+    detecting: false,
+  };
+  calibrationSuggestionLayer.replaceChildren();
+}
+function calibrationUIRenderSuggestions() {
+  const auto = calibrationUI.suggestions,
+    current = calibrationUICurrentSuggestion(),
+    view = calibrationUI.views.left;
+  const buttons = new Map(
+      [...calibrationSuggestionLayer.children].map((b) => [
+        b.dataset.suggestion,
+        b,
+      ]),
+    ),
+    wanted = new Set();
+  const count = calibrationUIPairMatches().length,
+    target = calibrationUI.session?.config.minCorrespondences || 4;
+  calibrationAutoStatus.textContent = auto?.detecting
+    ? "Finding reference details…"
+    : current
+      ? `Match ${count + 1} of ${target} · yellow point on the left`
+      : "";
+  calibrationSkip.hidden = !current;
+  calibrationSkip.disabled = calibrationUI.busy;
+  calibrationSuggest.disabled =
+    !calibrationUI.open ||
+    calibrationUI.busy ||
+    !view?.texture ||
+    view.readyId !== calibrationUIState().left ||
+    !!auto?.detecting;
+  for (const [index, p] of (auto?.points || []).entries()) {
+    const location = view?.projectBearing(p);
+    if (!location?.visible) continue;
+    wanted.add(p.id);
+    let button = buttons.get(p.id);
+    if (!button) {
+      button = document.createElement("button");
+      button.type = "button";
+      button.className = "calibration-proposal";
+      button.dataset.suggestion = p.id;
+      button.innerHTML = "<span></span>";
+      button.onpointerdown = (e) => e.stopPropagation();
+      button.onclick = (e) => {
+        e.stopPropagation();
+        auto.selected = p.id;
+        calibrationUIState().selected = null;
+        calibrationUIRenderSuggestions();
+        calibrationUIUpdateGuide();
+      };
+      calibrationSuggestionLayer.append(button);
+    }
+    button.setAttribute("aria-pressed", String(p.id === current?.id));
+    button.setAttribute(
+      "aria-label",
+      `Suggested reference point ${count + index + 1}`,
+    );
+    button.title = "Find this exact detail in the connecting panorama";
+    button.firstChild.textContent = String(count + index + 1);
+    button.style.left = location.x * 100 + "%";
+    button.style.top = location.y * 100 + "%";
+  }
+  for (const b of calibrationSuggestionLayer.children)
+    if (!wanted.has(b.dataset.suggestion)) b.remove();
+}
+function calibrationUIRefreshSuggestions() {
+  const saved = calibrationUIState(),
+    key = [
+      calibrationUI.generation,
+      saved.sessionId,
+      saved.left,
+      saved.right,
+    ].join("|");
+  if (calibrationUI.suggestions?.key !== key) {
+    const selected = calibrationUI.session?.landmarks.find(
+      (p) => p.id === saved.selected,
+    );
+    // A/B → B/C can carry a manually selected landmark for a third observation.
+    // Do not replace that explicit selection with a new suggestion batch.
+    calibrationUIResetSuggestions(
+      !!selected?.observations.some((o) => o.panoId === saved.left),
+    );
+  }
+  const auto = calibrationUI.suggestions,
+    target = calibrationUI.session?.config.minCorrespondences || 4;
+  if (calibrationUIPairMatches().length >= target) {
+    auto.job?.cancel();
+    auto.points = [];
+    auto.reserve = [];
+    auto.disabled = true;
+  }
+  if (
+    !auto.disabled &&
+    !auto.attempted &&
+    calibrationUI.session &&
+    saved.right &&
+    ["left", "right"].every(
+      (side) =>
+        calibrationUI.views[side]?.readyId === saved[side] &&
+        calibrationUI.views[side]?.texture,
+    )
+  ) {
+    auto.attempted = true;
+    calibrationUI.suggestionTimer = setTimeout(
+      () => calibrationUIFindPoints(auto),
+      120,
+    );
+  }
+  calibrationUIRenderSuggestions();
+}
+async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
+  if (
+    !calibrationUI.open ||
+    auto !== calibrationUI.suggestions ||
+    auto.disabled
+  )
+    return;
+  auto.detecting = true;
+  calibrationUIRenderSuggestions();
+  try {
+    const sample = calibrationUI.views.left.sampleImage();
+    auto.job = PalaceCalibrationFeatures.start({
+      width: sample.width,
+      height: sample.height,
+      pixels: sample.pixels,
+      count: 24,
+    });
+    const features = await auto.job.promise;
+    if (
+      !calibrationUI.open ||
+      auto !== calibrationUI.suggestions ||
+      auto.disabled
+    )
+      return;
+    const used = (calibrationUI.session?.landmarks || []).flatMap((p) =>
+      p.observations.filter((o) => o.panoId === calibrationUIState().left),
+    );
+    const candidates = features
+      .map((point, index) => ({
+        ...sample.bearingAt(point.x, point.y),
+        id: auto.key + ":" + index,
+      }))
+      .filter((p) =>
+        used.every((o) => {
+          const a = PalaceCalibrationMath.ray(p.yaw, p.pitch),
+            b = PalaceCalibrationMath.ray(o.yaw, o.pitch);
+          return (
+            a.reduce((sum, v, i) => sum + v * b[i], 0) <
+            Math.cos((4 * Math.PI) / 180)
+          );
+        }),
+      );
+    const remaining = Math.max(
+      1,
+      (calibrationUI.session?.config.minCorrespondences || 4) -
+        calibrationUIPairMatches().length,
+    );
+    auto.points = candidates.slice(0, remaining);
+    auto.reserve = candidates.slice(remaining);
+    auto.selected = auto.points[0]?.id || null;
+    calibrationUI.placingNew = false;
+    calibrationUIState().selected = null;
+    calibrationUIMessage(
+      auto.points.length
+        ? "Match the yellow detail on the right. The next reference point is selected automatically. Skip anything not visible in both."
+        : "No distinctive corners in this view. Rotate the left panorama and use Find points, or choose a Manual point.",
+    );
+  } catch (error) {
+    if (
+      calibrationUI.open &&
+      auto === calibrationUI.suggestions &&
+      !auto.disabled
+    )
+      calibrationUIMessage(
+        error.message + " Use Manual point or try another view.",
+      );
+  } finally {
+    if (auto === calibrationUI.suggestions) {
+      auto.job = null;
+      auto.detecting = false;
+      calibrationUIRenderSuggestions();
+      calibrationUIUpdateGuide();
+    }
+  }
+}
+calibrationSuggest.onclick = () => {
+  if (calibrationUI.busy) return;
+  calibrationUIResetSuggestions();
+  const auto = calibrationUI.suggestions;
+  auto.attempted = true;
+  calibrationUIFindPoints(auto);
+};
+calibrationSkip.onclick = () => {
+  if (calibrationUI.busy) return;
+  const auto = calibrationUI.suggestions,
+    current = calibrationUICurrentSuggestion();
+  if (!current) return;
+  const index = auto.points.indexOf(current),
+    next = auto.reserve.shift();
+  auto.points.splice(index, 1, ...(next ? [next] : []));
+  auto.selected = auto.points[index]?.id || auto.points[0]?.id || null;
+  calibrationUIMessage(
+    auto.points.length
+      ? "Point skipped. Match the newly highlighted reference detail on the right."
+      : "No more suggestions in this view. Rotate the reference panorama and use Find points.",
+  );
+};
 async function calibrationUIAction(action) {
   const generation = calibrationUI.generation;
   const operation = calibrationUI.actionTail.then(async () => {
     if (!calibrationUI.open || generation !== calibrationUI.generation) return;
     calibrationUI.busy = true;
+    calibrationUIRenderSuggestions();
     const before = calibrationUI.session
       ? {
           id: calibrationUI.session.id,
@@ -429,6 +725,7 @@ async function calibrationUIAction(action) {
       }
     } finally {
       calibrationUI.busy = false;
+      calibrationUIRenderSuggestions();
     }
   });
   calibrationUI.actionTail = operation.catch(() => {});
@@ -520,6 +817,7 @@ async function calibrationUIRefresh() {
   calibrationUIRenderPoints();
   calibrationUIRenderCameras();
   calibrationUIUpdateGuide();
+  calibrationUIRefreshSuggestions();
 }
 function calibrationUIGroupPlacementReady(session) {
   if (!session?.solution) return false;
@@ -661,8 +959,9 @@ function calibrationUIRenderMarkers(side) {
   const placing =
     side === "left"
       ? calibrationUI.placingNew
-      : !!selected?.observations.some((o) => o.panoId === saved.left) &&
-        !selected.observations.some((o) => o.panoId === saved.right);
+      : !!calibrationUICurrentSuggestion() ||
+        (!!selected?.observations.some((o) => o.panoId === saved.left) &&
+          !selected.observations.some((o) => o.panoId === saved.right));
   layer.dataset.placeNew = String(placing);
   const buttons = new Map(
     [...layer.children].map((button) => [button.dataset.landmark, button]),
@@ -686,10 +985,19 @@ function calibrationUIRenderMarkers(side) {
         "aria-label",
         side + " control point " + (ordinal + 1),
       );
-      button.onpointerdown = (event) =>
+      button.onpointerdown = (event) => {
+        calibrationUI.lastGuidedMatch = null;
         calibrationUIDragStart(event, side, landmark.id);
+      };
       button.onclick = (event) => {
         event.stopPropagation();
+        // A delayed touch compatibility click can target the marker inserted
+        // under the finger after pointerup; it is not a new point selection.
+        if (
+          calibrationUI.lastGuidedMatch?.id === landmark.id &&
+          performance.now() < calibrationUI.lastGuidedMatch.until
+        )
+          return;
         calibrationUISelectPoint(landmark.id);
       };
       layer.append(button);
@@ -716,6 +1024,7 @@ function calibrationUIRenderMarkers(side) {
     if (!wanted.has(button.dataset.landmark)) button.remove();
 }
 function calibrationUISelectPoint(id) {
+  calibrationUIResetSuggestions(true);
   calibrationUI.placingNew = false;
   const saved = calibrationUIState();
   saved.selected = id;
@@ -871,6 +1180,39 @@ async function calibrationUIPlace(side, x, y, captured) {
   const angles = captured?.angles || view.bearingAt(x, y),
     api = calibrationUIAPI(),
     landmark = session.landmarks.find((l) => l.id === saved.selected);
+  if (side === "left") calibrationUIResetSuggestions(true);
+  if (side === "right" && captured?.suggestionId) {
+    const auto = calibrationUI.suggestions,
+      point = auto?.points.find((p) => p.id === captured.suggestionId);
+    if (!point) return;
+    const match = await api.addLandmark(session.id, {
+      label: "Suggested detail " + (calibrationUIPairMatches().length + 1),
+      observations: [
+        {
+          panoId: saved.left,
+          yaw: point.yaw,
+          pitch: point.pitch,
+          verified: true,
+        },
+        { panoId: saved.right, ...angles, verified: true },
+      ],
+    });
+    calibrationUI.lastGuidedMatch = {
+      id: match.id,
+      until: performance.now() + 600,
+    };
+    auto.points.splice(auto.points.indexOf(point), 1);
+    auto.selected = auto.points[0]?.id || null;
+    saved.selected = null;
+    saved.visibleConfirmed = true;
+    calibrationUIMessage(
+      auto.points.length
+        ? "Match saved. Tap the next highlighted reference detail on the right."
+        : "Suggested matches saved. Check the calibration status below.",
+    );
+    calibrationUISave();
+    return;
+  }
   if (
     side === "left" &&
     (!landmark || landmark.observations.some((o) => o.panoId === saved.left))
@@ -1061,6 +1403,7 @@ async function openPanoramaCalibration() {
       onFrame: (view) => {
         if (!calibrationUI.open) return;
         calibrationUIRenderMarkers(side);
+        if (side === "left") calibrationUIRenderSuggestions();
         document.querySelector("#calibration-" + side + "-fov").value =
           view.fov;
         const ui = calibrationUIState();
@@ -1077,6 +1420,7 @@ async function openPanoramaCalibration() {
           calibrationUIUpdateGuide();
           calibrationUIWorldOverlay(side);
           calibrationUIRenderMarkers(side);
+          calibrationUIQueueRefresh();
         }
       },
       onError: (message) => {
@@ -1111,6 +1455,8 @@ async function openPanoramaCalibration() {
         const captured = {
           panoId: current.panoId,
           sessionId: calibrationUIState().sessionId,
+          suggestionId:
+            side === "right" ? calibrationUICurrentSuggestion()?.id : null,
           angles:
             view.readyId === current.panoId
               ? view.bearingAt(e.clientX, e.clientY)
@@ -1202,6 +1548,7 @@ async function openPanoramaCalibration() {
 function closePanoramaCalibration({ restore = true } = {}) {
   if (!calibrationUI.open) return;
   calibrationUICapture();
+  calibrationUIResetSuggestions(true);
   calibrationUI.open = false;
   ++calibrationUI.generation;
   clearTimeout(calibrationUI.refreshTimer);
@@ -1291,6 +1638,7 @@ document.querySelector("#calibrationBack").onclick = () =>
       });
   });
 document.querySelector("#calibrationNewPoint").onclick = () => {
+  calibrationUIResetSuggestions(true);
   calibrationUI.placingNew = true;
   calibrationUIState().selected = null;
   calibrationUIState().visibleConfirmed = false;

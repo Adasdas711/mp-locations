@@ -5,8 +5,8 @@ The **Panorama calibration** crosshair button sits below **3D tour** in the far-
 ## Match a physical point
 
 1. Open an imported project in **Edit** mode. Select the reference panorama on the left and the connecting panorama on the right. Cameras without imported images are omitted. Options have unique numbered labels in archive order; the default pair uses a tour connection when available.
-2. Click a directly visible landmark on the left to create a numbered control point. Alternatively, select an existing numbered marker or choose it under **Points & settings**.
-3. Click the same physical location on the right. This adds an observation to the **same landmark ID**.
+2. PALACE automatically proposes distinctive image corners in the current reference view. The yellow marker is the active suggestion; cyan markers show the remaining suggestions. In the default level-horizon mode, collect four matches. Click the same physical detail on the right; the next reference point is selected automatically. You do not need to place points on the left.
+3. Use **Skip point** if the detail is hidden, unclear or absent in the other panorama. Skipping does not create an observation. Rotate or zoom the reference view and choose **Find points** to get a new batch. On blank or textureless images PALACE reports that no distinctive corners were found; it never substitutes arbitrary positions. **Manual point** retains the previous workflow, and existing numbered markers can still be selected or dragged for corrections.
 4. Placing the same visible feature on the right confirms both observations. The caption states this confirmation; **Visible in both** can revoke or reconfirm the selected match. The optional **Nearby point with clear parallax** confirmation reminds you to choose useful geometry. Observations can be saved without either confirmation.
 5. Choose **Next panorama** whenever you want. A/B becomes B/C; the selected point is retained if it is observed on B. Match that point in C or create another one. Navigation has no per-pair point quota or predetermined camera count.
 
@@ -49,7 +49,7 @@ Progress separately counts panoramas with observations, registered **candidate**
 - `solved`: a stable candidate is ready for explicit application.
 - `failed`: calculation failed; saved observations can be corrected/recalculated.
 
-The core performs automatic recalculation. The UI subscribes to SDK observation/status/solved/applied/failed events and runs no registration algorithm. If a session's automatic mode was disabled externally, UI observation mutations explicitly queue `solve`. Closing the editor disposes renderers/subscriptions; background core calculations may finish and appear on reopening.
+The core performs automatic recalculation. The UI subscribes to SDK observation/status/solved/applied/failed events and runs no registration algorithm. Reference feature detection uses a separate worker on a bounded photograph-only render, without UI or global-object overlays. Subpixel corners are refined and distributed over the view; suggestions remain temporary until the user supplies a right-side match. Saved matches and camera pose calculations continue through the public calibration SDK. If a session's automatic mode was disabled externally, UI observation mutations explicitly queue `solve`. Closing the editor cancels feature analysis and disposes renderers/subscriptions; background core calculations may finish and appear on reopening.
 
 ## Preview, apply and undo
 

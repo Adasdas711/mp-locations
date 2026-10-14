@@ -1,20 +1,293 @@
 /* Reusable instances of PALACE's existing panorama viewer, captured before singleton SDK hooks. */
-'use strict';
-const palacePanoramaMethods=Object.fromEntries(Object.entries(localViewer).filter(([,value])=>typeof value==='function'));
-const panoramaDimJobs=new WeakMap(),palacePanoramaLive=new Set();
-l3dDimIn=function(canvas){const element=l3dDimEl(canvas);if(!element)return Promise.resolve();const previous=panoramaDimJobs.get(element);if(previous){clearTimeout(previous.timer);previous.resolve()}const already=element.classList.contains('on');element.classList.add('on');return new Promise(resolve=>{const timer=setTimeout(()=>{panoramaDimJobs.delete(element);resolve()},already?0:matchMedia('(prefers-reduced-motion: reduce)').matches?40:110);panoramaDimJobs.set(element,{timer,resolve})})};
-function createPalacePanoramaSurface(canvas,callbacks={}){
- const view={...palacePanoramaMethods,renderer:null,scene:null,camera:null,mesh:null,texture:null,navGroup:null,navMeshes:[],yaw:0,pitch:0,fov:75,velYaw:0,velPitch:0,dragging:false,raf:null,ro:null,currentId:null,canvas:null,disposed:false,suppressPrefetch:true,keys:new Set()};
- view.reportError=message=>{if(view.disposed)return;if(message){view.readyId=null;canvas.setAttribute('aria-busy','false');if(view.mesh)view.clearImage();if(message.includes('decode'))view.requestRender()}callbacks.onError?.(message)};view.clearError=()=>callbacks.onError?.('');
- view.dispose=function(){this.currentId=this.readyId=null;if(this.raf)cancelAnimationFrame(this.raf);this.raf=null;this.ro?.disconnect();this.ro=null;if(this.scene)this.scene.traverse(node=>{node.geometry?.dispose();for(const material of Array.isArray(node.material)?node.material:node.material?[node.material]:[]){material.map?.dispose();material.dispose()}});this.renderer?.dispose();this.renderer=this.scene=this.camera=this.mesh=this.texture=this.canvas=null;this.navGroup=null;this.navMeshes=[];this.worldWrapped=false;this.worldGroup=this.worldGeometry=null;this.overlaySignature=null};
- view.updateNavLabels=()=>{view.camera?.updateMatrixWorld(true);callbacks.onFrame?.(view)};
- const applyTexture=view.applyCanvasTexture;view.applyCanvasTexture=function(...args){applyTexture.apply(this,args);this.readyId=this.currentId;canvas.setAttribute('aria-busy','false');callbacks.onReady?.(this.currentId)};
- canvas.addEventListener('webglcontextrestored',event=>{event.stopImmediatePropagation();const id=view.currentId;view.dispose();view.currentId=null;if(id)view.showPanorama(id).catch(error=>view.reportError(error.message))},true);
- view.showPanorama=async function(id,pose={}){if(this.disposed)return;const request=(this.loadRequest||0)+1;this.loadRequest=request;const project=state.panoramas,pano=project[id];if(!pano)throw new Error('Panorama no longer exists.');await ensureThreeLoaded();if(this.disposed||state.panoramas!==project||this.loadRequest!==request)return;this.ensure(canvas);if(!this.renderer)throw new Error('Panorama renderer is unavailable.');if(this.currentId!==id){this.currentId=id;this.readyId=null;canvas.setAttribute('aria-busy','true');this.yaw=pose.yaw??0;this.pitch=pose.pitch??0;this.fov=this.fovTarget=pose.fov??75;this.velYaw=this.velPitch=0;this.camera.fov=this.fov;this.camera.far=200000;this.camera.updateProjectionMatrix();if(pano.mode==='equirect'&&pano.data)this.setImage(pano.data,true);else{this.clearImage();this.reportError('This camera has no panorama image.');callbacks.onReady?.(id)}}this.resize();this.requestRender()};
- view.bearingAt=function(x,y){if(!this.camera)throw new Error('Wait for the panorama to load.');const rect=canvas.getBoundingClientRect();this.camera.updateMatrixWorld(true);const direction=new THREE.Vector3((x-rect.left)/rect.width*2-1,1-(y-rect.top)/rect.height*2,.5).unproject(this.camera).sub(this.camera.position).normalize();return PalaceCalibrationMath.angles([direction.x,direction.y,direction.z])};
- view.projectBearing=function(observation){if(!this.camera)return null;this.camera.updateMatrixWorld(true);const ray=PalaceCalibrationMath.ray(observation.yaw,observation.pitch),point=new THREE.Vector3(...ray).multiplyScalar(100),projected=point.project(this.camera);return {x:(projected.x+1)/2,y:(1-projected.y)/2,visible:projected.z>=-1&&projected.z<=1&&Math.abs(projected.x)<=1&&Math.abs(projected.y)<=1}};
- view.setView=function(pose){for(const key of ['yaw','pitch','fov'])if(pose[key]!=null){if(!Number.isFinite(pose[key]))throw new Error('View angles must be finite.');this[key]=key==='pitch'?Math.max(-85,Math.min(85,pose[key])):key==='fov'?Math.max(30,Math.min(150,pose[key])):pose[key]}this.velYaw=this.velPitch=0;this.fovTarget=this.fov;if(this.camera){this.camera.fov=this.fov;this.camera.updateProjectionMatrix()}this.requestRender()};
- palacePanoramaLive.add(view);
- view.destroy=()=>{palacePanoramaLive.delete(view);view.disposed=true;view.renderer?.forceContextLoss();view.dispose()};return view;
+"use strict";
+const palacePanoramaMethods = Object.fromEntries(
+  Object.entries(localViewer).filter(
+    ([, value]) => typeof value === "function",
+  ),
+);
+const panoramaDimJobs = new WeakMap(),
+  palacePanoramaLive = new Set();
+l3dDimIn = function (canvas) {
+  const element = l3dDimEl(canvas);
+  if (!element) return Promise.resolve();
+  const previous = panoramaDimJobs.get(element);
+  if (previous) {
+    clearTimeout(previous.timer);
+    previous.resolve();
+  }
+  const already = element.classList.contains("on");
+  element.classList.add("on");
+  return new Promise((resolve) => {
+    const timer = setTimeout(
+      () => {
+        panoramaDimJobs.delete(element);
+        resolve();
+      },
+      already
+        ? 0
+        : matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? 40
+          : 110,
+    );
+    panoramaDimJobs.set(element, { timer, resolve });
+  });
+};
+function createPalacePanoramaSurface(canvas, callbacks = {}) {
+  const view = {
+    ...palacePanoramaMethods,
+    renderer: null,
+    scene: null,
+    camera: null,
+    mesh: null,
+    texture: null,
+    navGroup: null,
+    navMeshes: [],
+    yaw: 0,
+    pitch: 0,
+    fov: 75,
+    velYaw: 0,
+    velPitch: 0,
+    dragging: false,
+    raf: null,
+    ro: null,
+    currentId: null,
+    canvas: null,
+    disposed: false,
+    suppressPrefetch: true,
+    keys: new Set(),
+  };
+  view.reportError = (message) => {
+    if (view.disposed) return;
+    if (message) {
+      view.readyId = null;
+      canvas.setAttribute("aria-busy", "false");
+      if (view.mesh) view.clearImage();
+      if (message.includes("decode")) view.requestRender();
+    }
+    callbacks.onError?.(message);
+  };
+  view.clearError = () => callbacks.onError?.("");
+  view.dispose = function () {
+    this.currentId = this.readyId = null;
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = null;
+    this.ro?.disconnect();
+    this.ro = null;
+    if (this.scene)
+      this.scene.traverse((node) => {
+        node.geometry?.dispose();
+        for (const material of Array.isArray(node.material)
+          ? node.material
+          : node.material
+            ? [node.material]
+            : []) {
+          material.map?.dispose();
+          material.dispose();
+        }
+      });
+    this.renderer?.dispose();
+    this.renderer =
+      this.scene =
+      this.camera =
+      this.mesh =
+      this.texture =
+      this.canvas =
+        null;
+    this.navGroup = null;
+    this.navMeshes = [];
+    this.worldWrapped = false;
+    this.worldGroup = this.worldGeometry = null;
+    this.overlaySignature = null;
+  };
+  view.updateNavLabels = () => {
+    view.camera?.updateMatrixWorld(true);
+    callbacks.onFrame?.(view);
+  };
+  const applyTexture = view.applyCanvasTexture;
+  view.applyCanvasTexture = function (...args) {
+    applyTexture.apply(this, args);
+    this.readyId = this.currentId;
+    canvas.setAttribute("aria-busy", "false");
+    callbacks.onReady?.(this.currentId);
+  };
+  canvas.addEventListener(
+    "webglcontextrestored",
+    (event) => {
+      event.stopImmediatePropagation();
+      const id = view.currentId;
+      view.dispose();
+      view.currentId = null;
+      if (id)
+        view.showPanorama(id).catch((error) => view.reportError(error.message));
+    },
+    true,
+  );
+  view.showPanorama = async function (id, pose = {}) {
+    if (this.disposed) return;
+    const request = (this.loadRequest || 0) + 1;
+    this.loadRequest = request;
+    const project = state.panoramas,
+      pano = project[id];
+    if (!pano) throw new Error("Panorama no longer exists.");
+    await ensureThreeLoaded();
+    if (
+      this.disposed ||
+      state.panoramas !== project ||
+      this.loadRequest !== request
+    )
+      return;
+    this.ensure(canvas);
+    if (!this.renderer) throw new Error("Panorama renderer is unavailable.");
+    if (this.currentId !== id) {
+      this.currentId = id;
+      this.readyId = null;
+      canvas.setAttribute("aria-busy", "true");
+      this.yaw = pose.yaw ?? 0;
+      this.pitch = pose.pitch ?? 0;
+      this.fov = this.fovTarget = pose.fov ?? 75;
+      this.velYaw = this.velPitch = 0;
+      this.camera.fov = this.fov;
+      this.camera.far = 200000;
+      this.camera.updateProjectionMatrix();
+      if (pano.mode === "equirect" && pano.data) this.setImage(pano.data, true);
+      else {
+        this.clearImage();
+        this.reportError("This camera has no panorama image.");
+        callbacks.onReady?.(id);
+      }
+    }
+    this.resize();
+    this.requestRender();
+  };
+  view.bearingAt = function (x, y) {
+    if (!this.camera) throw new Error("Wait for the panorama to load.");
+    const rect = canvas.getBoundingClientRect();
+    this.camera.updateMatrixWorld(true);
+    const direction = new THREE.Vector3(
+      ((x - rect.left) / rect.width) * 2 - 1,
+      1 - ((y - rect.top) / rect.height) * 2,
+      0.5,
+    )
+      .unproject(this.camera)
+      .sub(this.camera.position)
+      .normalize();
+    return PalaceCalibrationMath.angles([
+      direction.x,
+      direction.y,
+      direction.z,
+    ]);
+  };
+  view.projectBearing = function (observation) {
+    if (!this.camera) return null;
+    this.camera.updateMatrixWorld(true);
+    const ray = PalaceCalibrationMath.ray(observation.yaw, observation.pitch),
+      point = new THREE.Vector3(...ray).multiplyScalar(100),
+      projected = point.project(this.camera);
+    return {
+      x: (projected.x + 1) / 2,
+      y: (1 - projected.y) / 2,
+      visible:
+        projected.z >= -1 &&
+        projected.z <= 1 &&
+        Math.abs(projected.x) <= 1 &&
+        Math.abs(projected.y) <= 1,
+    };
+  };
+  view.setView = function (pose) {
+    for (const key of ["yaw", "pitch", "fov"])
+      if (pose[key] != null) {
+        if (!Number.isFinite(pose[key]))
+          throw new Error("View angles must be finite.");
+        this[key] =
+          key === "pitch"
+            ? Math.max(-85, Math.min(85, pose[key]))
+            : key === "fov"
+              ? Math.max(30, Math.min(150, pose[key]))
+              : pose[key];
+      }
+    this.velYaw = this.velPitch = 0;
+    this.fovTarget = this.fov;
+    if (this.camera) {
+      this.camera.fov = this.fov;
+      this.camera.updateProjectionMatrix();
+    }
+    this.requestRender();
+  };
+  // Render only the photograph into a bounded target; UI/world overlays are excluded.
+  view.sampleImage = function () {
+    if (!this.texture || this.readyId !== this.currentId || !this.renderer)
+      throw new Error(
+        "Wait for a valid panorama image before suggesting points.",
+      );
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1)
+      throw new Error("The reference panorama is not visible.");
+    const scale = Math.min(1, 480 / rect.width, 384 / rect.height),
+      width = Math.max(16, Math.round(rect.width * scale)),
+      height = Math.max(16, Math.round(rect.height * scale)),
+      target = new THREE.WebGLRenderTarget(width, height),
+      previous = this.renderer.getRenderTarget(),
+      camera = this.camera.clone(),
+      scene = new THREE.Scene(),
+      pixels = new Uint8Array(width * height * 4);
+    scene.add(this.mesh.clone());
+    camera.aspect = rect.width / rect.height;
+    camera.updateProjectionMatrix();
+    try {
+      this.renderer.setRenderTarget(target);
+      this.renderer.render(scene, camera);
+      this.renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
+    } finally {
+      this.renderer.setRenderTarget(previous);
+      target.dispose();
+    }
+    const topDown = new Uint8Array(pixels.length);
+    for (let y = 0; y < height; y++)
+      topDown.set(
+        pixels.subarray((height - y - 1) * width * 4, (height - y) * width * 4),
+        y * width * 4,
+      );
+    camera.updateMatrixWorld(true);
+    return {
+      width,
+      height,
+      pixels: topDown,
+      bearingAt: (x, y) => {
+        const direction = new THREE.Vector3(
+          ((x + 0.5) / width) * 2 - 1,
+          1 - ((y + 0.5) / height) * 2,
+          0.5,
+        )
+          .unproject(camera)
+          .sub(camera.position)
+          .normalize();
+        return PalaceCalibrationMath.angles([
+          direction.x,
+          direction.y,
+          direction.z,
+        ]);
+      },
+    };
+  };
+  palacePanoramaLive.add(view);
+  view.destroy = () => {
+    palacePanoramaLive.delete(view);
+    view.disposed = true;
+    view.renderer?.forceContextLoss();
+    view.dispose();
+  };
+  return view;
 }
-window.PalacePanoramaSurfaces=Object.freeze({create:createPalacePanoramaSurface,isTextureInUse:canvas=>[...palacePanoramaLive].some(view=>view.texture?.image===canvas),list:()=>Object.entries(state.panoramas||{}).map(([id,pano])=>({id,room:pano.room||id,floorId:pano.floorId,order:pano.order,hasImage:pano.mode==='equirect'&&!!pano.data}))});
+window.PalacePanoramaSurfaces = Object.freeze({
+  create: createPalacePanoramaSurface,
+  isTextureInUse: (canvas) =>
+    [...palacePanoramaLive].some((view) => view.texture?.image === canvas),
+  list: () =>
+    Object.entries(state.panoramas || {}).map(([id, pano]) => ({
+      id,
+      room: pano.room || id,
+      floorId: pano.floorId,
+      order: pano.order,
+      hasImage: pano.mode === "equirect" && !!pano.data,
+    })),
+});
