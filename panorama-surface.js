@@ -214,7 +214,7 @@ function createPalacePanoramaSurface(canvas, callbacks = {}) {
     this.requestRender();
   };
   // Render only the photograph into a bounded target; UI/world overlays are excluded.
-  view.sampleImage = function () {
+  view.sampleImage = function (options = {}) {
     if (!this.texture || this.readyId !== this.currentId || !this.renderer)
       throw new Error(
         "Wait for a valid panorama image before suggesting points.",
@@ -223,15 +223,36 @@ function createPalacePanoramaSurface(canvas, callbacks = {}) {
     if (rect.width < 1 || rect.height < 1)
       throw new Error("The reference panorama is not visible.");
     const scale = Math.min(1, 480 / rect.width, 384 / rect.height),
-      width = Math.max(16, Math.round(rect.width * scale)),
-      height = Math.max(16, Math.round(rect.height * scale)),
+      width = options.width || Math.max(16, Math.round(rect.width * scale)),
+      height = options.height || Math.max(16, Math.round(rect.height * scale)),
       target = new THREE.WebGLRenderTarget(width, height),
       previous = this.renderer.getRenderTarget(),
       camera = this.camera.clone(),
       scene = new THREE.Scene(),
       pixels = new Uint8Array(width * height * 4);
     scene.add(this.mesh.clone());
-    camera.aspect = rect.width / rect.height;
+    if (
+      !Number.isInteger(width) ||
+      !Number.isInteger(height) ||
+      width < 16 ||
+      height < 16 ||
+      width * height > 262144
+    ) {
+      target.dispose();
+      throw new Error("Invalid panorama sample dimensions.");
+    }
+    camera.aspect = options.width ? width / height : rect.width / rect.height;
+    if (options.pose) {
+      camera.rotation.set(
+        ((options.pose.pitch || 0) * Math.PI) / 180,
+        ((options.pose.yaw || 0) * Math.PI) / 180,
+        0,
+        "YXZ",
+      );
+      camera.fov = options.pose.fov || 90;
+      camera.position.set(0, 0, 0);
+    }
+    camera.updateMatrixWorld(true);
     camera.updateProjectionMatrix();
     try {
       this.renderer.setRenderTarget(target);
@@ -252,6 +273,11 @@ function createPalacePanoramaSurface(canvas, callbacks = {}) {
       width,
       height,
       pixels: topDown,
+      pose: {
+        yaw: (camera.rotation.y * 180) / Math.PI,
+        pitch: (camera.rotation.x * 180) / Math.PI,
+        fov: camera.fov,
+      },
       bearingAt: (x, y) => {
         const direction = new THREE.Vector3(
           ((x + 0.5) / width) * 2 - 1,

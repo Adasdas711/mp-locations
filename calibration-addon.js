@@ -20,6 +20,7 @@ const calibrationUI = {
   suggestions: null,
   suggestionTimer: null,
   lastGuidedMatch: null,
+  railSignature: null,
 };
 function calibrationUIBlank() {
   return {
@@ -358,6 +359,74 @@ calibrationMatchActions.append(
   calibrationNoOverlap,
 );
 calibrationUIStyle.textContent += `.calibration-match-actions{display:flex;gap:6px;align-items:center;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}.calibration-match-actions button{flex:none;white-space:nowrap}html.phone #calibrationWorkspace .calibration-match-actions{width:100%}html.phone #calibrationWorkspace .calibration-summary{flex-wrap:nowrap}html.phone #calibrationAutoStatus{flex:none}html.phone #calibrationStatus{min-width:0}`;
+const calibrationPointRail = document.createElement("nav");
+calibrationPointRail.id = "calibrationPointRail";
+calibrationPointRail.setAttribute("aria-label", "Calibration points");
+calibrationPointRail.innerHTML = '<div id="calibrationPointTrack"></div>';
+calibrationWorkspace
+  .querySelector(".calibration-pane[data-side=left]")
+  .after(calibrationPointRail);
+const calibrationPointTrack = calibrationPointRail.firstChild;
+const calibrationFooter = document.createElement("footer");
+calibrationFooter.className = "calibration-footer";
+calibrationWorkspace.append(calibrationFooter);
+calibrationFooter.append(
+  calibrationWorkspace.querySelector(".calibration-matchbar"),
+  calibrationWorkspace.querySelector(".calibration-navigation"),
+);
+calibrationHeader
+  .querySelector("div")
+  .append(calibrationWorkspace.querySelector(".calibration-summary"));
+calibrationWorkspace
+  .querySelector(".calibration-summary")
+  .append(document.querySelector("#calibrationPairStatus"));
+calibrationUIStyle.textContent += `
+#calibrationWorkspace{padding:0;gap:0}
+#calibrationWorkspace .calibration-header{min-height:38px;padding:4px 190px 4px 8px;gap:6px}
+#calibrationWorkspace .calibration-header>div{display:flex;align-items:center;gap:12px;overflow:hidden}
+#calibrationWorkspace .calibration-header strong{font-size:14px;flex:none}
+#calibrationWorkspace .calibration-caption,#calibrationAutoStatus{display:none}
+#calibrationWorkspace .calibration-summary{font-size:11px;min-width:0;flex-wrap:nowrap;gap:8px;overflow:hidden}
+#calibrationWorkspace #calibrationStatus{white-space:nowrap;display:block;overflow:hidden;text-overflow:ellipsis}
+#calibrationWorkspace #calibrationPairStatus{font-size:11px;flex:none}
+#calibrationWorkspace .calibration-details{top:4px;right:42px;width:142px}
+#calibrationWorkspace .calibration-details>summary{padding:6px 5px}
+#calibrationWorkspace .calibration-details[open]{top:42px;right:6px;width:340px}
+#calibrationWorkspace #calibrationClose{top:4px;right:4px;min-height:30px;min-width:30px;padding:4px!important}
+#calibrationWorkspace .calibration-pair{grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);gap:0}
+#calibrationWorkspace .calibration-pane{position:relative;border-radius:6px}
+#calibrationWorkspace .calibration-pane>header{position:absolute;top:5px;left:5px;right:5px;z-index:5;padding:4px 6px;gap:6px;border:1px solid var(--line);border-radius:6px;background:#202020e8}
+#calibrationWorkspace .calibration-pane>header>label:first-child{font-size:10px}
+#calibrationWorkspace .calibration-pane select{padding:3px 6px;margin:0;height:28px}
+#calibrationWorkspace .calibration-step{top:65px;left:8px;font-size:10px}
+#calibrationPointRail{display:flex;align-items:center;justify-content:center;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;background:var(--vscode-editor-bg)}
+#calibrationPointTrack{display:flex;flex-direction:column;gap:8px;align-items:center;padding:8px 3px;margin:auto 0}
+#calibrationWorkspace .calibration-point-chip{flex:none;width:30px;height:30px;min-height:30px;padding:0;border-radius:50%;font-size:12px;border:1px solid var(--line);color:var(--text);background:var(--panel);position:relative}
+#calibrationWorkspace .calibration-point-chip[data-state=matched]{background:var(--vscode-button-bg)}
+#calibrationWorkspace .calibration-point-chip[data-state=pending]{border-color:#78d8ff;color:#78d8ff}
+#calibrationWorkspace .calibration-point-chip[data-state=blocked]{border-color:#f17b86;color:#f17b86}
+#calibrationWorkspace .calibration-point-chip[aria-pressed=true]{background:#ffd43b;border-color:#ffd43b;color:#171717;box-shadow:0 0 0 2px #ffd43b55}
+#calibrationWorkspace .calibration-footer{order:4;display:flex;align-items:center;gap:10px;flex:none;min-height:38px;padding:3px 6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-top:1px solid var(--line)}
+#calibrationWorkspace .calibration-footer button{min-height:30px;padding:4px 8px;font-size:11px;white-space:nowrap;flex:none}
+#calibrationWorkspace .calibration-matchbar{flex-wrap:nowrap;flex:none;gap:6px}
+#calibrationWorkspace .calibration-match-actions{overflow:visible}
+#calibrationWorkspace .calibration-navigation{flex:none;margin-left:auto;padding:0;border:0;flex-wrap:nowrap;gap:5px}
+#calibrationWorkspace .calibration-hint{position:absolute;left:8px;right:8px;bottom:44px;z-index:6;background:#181818c9;padding:3px 6px;border-radius:4px;color:#ddd;font-size:11px;pointer-events:none;min-height:0}
+#calibrationWorkspace .calibration-result-actions{position:absolute;bottom:76px;right:8px;left:auto;z-index:7;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:6px;max-width:calc(100% - 16px)}
+#calibrationWorkspace:has(#calibrationPreviewPanel:not([hidden])) .calibration-result-actions{z-index:10}
+html.phone #calibrationWorkspace{padding:0!important;gap:0!important}
+html.phone #calibrationWorkspace .calibration-header{min-height:34px;padding-right:177px}
+html.phone #calibrationWorkspace .calibration-header strong{font-size:12px}
+html.phone #calibrationWorkspace .calibration-header>div{gap:4px}
+html.phone #calibrationWorkspace .calibration-summary{display:flex;position:absolute;bottom:39px;left:8px;right:8px;background:#181818d9;padding:3px 6px;border-radius:4px;z-index:7;pointer-events:none;font-size:10px}
+html.phone #calibrationWorkspace .calibration-hint{bottom:65px}
+html.phone #calibrationWorkspace .calibration-details{right:38px;width:132px;font-size:10px}
+html.phone #calibrationWorkspace .calibration-details[open]{right:6px;width:min(340px,calc(100% - 12px))}
+html.phone #calibrationWorkspace .calibration-footer{min-height:34px;gap:6px}
+html.phone #calibrationWorkspace .calibration-match-actions{width:auto;overflow:visible}
+html.phone #calibrationWorkspace .calibration-step{top:58px}
+@media(max-width:760px){#calibrationWorkspace .calibration-pair{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 42px minmax(0,1fr)}#calibrationPointRail{overflow-x:auto;overflow-y:hidden;touch-action:pan-x}#calibrationPointTrack{flex-direction:row;padding:3px 8px;margin:0 auto}#calibrationWorkspace .calibration-pane>header{top:4px;left:4px;right:4px}#calibrationWorkspace .calibration-footer{touch-action:pan-x}}
+`;
 const calibrationScope = document.createElement("button");
 calibrationScope.id = "calibrationScope";
 calibrationScope.type = "button";
@@ -487,6 +556,7 @@ function calibrationUIResetSuggestions(disabled = false) {
     disabled,
     attempted: false,
     detecting: false,
+    completed: false,
   };
   calibrationSuggestionLayer.replaceChildren();
 }
@@ -515,8 +585,11 @@ function calibrationUIRenderSuggestions() {
     calibrationUI.busy ||
     !view?.texture ||
     view.readyId !== calibrationUIState().left ||
+    !calibrationUI.views.right?.texture ||
+    calibrationUI.views.right.readyId !== calibrationUIState().right ||
     !!auto?.detecting;
   for (const [index, p] of (auto?.points || []).entries()) {
+    if (p.id !== current?.id) continue;
     const location = view?.projectBearing(p);
     if (!location?.visible) continue;
     wanted.add(p.id);
@@ -540,15 +613,117 @@ function calibrationUIRenderSuggestions() {
     button.setAttribute("aria-pressed", String(p.id === current?.id));
     button.setAttribute(
       "aria-label",
-      `Suggested reference point ${count + index + 1}`,
+      `Suggested reference point ${(calibrationUI.session?.landmarks.length || 0) + index + 1}`,
     );
     button.title = "Find this exact detail in the connecting panorama";
-    button.firstChild.textContent = String(count + index + 1);
+    button.firstChild.textContent = String(
+      (calibrationUI.session?.landmarks.length || 0) + index + 1,
+    );
     button.style.left = location.x * 100 + "%";
     button.style.top = location.y * 100 + "%";
   }
   for (const b of calibrationSuggestionLayer.children)
     if (!wanted.has(b.dataset.suggestion)) b.remove();
+  calibrationUIRenderRail();
+}
+function calibrationUIRenderRail() {
+  const signature = JSON.stringify([
+    calibrationUI.session?.id,
+    calibrationUI.session?.revision,
+    calibrationUI.session?.status,
+    calibrationUIState().selected,
+    calibrationUI.suggestions?.key,
+    calibrationUI.suggestions?.selected,
+    calibrationUI.suggestions?.points.map((p) => p.id),
+    calibrationUI.session?.quality?.visibility?.occluded,
+  ]);
+  if (signature === calibrationUI.railSignature) return;
+  calibrationUI.railSignature = signature;
+  const saved = calibrationUIState(),
+    auto = calibrationUI.suggestions,
+    current = calibrationUICurrentSuggestion(),
+    matches = calibrationUIPairMatches(),
+    nodes = new Map(
+      [...calibrationPointTrack.children].map((b) => [b.dataset.point, b]),
+    ),
+    wanted = new Set(),
+    occluded = calibrationUI.session?.quality?.visibility?.occluded || [];
+  const entries = (calibrationUI.session?.landmarks || []).flatMap(
+    (p, index) =>
+      p.observations.some((o) => o.panoId === saved.left)
+        ? [
+            {
+              id: p.id,
+              number: index + 1,
+              type: "landmark",
+              state: occluded.some((o) => o.landmarkId === p.id)
+                ? "blocked"
+                : matches.some((q) => q.id === p.id)
+                  ? "matched"
+                  : "pending",
+            },
+          ]
+        : [],
+  );
+  for (const [index, p] of (auto?.points || []).entries())
+    entries.push({
+      id: p.id,
+      number: (calibrationUI.session?.landmarks.length || 0) + index + 1,
+      type: "proposal",
+      state: "pending",
+    });
+  for (const entry of entries) {
+    wanted.add(entry.id);
+    let b = nodes.get(entry.id);
+    if (!b) {
+      b = document.createElement("button");
+      b.type = "button";
+      b.className = "calibration-point-chip";
+      b.dataset.point = entry.id;
+      calibrationPointTrack.append(b);
+    }
+    b.textContent = String(entry.number);
+    b.dataset.state = entry.state;
+    b.setAttribute("aria-label", `Point ${entry.number}: ${entry.state}`);
+    b.setAttribute(
+      "aria-pressed",
+      String(
+        entry.type === "proposal"
+          ? entry.id === current?.id
+          : entry.id === saved.selected,
+      ),
+    );
+    b.title =
+      entry.type === "proposal"
+        ? "Show the suggested detail in both panoramas"
+        : "Show this saved point";
+    b.onclick = () => {
+      if (calibrationUI.busy) return;
+      if (entry.type === "proposal") {
+        auto.selected = entry.id;
+        saved.selected = null;
+        calibrationUIFocusSuggestion();
+        calibrationUIRenderSuggestions();
+        calibrationUIUpdateGuide();
+      } else {
+        calibrationUISelectPoint(entry.id);
+        calibrationUIFocusLandmark(entry.id);
+      }
+    };
+    // Saved points and proposals share one ordered route, even when a proposal
+    // is replaced by its persisted landmark after a successful match.
+    calibrationPointTrack.append(b);
+  }
+  for (const b of [...calibrationPointTrack.children])
+    if (!wanted.has(b.dataset.point)) b.remove();
+}
+function calibrationUIFocusLandmark(id) {
+  const point = calibrationUI.session?.landmarks.find((p) => p.id === id),
+    saved = calibrationUIState();
+  for (const side of ["left", "right"]) {
+    const o = point?.observations.find((o) => o.panoId === saved[side]);
+    if (o) calibrationUI.views[side]?.setView({ yaw: o.yaw, pitch: o.pitch });
+  }
 }
 function calibrationUIRefreshSuggestions() {
   const saved = calibrationUIState(),
@@ -570,7 +745,7 @@ function calibrationUIRefreshSuggestions() {
   }
   const auto = calibrationUI.suggestions,
     target = calibrationUI.session?.config.minCorrespondences || 4;
-  if (calibrationUIPairMatches().length >= target) {
+  if (calibrationUIPairMatches().length >= target && !auto.explicit) {
     auto.job?.cancel();
     auto.points = [];
     auto.reserve = [];
@@ -595,6 +770,63 @@ function calibrationUIRefreshSuggestions() {
   }
   calibrationUIRenderSuggestions();
 }
+function calibrationUIVisibilityContext() {
+  const saved = calibrationUIState(),
+    world = worldData(),
+    left = world.cameras[saved.left],
+    right = world.cameras[saved.right];
+  if (!left || !right) return {};
+  const context = { left, right },
+    g = world.geometry;
+  if (g?.positions)
+    context.geometry = { positions: g.positions, indices: g.indices };
+  else if (g?.source === "dollhouse" && DHM) {
+    const positions = [],
+      indices = [],
+      matrix = new THREE.Matrix4().compose(
+        new THREE.Vector3(g.origin.x, g.origin.y, g.origin.z),
+        new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(g.rotation.x, g.rotation.y, g.rotation.z),
+        ),
+        new THREE.Vector3(g.scale || 1, g.scale || 1, g.scale || 1),
+      ),
+      v = new THREE.Vector3();
+    for (let i = 0; i < DHM.meta.chunks.length; i++) {
+      const geometry = dhmGeometry(i, false),
+        attribute = geometry.getAttribute("position"),
+        base = positions.length / 3;
+      for (let j = 0; j < attribute.count; j++) {
+        v.fromBufferAttribute(attribute, j).applyMatrix4(matrix);
+        positions.push(v.x, v.y, v.z);
+      }
+      if (geometry.index)
+        for (const id of geometry.index.array) indices.push(base + id);
+      else for (let j = 0; j < attribute.count; j++) indices.push(base + j);
+    }
+    context.geometry = { positions, indices };
+  }
+  for (const [side, id] of [
+    ["left", saved.left],
+    ["right", saved.right],
+  ]) {
+    const config = state.sceneConfigurations?.[id];
+    if (!config?.depthMap) continue;
+    const scale =
+      config.units === world.units
+        ? 1
+        : config.units === "meters" && world.metersPerUnit
+          ? 1 / world.metersPerUnit
+          : null;
+    if (scale) context[side + "Depth"] = { ...config.depthMap, scale };
+  }
+  return context;
+}
+function calibrationUIFocusSuggestion() {
+  const point = calibrationUICurrentSuggestion();
+  if (!point) return;
+  calibrationUI.views.left?.setView({ yaw: point.yaw, pitch: point.pitch });
+  if (point.rightHint) calibrationUI.views.right?.setView(point.rightHint);
+}
 async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
   if (
     !calibrationUI.open ||
@@ -605,11 +837,52 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
   auto.detecting = true;
   calibrationUIRenderSuggestions();
   try {
-    const sample = calibrationUI.views.left.sampleImage();
+    const source = calibrationUI.views.left;
+    // A square angular sample keeps descriptors independent of phone/portrait
+    // layout and supplies context around corners at the viewport boundary.
+    const sample = source.sampleImage({
+      width: 384,
+      height: 384,
+      pose: { yaw: source.yaw, pitch: source.pitch, fov: source.fov },
+    });
+    const targets = [],
+      saved = calibrationUIState(),
+      right = calibrationUI.views.right;
+    // Inspect all directions of the other panorama, not just its current viewport.
+    for (const pose of [
+      { yaw: right.yaw, pitch: right.pitch, fov: right.fov },
+      { yaw: 0, pitch: 0, fov: 100 },
+      { yaw: 90, pitch: 0, fov: 100 },
+      { yaw: 180, pitch: 0, fov: 100 },
+      { yaw: 270, pitch: 0, fov: 100 },
+      { yaw: 0, pitch: 65, fov: 100 },
+      { yaw: 0, pitch: -65, fov: 100 },
+    ]) {
+      await new Promise(requestAnimationFrame);
+      if (
+        !calibrationUI.open ||
+        auto !== calibrationUI.suggestions ||
+        auto.disabled ||
+        right.readyId !== saved.right
+      )
+        return;
+      const image = right.sampleImage({ width: 256, height: 256, pose });
+      targets.push({
+        width: image.width,
+        height: image.height,
+        pixels: image.pixels,
+        pose,
+      });
+    }
     auto.job = PalaceCalibrationFeatures.start({
-      width: sample.width,
-      height: sample.height,
-      pixels: sample.pixels,
+      reference: {
+        width: sample.width,
+        height: sample.height,
+        pixels: sample.pixels,
+        pose: sample.pose,
+      },
+      targets,
+      geometryContext: calibrationUIVisibilityContext(),
       count: 24,
     });
     const features = await auto.job.promise;
@@ -619,12 +892,27 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
       auto.disabled
     )
       return;
+    const yawChange = Math.abs(
+      ((source.yaw - sample.pose.yaw + 540) % 360) - 180,
+    );
+    if (
+      yawChange > 0.5 ||
+      Math.abs(source.pitch - sample.pose.pitch) > 0.5 ||
+      Math.abs(source.fov - sample.pose.fov) > 0.5
+    ) {
+      calibrationUIMessage(
+        "Reference view changed. Use Find points to search this area.",
+      );
+      return;
+    }
     const used = (calibrationUI.session?.landmarks || []).flatMap((p) =>
       p.observations.filter((o) => o.panoId === calibrationUIState().left),
     );
     const candidates = features
       .map((point, index) => ({
         ...sample.bearingAt(point.x, point.y),
+        rightHint: point.rightHint,
+        visibility: point.visibility,
         id: auto.key + ":" + index,
       }))
       .filter((p) =>
@@ -647,10 +935,11 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
     auto.selected = auto.points[0]?.id || null;
     calibrationUI.placingNew = false;
     calibrationUIState().selected = null;
+    calibrationUIFocusSuggestion();
     calibrationUIMessage(
       auto.points.length
         ? "Match the yellow detail on the right. The next reference point is selected automatically. Skip anything not visible in both."
-        : "No distinctive corners in this view. Rotate the left panorama and use Find points, or choose a Manual point.",
+        : "No confidently shared details in this view. Rotate the reference panorama and use Find points, choose another pair, or use Manual point.",
     );
   } catch (error) {
     if (
@@ -665,6 +954,7 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
     if (auto === calibrationUI.suggestions) {
       auto.job = null;
       auto.detecting = false;
+      auto.completed = true;
       calibrationUIRenderSuggestions();
       calibrationUIUpdateGuide();
     }
@@ -674,6 +964,7 @@ calibrationSuggest.onclick = () => {
   if (calibrationUI.busy) return;
   calibrationUIResetSuggestions();
   const auto = calibrationUI.suggestions;
+  auto.explicit = true;
   auto.attempted = true;
   calibrationUIFindPoints(auto);
 };
@@ -686,6 +977,7 @@ calibrationSkip.onclick = () => {
     next = auto.reserve.shift();
   auto.points.splice(index, 1, ...(next ? [next] : []));
   auto.selected = auto.points[index]?.id || auto.points[0]?.id || null;
+  calibrationUIFocusSuggestion();
   calibrationUIMessage(
     auto.points.length
       ? "Point skipped. Match the newly highlighted reference detail on the right."
@@ -970,6 +1262,7 @@ function calibrationUIRenderMarkers(side) {
   for (const [ordinal, landmark] of (
     calibrationUI.session?.landmarks || []
   ).entries()) {
+    if (landmark.id !== saved.selected) continue;
     const observation = landmark.observations.find(
       (o) => o.panoId === saved[side],
     );
@@ -1180,6 +1473,23 @@ async function calibrationUIPlace(side, x, y, captured) {
   const angles = captured?.angles || view.bearingAt(x, y),
     api = calibrationUIAPI(),
     landmark = session.landmarks.find((l) => l.id === saved.selected);
+  if (side === "right") {
+    const source = captured?.suggestionId
+      ? calibrationUI.suggestions?.points.find(
+          (p) => p.id === captured.suggestionId,
+        )
+      : landmark?.observations.find((o) => o.panoId === saved.left);
+    if (
+      source &&
+      PalaceCalibrationFeatures.visibility(
+        source,
+        calibrationUIVisibilityContext(),
+      ).visible === false
+    )
+      throw new Error(
+        "This reference detail is hidden from the connecting camera by a wall or depth obstruction. Choose another point.",
+      );
+  }
   if (side === "left") calibrationUIResetSuggestions(true);
   if (side === "right" && captured?.suggestionId) {
     const auto = calibrationUI.suggestions,
@@ -1203,6 +1513,7 @@ async function calibrationUIPlace(side, x, y, captured) {
     };
     auto.points.splice(auto.points.indexOf(point), 1);
     auto.selected = auto.points[0]?.id || null;
+    calibrationUIFocusSuggestion();
     saved.selected = null;
     saved.visibleConfirmed = true;
     calibrationUIMessage(
