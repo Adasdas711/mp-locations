@@ -31,6 +31,65 @@ input:where([type=checkbox],[type=radio],[type=range]) {accent-color:var(--blue,
 #settingsModal {color-scheme:dark}
 :where(.dialog) .persistence-actions {align-items:center}
 :where(.dialog) select option {background:var(--vscode-input-bg,var(--panel,#303030));color:var(--text,inherit)}
+/* Scroll individual control lanes, never the plan/panorama gesture surface. */
+html.phone .activity::-webkit-scrollbar {display:none}
+html.phone .top {min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+html.phone .top .menubar,html.phone .top .top-actions {flex-shrink:0}
+html.phone .top .title {min-width:60px}
+html.phone .top .menu-item,html.phone .top-actions button {font-size:12px;height:32px;line-height:32px;padding-left:7px;padding-right:7px}
+html.phone .top #themeBtn {width:32px}
+html.phone .title input {height:30px;font-size:12px}
+html.phone .dialog {font-size:12px;padding:12px;overscroll-behavior:contain}
+html.phone .dialog h2 {font-size:17px}
+html.phone #settingsModal>.dialog {font-size:12px}
+html.phone #settingsModalTitle {font-size:14px;padding-top:12px;padding-bottom:12px}
+html.phone #settingsModal #settingsClose {font-size:22px;top:5px;right:10px;width:32px;height:32px;min-height:32px;padding:0}
+html.phone .settings-window-lights {top:18px}
+html.phone .dialog :where(button):not(.plugin-icon-button,.settings-switch) {font-size:12px}
+html.phone :where(.dialog,.palace-plugin-surface) :where(input,select,textarea) {min-width:0;max-width:100%}
+/* iOS must retain a 16px input font to avoid zooming the page on focus. */
+html.phone.ios :where(input:not([type=range],[type=checkbox],[type=radio],[type=color],[type=file]),select,textarea) {font-size:max(16px,calc(16px * var(--ui-k,1)))!important}
+html.phone :where(.persistence-actions,.workspace-preset>div,.addon-actions,.rv-chips,.rv-actions,.arrange-bar .ab-row2,.tour-toolbar-local,.palette-footer) {
+ min-width:0;max-width:100%;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;
+}
+html.phone :where(.persistence-actions,.workspace-preset>div,.addon-actions,.rv-chips,.rv-actions,.arrange-bar .ab-row2,.tour-toolbar-local,.palette-footer)>* {flex-shrink:0}
+html.phone :where(.persistence-actions,.workspace-preset>div,.addon-actions,.rv-chips,.rv-actions,.arrange-bar .ab-row2,.tour-toolbar-local) button {white-space:nowrap}
+html.phone #workspacePresetName {min-width:140px}
+html.phone :where(.dialog,.palace-plugin-surface) pre {max-width:100%;overflow:auto}
+html.phone .settings-content {padding:14px 12px;overflow:auto}
+html.phone .settings-card {padding:0 12px;margin-bottom:16px;overflow-x:auto}
+html.phone #settingsModal .settings-pane h2 {font-size:18px;margin-bottom:16px}
+html.phone #settingsModal .settings-row {padding:12px 0;gap:10px}
+html.phone #settingsModal .settings-row-title {font-size:13px}
+html.phone #settingsModal .settings-row-description {font-size:12px;line-height:1.4}
+html.phone #settingsModal .settings-row-control {gap:6px}
+html.phone #settingsModal .settings-row-control :where(button,select,input) {padding:6px 8px}
+html.phone #settingsModal #settingsNav .settings-nav-item {min-height:32px;padding:5px 10px!important;font-size:12px;gap:8px}
+html.phone .settings-nav-item .ic {width:18px;height:18px}
+html.phone #settingsModal #toolsList {padding:0 12px}
+html.phone #settingsModal .tool-settings-row {padding:10px 0}
+html.phone .tool-settings-info>span {font-size:12px}
+html.phone #settingsModal .addon-card {padding:12px 0}
+/* Floating plugin menus must escape their trigger lane. */
+html.phone #settingsModal .addon-card>.persistence-actions {overflow:visible;max-width:none}
+html.phone #calibrationWorkspace {font-size:12px;padding:6px;gap:4px}
+html.phone #calibrationWorkspace .calibration-header strong {font-size:12px}
+html.phone #calibrationWorkspace .calibration-navigation,html.phone #calibrationWorkspace .calibration-result-actions {
+ min-width:0;max-width:100%;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;
+}
+html.phone #calibrationWorkspace .calibration-navigation button,html.phone #calibrationWorkspace .calibration-result-actions button {flex:none;white-space:nowrap}
+html.phone #calibrationWorkspace .calibration-navigation button {font-size:11px;min-height:30px;padding:4px 7px}
+html.phone #calibrationWorkspace .calibration-matchbar {min-width:0}
+html.phone #calibrationWorkspace .calibration-details {max-width:calc(100% - 16px)}
+html.phone #calibrationWorkspace .calibration-preview-camera,html.phone #calibrationCameraList {min-width:0}
+@media(max-width:650px) {
+ html.phone .settings-sidebar {padding:10px 12px;flex-basis:170px;max-height:170px;min-height:110px}
+ html.phone .settings-nav-group {margin-bottom:12px}
+ html.phone .settings-nav-group h3 {font-size:11px;margin-bottom:8px}
+ html.phone #settingsSearch {padding:6px 10px 6px 36px;margin-bottom:10px}
+ html.phone .settings-sidebar::before {left:24px;top:22px}
+ html.phone .settings-sidebar::after {left:34px;top:33px}
+}
 `;
 const sharedControlsStyle = document.createElement('style');
 sharedControlsStyle.id = 'palaceSharedControls'; sharedControlsStyle.textContent = PALACE_CONTROL_CSS;

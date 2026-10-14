@@ -50,7 +50,7 @@
             t.classList.toggle("phone", r),
             t.classList.toggle("phone-land", r && i > o),
             t.style.setProperty("--app-h", o + "px"));
-          var s = r ? [1, 1.1, 1.2] : e ? [1, 1.18, 1.36] : [1, 1.22, 1.44];
+          var s = r ? [0.9, 1, 1.1] : e ? [1, 1.18, 1.36] : [1, 1.22, 1.44];
           (t.style.setProperty("--ui-k", String(s[a] || 1)),
             t.setAttribute("data-ui-size", String(a)));
         }
@@ -5607,9 +5607,9 @@
         font-size: calc(14.5px * var(--ui-k, 1));
       }
       html.phone {
-        --top: calc(44px * var(--ui-k, 1));
-        --m-tabs: calc(58px * var(--ui-k, 1));
-        --m-route: calc(46px * var(--ui-k, 1));
+        --top: calc(38px * var(--ui-k, 1));
+        --m-tabs: calc(46px * var(--ui-k, 1));
+        --m-route: calc(36px * var(--ui-k, 1));
       }
       html.phone,
       html.phone body {
@@ -5694,7 +5694,12 @@
         flex: none;
         flex-direction: row;
         align-items: stretch;
-        justify-content: space-around;
+        justify-content: flex-start;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        touch-action: pan-x;
+        scrollbar-width: none;
         padding: 0 4px env(safe-area-inset-bottom);
         border-top: 1px solid var(--t-border, #2b2b2b);
         background: var(--t-chrome, #181818);
@@ -5703,10 +5708,10 @@
         order: 4;
       }
       html.phone:not(.phone-land) .abtn {
-        flex: 1 1 0;
-        width: auto;
+        flex: 0 0 calc(54px * var(--ui-k, 1));
+        width: calc(54px * var(--ui-k, 1));
         height: var(--m-tabs);
-        min-width: 0;
+        min-width: calc(54px * var(--ui-k, 1));
         padding: 6px 0 4px;
         gap: 3px;
         position: relative;
@@ -5783,7 +5788,7 @@
         top: 8px;
         transform: none;
         width: auto;
-        height: calc(50px * var(--ui-k, 1));
+        height: calc(42px * var(--ui-k, 1));
         flex-direction: row;
         align-items: center;
         gap: 2px;
@@ -5798,8 +5803,8 @@
       }
       html.phone .left .tool {
         flex: none;
-        width: calc(40px * var(--ui-k, 1));
-        height: calc(40px * var(--ui-k, 1));
+        width: calc(34px * var(--ui-k, 1));
+        height: calc(34px * var(--ui-k, 1));
       }
       html.phone .left .tool-sep {
         width: 1px;
@@ -5811,7 +5816,7 @@
         height: auto;
       }
       html.phone .floor-overlay {
-        top: 64px;
+        top: calc(58px * var(--ui-k, 1));
         left: 8px;
         right: 8px;
         flex-direction: row;
@@ -6011,7 +6016,7 @@
       }
       html.phone-land {
         --top: calc(38px * var(--ui-k, 1));
-        --activity: calc(52px * var(--ui-k, 1));
+        --activity: calc(44px * var(--ui-k, 1));
         --m-tabs: 0px;
         --m-route: 0px;
       }
@@ -6027,13 +6032,18 @@
         height: calc(30px * var(--ui-k, 1));
       }
       html.phone-land .activity {
-        width: calc(52px * var(--ui-k, 1));
+        overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+        width: calc(44px * var(--ui-k, 1));
         padding-left: env(safe-area-inset-left);
         box-sizing: content-box;
       }
       html.phone-land .abtn {
-        width: calc(52px * var(--ui-k, 1));
-        height: calc(46px * var(--ui-k, 1));
+        flex: none;
+        width: calc(44px * var(--ui-k, 1));
+        height: calc(40px * var(--ui-k, 1));
       }
       html.phone-land .bottom {
         display: none !important;
