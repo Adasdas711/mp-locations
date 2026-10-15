@@ -254,8 +254,30 @@
   }
   function visibility(point, context = {}) {
     const { left, right, geometry, leftDepth, rightDepth } = context;
-    if (!left || !right)
-      return { visible: null, reason: "unknown-camera-poses" };
+    const unknown = (reason, extra = {}) => ({
+      visible: null,
+      reason,
+      ...extra,
+    });
+    const validPose = (p) =>
+      p &&
+      [
+        p.position?.x,
+        p.position?.y,
+        p.position?.z,
+        p.rotation?.x,
+        p.rotation?.y,
+        p.rotation?.z,
+        p.rotation?.w,
+      ].every(Number.isFinite);
+    if (!validPose(left) || !validPose(right))
+      return unknown("unknown-camera-poses");
+    if (
+      !Number.isFinite(point?.yaw) ||
+      !Number.isFinite(point?.pitch) ||
+      Math.abs(point.pitch) > 90
+    )
+      return unknown("invalid-bearing");
     const sub = (a, b) => a.map((v, i) => v - b[i]),
       add = (a, b) => a.map((v, i) => v + b[i]),
       mul = (a, s) => a.map((v) => v * s),
@@ -267,15 +289,18 @@
       ],
       unit = (a) => mul(a, 1 / Math.hypot(...a));
     const rotate = (v, q, inverse = false) => {
-      const r = [q.x, q.y, q.z].map((x) => (inverse ? -x : x)),
+      const n = Math.hypot(q.x, q.y, q.z, q.w);
+      if (n < 1e-12) return [NaN, NaN, NaN];
+      const r = [q.x, q.y, q.z].map((x) => (x / n) * (inverse ? -1 : 1)),
         a = cross(r, v),
         b = cross(r, a);
-      return add(v, add(mul(a, 2 * q.w), mul(b, 2)));
+      return add(v, add(mul(a, (2 * q.w) / n), mul(b, 2)));
     };
     const xyz = (p) => [p.x, p.y, p.z],
       yaw = (point.yaw * Math.PI) / 180,
       pitch = (point.pitch * Math.PI) / 180,
       origin = xyz(left.position),
+      other = xyz(right.position),
       ray = rotate(
         [
           -Math.sin(yaw) * Math.cos(pitch),
@@ -284,35 +309,102 @@
         ],
         left.rotation,
       );
+    if (!ray.every(Number.isFinite)) return unknown("invalid-camera-rotation");
+    // Tolerances scale with the reconstruction, including non-metric projects.
+    const baseline = Math.hypot(...sub(origin, other)),
+      epsilon = Math.max(1e-9, baseline * 1e-7),
+      metersPerUnit = context.units === "meters" ? 1 : context.metersPerUnit;
+    const surfaceTolerance = (distance) => Math.max(epsilon, distance * 1e-4),
+      depthTolerance = (distance) =>
+        Math.max(
+          epsilon,
+          distance * 0.02,
+          Number.isFinite(metersPerUnit) && metersPerUnit > 0
+            ? 0.015 / metersPerUnit
+            : 0,
+        );
     const hit = (o, d) => {
-      if (!geometry) return null;
+      if (!geometry?.positions?.length) return null;
       let nearest = null;
       const ids =
         geometry.indices ||
         Array.from({ length: geometry.positions.length / 3 }, (_, i) => i);
-      for (let i = 0; i < ids.length; i += 3) {
+      for (let i = 0; i + 2 < ids.length; i += 3) {
         const a = geometry.positions.slice(ids[i] * 3, ids[i] * 3 + 3),
           b = geometry.positions.slice(ids[i + 1] * 3, ids[i + 1] * 3 + 3),
           c = geometry.positions.slice(ids[i + 2] * 3, ids[i + 2] * 3 + 3),
           e1 = sub(b, a),
           e2 = sub(c, a),
           p = cross(d, e2),
-          det = dot(e1, p);
-        if (Math.abs(det) < 1e-9) continue;
+          det = dot(e1, p),
+          area = Math.hypot(...cross(e1, e2));
+        if (!Number.isFinite(det) || area === 0 || Math.abs(det) < area * 1e-10)
+          continue;
         const t = sub(o, a),
           u = dot(t, p) / det;
-        if (u < 0 || u > 1) continue;
+        if (u < -1e-8 || u > 1 + 1e-8) continue;
         const q = cross(t, e1),
           v = dot(d, q) / det;
-        if (v < 0 || u + v > 1) continue;
+        if (v < -1e-8 || u + v > 1 + 1e-8) continue;
         const distance = dot(e2, q) / det;
-        if (distance > 1e-5 && (!nearest || distance < nearest.distance))
-          nearest = { distance, normal: unit(cross(e1, e2)) };
+        if (distance > epsilon && (!nearest || distance < nearest.distance))
+          nearest = {
+            distance,
+            normal: unit(cross(e1, e2)),
+            triangle: i,
+            vertices: [a, b, c],
+            barycentric: [1 - u - v, u, v],
+          };
       }
       return nearest;
     };
+    const boundary = (surface) => {
+      const area = Math.hypot(
+          ...cross(
+            sub(surface.vertices[1], surface.vertices[0]),
+            sub(surface.vertices[2], surface.vertices[0]),
+          ),
+        ),
+        margin = Math.max(epsilon * 4, surface.distance * 0.005),
+        edges = surface.barycentric.flatMap((weight, i) => {
+          const other = surface.vertices.filter((_, j) => j !== i),
+            height = area / Math.hypot(...sub(other[0], other[1]));
+          return weight * height <= margin ? [i] : [];
+        });
+      if (!edges.length) return false;
+      // A vertex or exposed edge may be visible around a doorway. An internal
+      // triangulation seam is not a physical boundary of the opaque wall.
+      if (edges.length > 1) return true;
+      const endpoints = surface.vertices.filter((_, i) => i !== edges[0]),
+        ids =
+          geometry.indices ||
+          Array.from({ length: geometry.positions.length / 3 }, (_, i) => i),
+        same = (a, b) => Math.hypot(...sub(a, b)) <= epsilon * 4;
+      for (let i = 0; i + 2 < ids.length; i += 3) {
+        if (i === surface.triangle) continue;
+        const vertices = Array.from(ids.slice(i, i + 3), (id) =>
+          geometry.positions.slice(id * 3, id * 3 + 3),
+        );
+        if (!endpoints.every((p) => vertices.some((q) => same(p, q)))) continue;
+        const n = unit(
+          cross(sub(vertices[1], vertices[0]), sub(vertices[2], vertices[0])),
+        );
+        if (Math.abs(dot(n, surface.normal)) > 0.99999) return false;
+      }
+      return true;
+    };
     const depth = (map, p) => {
-      if (!map) return null;
+      if (
+        !map ||
+        !Number.isInteger(map.width) ||
+        map.width < 1 ||
+        !Number.isInteger(map.height) ||
+        map.height < 1 ||
+        map.data?.length !== map.width * map.height
+      )
+        return null;
+      const scale = map.scale ?? 1;
+      if (!Number.isFinite(scale) || scale <= 0) return null;
       const x =
           Math.floor(((((p.yaw % 360) + 360) % 360) / 360) * map.width) %
           map.width,
@@ -323,55 +415,69 @@
             Math.round(((90 - p.pitch) / 180) * (map.height - 1)),
           ),
         ),
-        value = map.data[y * map.width + x];
-      return value > 0 ? value * (map.scale || 1) : null;
+        value = map.data[y * map.width + x] * scale;
+      return Number.isFinite(value) && value > 0 ? value : null;
     };
     const first = hit(origin, ray),
       sourceDepth = depth(leftDepth, point),
       distance = sourceDepth ?? first?.distance;
+    if (!distance) return unknown("unknown-point-depth");
     if (
       sourceDepth &&
       first &&
-      first.distance < sourceDepth - Math.max(0.02, sourceDepth * 0.01)
+      Math.abs(first.distance - sourceDepth) > depthTolerance(sourceDepth)
     )
-      return { visible: false, reason: "source-occlusion" };
-    if (!distance) return { visible: null, reason: "unknown-point-depth" };
+      return unknown("geometry-depth-conflict");
     const position = add(origin, mul(ray, distance)),
-      other = xyz(right.position),
       delta = sub(position, other),
       range = Math.hypot(...delta);
-    if (range < 0.001) return { visible: false, reason: "camera-at-landmark" };
+    if (range <= epsilon) return unknown("camera-at-landmark");
     const targetRay = unit(delta),
-      blocker = hit(other, targetRay),
-      tolerance = Math.max(0.02, range * 0.01);
-    if (blocker && blocker.distance < range - tolerance)
-      return { visible: false, reason: "wall-occlusion" };
-    if (
-      first &&
-      !sourceDepth &&
-      dot(sub(origin, position), first.normal) *
-        dot(sub(other, position), first.normal) <
-        -1e-6
-    )
-      return { visible: false, reason: "opposite-wall-face" };
-    const local = rotate(targetRay, right.rotation, true),
-      rightHint = {
+      local = rotate(targetRay, right.rotation, true);
+    if (!local.every(Number.isFinite))
+      return unknown("invalid-camera-rotation");
+    const rightHint = {
         yaw: ((Math.atan2(-local[0], -local[2]) * 180) / Math.PI + 360) % 360,
         pitch: (Math.asin(Math.max(-1, Math.min(1, local[1]))) * 180) / Math.PI,
       },
-      targetDepth = depth(rightDepth, rightHint);
-    if (targetDepth && targetDepth < range - Math.max(0.03, range * 0.02))
-      return { visible: false, reason: "depth-occlusion" };
-    return {
-      visible: !!geometry || !!targetDepth ? true : null,
-      reason:
-        geometry || targetDepth
-          ? "geometry-supported"
-          : "unverified-target-depth",
-      rightHint,
-    };
+      blocker = hit(other, targetRay),
+      tolerance = surfaceTolerance(range);
+    if (blocker && blocker.distance < range - tolerance)
+      return { visible: false, reason: "wall-occlusion", rightHint };
+    // A surface remains one-sided even when its range came from a depth map.
+    if (
+      first &&
+      Math.abs(first.distance - distance) <= depthTolerance(distance)
+    ) {
+      const a = dot(sub(origin, position), first.normal),
+        b = dot(sub(other, position), first.normal);
+      if (
+        (a > tolerance && b < -tolerance) ||
+        (a < -tolerance && b > tolerance)
+      )
+        return boundary(first)
+          ? unknown("surface-boundary", { rightHint })
+          : { visible: false, reason: "opposite-wall-face", rightHint };
+    }
+    const targetDepth = depth(rightDepth, rightHint);
+    if (targetDepth) {
+      if (targetDepth < range - depthTolerance(range))
+        return { visible: false, reason: "depth-occlusion", rightHint };
+      if (Math.abs(targetDepth - range) > depthTolerance(range))
+        return unknown("target-depth-mismatch", { rightHint });
+      return { visible: true, reason: "depth-supported", rightHint };
+    }
+    if (blocker && Math.abs(blocker.distance - range) <= tolerance)
+      return { visible: true, reason: "geometry-supported", rightHint };
+    return unknown("unverified-target-surface", { rightHint });
   }
-  function matchVisible({ reference, targets, count = 24, geometryContext }) {
+  function matchVisible({
+    reference,
+    targets,
+    count = 24,
+    geometryContext,
+    includeUnverified = false,
+  }) {
     const source = detect({ ...reference, count }),
       target = [];
     const ray = (p) => {
@@ -404,7 +510,8 @@
       };
     };
     for (const sample of targets) {
-      for (const p of detect({ ...sample, count: 96, separation: 0.035 })) {
+      const features = detect({ ...sample, count: 96, separation: 0.035 });
+      for (const p of features) {
         const pose = bearing(sample, p),
           direction = ray(pose),
           descriptors = describe(sample, p);
@@ -441,7 +548,8 @@
       scores = descriptions.map((d) =>
         target.map((t) => similarity(d, t.descriptors)),
       ),
-      accepted = [];
+      accepted = [],
+      pending = [];
     for (let i = 0; i < source.length; i++) {
       const check = visibility(bearing(reference, source[i]), geometryContext);
       if (check.visible === false) continue;
@@ -464,12 +572,19 @@
         (second &&
           (1 - first.score > 0.8 * (1 - second.score) ||
             first.score - second.score < 0.025))
-      )
+      ) {
+        if (includeUnverified)
+          pending.push({ ...source[i], visibility: "unverified" });
         continue;
+      }
       const reverse = scores
         .map((row, index) => ({ index, score: row[first.j] }))
         .sort((a, b) => b.score - a.score);
-      if (reverse[0]?.index !== i) continue;
+      if (reverse[0]?.index !== i) {
+        if (includeUnverified)
+          pending.push({ ...source[i], visibility: "unverified" });
+        continue;
+      }
       accepted.push({
         ...source[i],
         rightHint: target[first.j].pose,
@@ -477,7 +592,16 @@
         visibility: "image-supported",
       });
     }
-    return accepted;
+    // Absence of an image match is not proof of a wall. Offer real reference
+    // corners as explicitly unverified candidates; never invent a right hint.
+    // Prefer the neighborhood of supported details over unrelated rooms.
+    if (accepted.length)
+      pending.sort(
+        (a, b) =>
+          Math.min(...accepted.map((p) => Math.hypot(p.x - a.x, p.y - a.y))) -
+          Math.min(...accepted.map((p) => Math.hypot(p.x - b.x, p.y - b.y))),
+      );
+    return [...accepted, ...pending];
   }
   function start(sample) {
     let worker,

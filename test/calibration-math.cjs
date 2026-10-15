@@ -33,6 +33,8 @@ test('native dollhouse geometry in both binary formats participates in worker vi
   const vertices=[-20,-2,-20,20,-2,-20,20,-2,20,-20,-2,-20,20,-2,20,-20,-2,20],posBytes=format===1?72:36,bin=new ArrayBuffer(posBytes+(format===1?24:12));
   if(format===1)new Float32Array(bin,0,18).set(vertices);else new Uint16Array(bin,0,18).set(vertices.map((v,i)=>Math.round((v-[-20,-2,-20][i%3])/.001)));
   const idx=format===1?new Uint32Array(bin,posBytes,6):new Uint16Array(bin,posBytes,6);idx.set([0,1,2,3,4,5]);const model={meta:{format,chunks:[{vertices:6,triangles:2,pos:0,idx:posBytes,ib:2,pq:[-20,-2,-20,.001,.001,.001]}]},bin};
+  const cached={dispose(){throw new Error('Live geometry was disposed')}},cache=[cached];model.geo=cache;model.geoKey=['mirrored'];const before=Array.from(new Uint8Array(bin));
+  const decoded=M.visibilityGeometry({source:'dollhouse',origin:{x:2,y:3,z:4},rotation:{x:0,y:0,z:0},scale:2},{model});assert.deepEqual(decoded.positions.slice(0,3),[-38,-37,0]);assert.equal(model.geo,cache);assert.equal(model.geo[0],cached);assert.deepEqual(Array.from(new Uint8Array(bin)),before);
   const result=M.calculate(f.session,{units:'meters',anchor:{position:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0,w:1}},geometry:{source:'dollhouse',origin:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0},scale:1},model});assert.equal(result.status,'provisional');assert.equal(result.quality.visibility.occluded.length,40);
  }
 });

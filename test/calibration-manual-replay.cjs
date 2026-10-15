@@ -37,3 +37,30 @@ for(const scenario of cases){const file=files.find(f=>path.basename(f).includes(
   }else{await page.locator('#calibrationClose').click();await page.locator('#calibrationTool').click();await page.waitForFunction(()=>calibrationUI.session?.landmarks.length===4);assert.equal(await page.evaluate(()=>calibrationUI.session.status),'solved')}
  });
 }
+// Golden image coordinates were collected by hand after inspecting the actual
+// proposed artwork details and frame corners. Only right-side pointer taps create these matches.
+const guided=require('./support/guided-photographic-case.json'),guidedFile=files.find(f=>path.basename(f).includes(guided.panoramaCount+'panoramas'));
+const M=require('../calibration-math.js'),math=M.math,frameCorners=cases.find(c=>c.panoramaCount===36).features,rows=[];
+for(const p of frameCorners){const a=M.ray(p.observations[0].yaw,p.observations[0].pitch),b=M.ray(p.observations[1].yaw,p.observations[1].pitch);rows.push([...a.map(v=>b[1]*v),...a.map(v=>-b[0]*v),0,0,0],[0,0,0,...a.map(v=>b[2]*v),...a.map(v=>-b[1]*v)],[...a.map(v=>b[2]*v),0,0,0,...a.map(v=>-b[0]*v)])}
+const h=M.eigen(math.mm(math.transpose(rows),rows))[0].vector,H=[h.slice(0,3),h.slice(3,6),h.slice(6)],frameRays=frameCorners.map(p=>M.ray(p.observations[0].yaw,p.observations[0].pitch)),targetRay=M.ray(frameCorners[0].observations[1].yaw,frameCorners[0].observations[1].pitch),sign=math.dot(math.mv(H,frameRays[0]),targetRay)>0?1:-1,frameCenter=math.unit(frameRays.reduce((sum,p)=>math.add(sum,p),[0,0,0]));
+
+if(guidedFile)for(const[name,options]of profiles)test(`${name}: four automatic reference points in real photographs solve using only connecting-view taps`,{timeout:120000},async t=>{
+ const {page}=await openSession(browser,t,options,{empty:true});page.setDefaultTimeout(30000);
+ await page.locator('#fileOpen').setInputFiles(guidedFile);await page.waitForFunction(()=>archiveContext&&!calibrationUI.importing);await page.locator('#calibrationTool').click();
+ for(const[side,i]of [['left',0],['right',1]])await page.locator('#calibration-'+side+'-picker').selectOption(guided.cameraIds[i]);
+ await page.waitForFunction(()=>['left','right'].every(s=>calibrationUI.views[s]?.readyId===calibrationUIState()[s]));
+ await page.evaluate(views=>{for(const side of ['left','right'])calibrationUI.views[side].setView(views[side])},guided.views);
+ // The previous job must settle before requesting an analysis at these views.
+ await page.locator('#calibrationSuggest').click();await page.waitForFunction(()=>calibrationUI.suggestions.completed&&calibrationUI.suggestions.points.length===4,null,{timeout:45000});
+ assert.equal(await page.evaluate(()=>calibrationUI.session.landmarks.length),0);const used=new Set();
+ for(let i=0;i<4;i++){
+  const source=await page.evaluate(()=>calibrationUICurrentSuggestion()),ray=M.ray(source.yaw,source.pitch);
+  for(let edge=0;edge<4;edge++){const normal=math.unit(math.cross(frameRays[edge],frameRays[(edge+1)%4])),side=math.dot(normal,frameCenter)>0?1:-1;assert.ok(math.dot(normal,ray)*side>-.01,'Automatically selected details stay on the shared picture plane')}
+  assert.equal(used.has(source.id),false);used.add(source.id);
+  // Independently project a real feature on the measured planar picture. This
+  // handles AVIF decode/feature differences between desktop and mobile without
+  // requiring a fixed corner ordering or trusting the detector's target hint.
+  const target=M.angles(math.mul(math.mv(H,ray),sign));await page.evaluate(p=>calibrationUI.views.right.setView({...p,fov:34}),target);await page.waitForFunction(()=>!calibrationUI.views.right.raf);const box=await page.locator('#calibration-right-canvas').boundingBox();await pressAt(page,options,box.x+box.width/2,box.y+box.height/2);await page.waitForFunction(n=>calibrationUI.session.landmarks.length===n&&!calibrationUI.busy,i+1);
+ }
+ await page.waitForFunction(()=>calibrationUI.session.status==='solved'&&!calibrationUI.session.pending,null,{timeout:30000});const result=await page.evaluate(()=>calibrationUI.session);assert.equal(result.quality.inliers,8);assert.equal(result.quality.outliers,0);assert.equal(result.quality.verifiedCorrespondences,4);assert.ok(result.quality.meanAngularErrorDeg<.4);await page.screenshot({path:'/tmp/guided-real-'+name+'.png'});
+});

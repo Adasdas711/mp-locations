@@ -34,6 +34,35 @@ test('Depth-map occlusion uses radial depth; unknown geometry never becomes know
  assert.equal(F.visibility(point,{left,right}).visible,null);
  assert.equal(F.visibility(point,{left,right,leftDepth:depth(4)}).visible,null);
  assert.equal(F.visibility(point,{left,right,leftDepth:depth(4),rightDepth:depth(2)}).reason,'depth-occlusion');
- assert.equal(F.visibility(point,{left,right,leftDepth:depth(4),rightDepth:depth(5)}).visible,true);
- assert.equal(F.visibility(point,{left,right,leftDepth:depth(8),geometry:plane}).reason,'source-occlusion');
+ assert.equal(F.visibility(point,{left,right,leftDepth:depth(4),rightDepth:depth(Math.sqrt(17))}).visible,true);
+ assert.equal(F.visibility(point,{left,right,leftDepth:depth(8),geometry:plane}).reason,'geometry-depth-conflict');
+});
+test('Empty or missed geometry and incompatible surface depth do not prove visibility',()=>{
+ const left=camera(0,0,0),right=camera(1,0,0),point={yaw:0,pitch:0},depth=value=>({width:4,height:3,data:Array(12).fill(value)});
+ assert.equal(F.visibility(point,{left,right,leftDepth:depth(4),geometry:{positions:[],indices:[]}}).visible,null);
+ assert.equal(F.visibility(point,{left,right,leftDepth:depth(4),rightDepth:depth(8)}).visible,null);
+ assert.equal(F.visibility(point,{left,right,leftDepth:depth(4),rightDepth:depth(Math.sqrt(17))}).visible,true);
+ for(const value of [NaN,Infinity,-1,0])assert.equal(F.visibility(point,{left,right,leftDepth:depth(value)}).visible,null);
+});
+test('Depth at a wall surface must not disable the opposite-face test',()=>{
+ const depth={width:4,height:3,data:Array(12).fill(4)},result=F.visibility({yaw:0,pitch:0},{left:camera(0,0,0),right:camera(0,0,-5),geometry:plane,leftDepth:depth});assert.equal(result.visible,false);assert.equal(result.reason,'opposite-wall-face');
+});
+test('Rotated camera depth rays identify actual surfaces and wrapped yaw consistently',()=>{
+ const q={x:0,y:Math.sin(Math.PI/4),z:0,w:Math.cos(Math.PI/4)},left={position:{x:0,y:0,z:0},rotation:q},right=camera(0,0,1),depth={width:4,height:3,data:Array(12).fill(4)},p={yaw:360,pitch:0},result=F.visibility(p,{left,right,leftDepth:depth,rightDepth:{...depth,data:Array(12).fill(Math.sqrt(17))}});
+ assert.equal(result.visible,true);assert.ok(Math.abs(result.rightHint.yaw-Math.atan2(4,1)*180/Math.PI)<1e-6);assert.deepEqual(F.visibility({...p,yaw:0},{left,right,leftDepth:depth}),F.visibility(p,{left,right,leftDepth:depth}));
+});
+
+test('Automatic reference suggestions survive ambiguous appearance without claiming visibility or inventing target rays',()=>{
+ const reference={...image(160,120,(x,y)=>x>=30&&x<130&&y>=25&&y<95?240:15),pose:{yaw:0,pitch:0,fov:90}},targets=[reference,{...reference,pose:{yaw:90,pitch:0,fov:90}}];
+ const points=F.matchVisible({reference,targets,count:4,includeUnverified:true});assert.equal(points.length,4);assert.ok(points.every(p=>p.visibility==='unverified'&&!p.rightHint));assert.equal(F.matchVisible({reference,targets:[{...image(160,120,()=>127),pose:reference.pose}],count:4,includeUnverified:true}).length,4,'Lack of target texture does not suppress genuine source corners');
+ const blocked=F.matchVisible({reference,targets,count:4,includeUnverified:true,geometryContext:{left:camera(0,0,0),right:camera(0,0,-5),geometry:{positions:plane.positions.map(v=>v===-4?v:v*4),indices:plane.indices}}});assert.deepEqual(blocked,[]);
+});
+test('Occlusion tests are invariant under relative-world scale and depth holes stay unknown',()=>{
+ for(const scale of [1e-5,1,1e5]){const geometry={positions:plane.positions.map(v=>v*scale),indices:plane.indices};assert.equal(F.visibility({yaw:0,pitch:0},{left:camera(0,0,0),right:camera(0,0,-5*scale),geometry,leftDepth:{width:4,height:3,data:Array(12).fill(4*scale)}}).visible,false)}
+ assert.equal(F.visibility({yaw:0,pitch:0},{left:camera(0,0,0),right:camera(1,0,0),leftDepth:{width:4,height:3,data:Array(12).fill(4)},rightDepth:{width:4,height:3,data:Array(12).fill(0)}}).visible,null);
+});
+test('A doorway or exposed wall edge is not falsely rejected as the hidden interior face',()=>{
+ const context={left:camera(0,0,0),right:camera(0,0,-5),geometry:plane},edge={yaw:Math.atan2(-3,4)*180/Math.PI,pitch:0};
+ assert.equal(F.visibility({yaw:Math.atan2(-2.98,4)*180/Math.PI,pitch:0},context).visible,null,'A small measurement offset next to the exposed edge stays uncertain');assert.equal(F.visibility({yaw:Math.atan2(-2.8,4)*180/Math.PI,pitch:0},context).visible,false);assert.equal(F.visibility(edge,context).visible,null);assert.equal(F.visibility(edge,context).reason,'surface-boundary');
+ assert.equal(F.visibility({yaw:0,pitch:0},context).visible,false,'A shared triangulation seam remains inside the wall');assert.equal(F.visibility({yaw:0,pitch:0},{...context,geometry:{positions:new Float32Array(plane.positions),indices:new Uint32Array(plane.indices)}}).visible,false);
 });

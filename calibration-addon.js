@@ -21,6 +21,7 @@ const calibrationUI = {
   suggestionTimer: null,
   lastGuidedMatch: null,
   railSignature: null,
+  suggestionBatch: 0,
 };
 function calibrationUIBlank() {
   return {
@@ -511,7 +512,9 @@ function calibrationUIUpdateGuide() {
     pane.querySelector(".calibration-step").textContent =
       side === "left"
         ? suggested
-          ? "1 · Suggested point"
+          ? calibrationUICurrentSuggestion()?.visibility === "unverified"
+            ? "1 · Reference · check visibility"
+            : "1 · Suggested point"
           : "1 · Reference"
         : "2 · Tap the same detail";
   }
@@ -544,6 +547,7 @@ function calibrationUIResetSuggestions(disabled = false) {
   calibrationUI.suggestions?.job?.cancel();
   const saved = calibrationUIState();
   calibrationUI.suggestions = {
+    batchId: ++calibrationUI.suggestionBatch,
     key: [
       calibrationUI.generation,
       saved.sessionId,
@@ -633,6 +637,7 @@ function calibrationUIRenderRail() {
     calibrationUI.session?.status,
     calibrationUIState().selected,
     calibrationUI.suggestions?.key,
+    calibrationUI.suggestions?.batchId,
     calibrationUI.suggestions?.selected,
     calibrationUI.suggestions?.points.map((p) => p.id),
     calibrationUI.session?.quality?.visibility?.occluded,
@@ -776,35 +781,19 @@ function calibrationUIVisibilityContext() {
     left = world.cameras[saved.left],
     right = world.cameras[saved.right];
   if (!left || !right) return {};
-  const context = { left, right },
+  const context = {
+      left,
+      right,
+      units: world.units,
+      metersPerUnit: world.metersPerUnit,
+    },
     g = world.geometry;
   if (g?.positions)
     context.geometry = { positions: g.positions, indices: g.indices };
-  else if (g?.source === "dollhouse" && DHM) {
-    const positions = [],
-      indices = [],
-      matrix = new THREE.Matrix4().compose(
-        new THREE.Vector3(g.origin.x, g.origin.y, g.origin.z),
-        new THREE.Quaternion().setFromEuler(
-          new THREE.Euler(g.rotation.x, g.rotation.y, g.rotation.z),
-        ),
-        new THREE.Vector3(g.scale || 1, g.scale || 1, g.scale || 1),
-      ),
-      v = new THREE.Vector3();
-    for (let i = 0; i < DHM.meta.chunks.length; i++) {
-      const geometry = dhmGeometry(i, false),
-        attribute = geometry.getAttribute("position"),
-        base = positions.length / 3;
-      for (let j = 0; j < attribute.count; j++) {
-        v.fromBufferAttribute(attribute, j).applyMatrix4(matrix);
-        positions.push(v.x, v.y, v.z);
-      }
-      if (geometry.index)
-        for (const id of geometry.index.array) indices.push(base + id);
-      else for (let j = 0; j < attribute.count; j++) indices.push(base + j);
-    }
-    context.geometry = { positions, indices };
-  }
+  else if (g?.source === "dollhouse" && DHM)
+    context.geometry = PalaceCalibrationMath.visibilityGeometry(g, {
+      model: DHM,
+    });
   for (const [side, id] of [
     ["left", saved.left],
     ["right", saved.right],
@@ -821,11 +810,22 @@ function calibrationUIVisibilityContext() {
   }
   return context;
 }
-function calibrationUIFocusSuggestion() {
+function calibrationUIFocusSuggestion(moveRight = true) {
   const point = calibrationUICurrentSuggestion();
   if (!point) return;
   calibrationUI.views.left?.setView({ yaw: point.yaw, pitch: point.pitch });
-  if (point.rightHint) calibrationUI.views.right?.setView(point.rightHint);
+  if (moveRight && point.rightHint)
+    calibrationUI.views.right?.setView(point.rightHint);
+}
+function calibrationUIResumeSuggestions(delay = 350) {
+  if (!calibrationUI.open || calibrationUI.suggestions?.disabled) return;
+  calibrationUIResetSuggestions();
+  const auto = calibrationUI.suggestions;
+  auto.attempted = true;
+  calibrationUI.suggestionTimer = setTimeout(
+    () => calibrationUIFindPoints(auto),
+    delay,
+  );
 }
 async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
   if (
@@ -834,6 +834,19 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
     auto.disabled
   )
     return;
+  const leftView = calibrationUI.views.left;
+  if (
+    leftView?.dragging ||
+    Math.abs(leftView?.velYaw || 0) > 0.02 ||
+    Math.abs(leftView?.velPitch || 0) > 0.02 ||
+    Math.abs((leftView?.fovTarget || leftView?.fov) - leftView?.fov) > 0.1
+  ) {
+    calibrationUI.suggestionTimer = setTimeout(
+      () => calibrationUIFindPoints(auto),
+      250,
+    );
+    return;
+  }
   auto.detecting = true;
   calibrationUIRenderSuggestions();
   try {
@@ -847,7 +860,10 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
     });
     const targets = [],
       saved = calibrationUIState(),
-      right = calibrationUI.views.right;
+      right = calibrationUI.views.right,
+      rightPose = { yaw: right.yaw, pitch: right.pitch, fov: right.fov },
+      worldSnapshot = state.worldSpace,
+      sceneSnapshot = state.sceneConfigurations;
     // Inspect all directions of the other panorama, not just its current viewport.
     for (const pose of [
       { yaw: right.yaw, pitch: right.pitch, fov: right.fov },
@@ -855,8 +871,8 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
       { yaw: 90, pitch: 0, fov: 100 },
       { yaw: 180, pitch: 0, fov: 100 },
       { yaw: 270, pitch: 0, fov: 100 },
-      { yaw: 0, pitch: 65, fov: 100 },
-      { yaw: 0, pitch: -65, fov: 100 },
+      { yaw: 0, pitch: 90, fov: 100 },
+      { yaw: 0, pitch: -90, fov: 100 },
     ]) {
       await new Promise(requestAnimationFrame);
       if (
@@ -884,6 +900,7 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
       targets,
       geometryContext: calibrationUIVisibilityContext(),
       count: 24,
+      includeUnverified: true,
     });
     const features = await auto.job.promise;
     if (
@@ -892,17 +909,20 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
       auto.disabled
     )
       return;
-    const yawChange = Math.abs(
-      ((source.yaw - sample.pose.yaw + 540) % 360) - 180,
-    );
+    const delta = ((source.yaw - sample.pose.yaw) * Math.PI) / 180,
+      yawChange =
+        (Math.abs(Math.atan2(Math.sin(delta), Math.cos(delta))) * 180) /
+        Math.PI;
     if (
+      source.dragging ||
+      right.dragging ||
+      state.worldSpace !== worldSnapshot ||
+      state.sceneConfigurations !== sceneSnapshot ||
       yawChange > 0.5 ||
       Math.abs(source.pitch - sample.pose.pitch) > 0.5 ||
       Math.abs(source.fov - sample.pose.fov) > 0.5
     ) {
-      calibrationUIMessage(
-        "Reference view changed. Use Find points to search this area.",
-      );
+      calibrationUIResumeSuggestions();
       return;
     }
     const used = (calibrationUI.session?.landmarks || []).flatMap((p) =>
@@ -913,7 +933,7 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
         ...sample.bearingAt(point.x, point.y),
         rightHint: point.rightHint,
         visibility: point.visibility,
-        id: auto.key + ":" + index,
+        id: auto.key + ":" + auto.batchId + ":" + index,
       }))
       .filter((p) =>
         used.every((o) => {
@@ -921,7 +941,7 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
             b = PalaceCalibrationMath.ray(o.yaw, o.pitch);
           return (
             a.reduce((sum, v, i) => sum + v * b[i], 0) <
-            Math.cos((4 * Math.PI) / 180)
+            Math.cos((0.75 * Math.PI) / 180)
           );
         }),
       );
@@ -935,11 +955,17 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
     auto.selected = auto.points[0]?.id || null;
     calibrationUI.placingNew = false;
     calibrationUIState().selected = null;
-    calibrationUIFocusSuggestion();
+    calibrationUIFocusSuggestion(
+      Math.abs(right.yaw - rightPose.yaw) < 0.5 &&
+        Math.abs(right.pitch - rightPose.pitch) < 0.5 &&
+        Math.abs(right.fov - rightPose.fov) < 0.5,
+    );
     calibrationUIMessage(
       auto.points.length
-        ? "Match the yellow detail on the right. The next reference point is selected automatically. Skip anything not visible in both."
-        : "No confidently shared details in this view. Rotate the reference panorama and use Find points, choose another pair, or use Manual point.",
+        ? auto.points.some((p) => p.visibility === "unverified")
+          ? "Reference points are ready. Visibility is unverified: match the same physical detail on the right, or skip it."
+          : "Match the yellow detail on the right. The next reference point is selected automatically. Skip anything not visible in both."
+        : "No usable reference points in this view. Rotate the reference panorama to search again, choose another pair, or use Manual point.",
     );
   } catch (error) {
     if (
@@ -1776,7 +1802,12 @@ async function openPanoramaCalibration() {
         calibrationUIAction(() =>
           calibrationUIPlace(side, e.clientX, e.clientY, captured),
         );
-      }
+      } else if (
+        side === "left" &&
+        current &&
+        Math.hypot(e.clientX - current.x, e.clientY - current.y) >= 6
+      )
+        calibrationUIResumeSuggestions();
       clearTimeout(calibrationUI.saveTimer);
       calibrationUI.saveTimer = setTimeout(calibrationUISave, 200);
     });
@@ -1784,11 +1815,27 @@ async function openPanoramaCalibration() {
     canvas.addEventListener(
       "wheel",
       () => {
+        if (side === "left") calibrationUIResumeSuggestions(450);
         clearTimeout(calibrationUI.saveTimer);
         calibrationUI.saveTimer = setTimeout(calibrationUISave, 250);
       },
       { passive: true },
     );
+    canvas.addEventListener("keyup", (event) => {
+      if (
+        side === "left" &&
+        [
+          "ArrowLeft",
+          "ArrowRight",
+          "ArrowUp",
+          "ArrowDown",
+          "+",
+          "-",
+          "=",
+        ].includes(event.key)
+      )
+        calibrationUIResumeSuggestions();
+    });
   }
   const api = calibrationUIAPI();
   for (const name of [
@@ -1913,6 +1960,7 @@ for (const side of ["left", "right"]) {
   };
   document.querySelector("#calibration-" + side + "-fov").oninput = (e) => {
     calibrationUI.views[side]?.setView({ fov: Number(e.target.value) });
+    if (side === "left") calibrationUIResumeSuggestions();
     clearTimeout(calibrationUI.saveTimer);
     calibrationUI.saveTimer = setTimeout(calibrationUISave, 250);
   };

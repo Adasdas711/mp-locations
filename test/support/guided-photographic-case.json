@@ -1,0 +1,19 @@
+{
+  "panoramaCount": 36,
+  "cameraIds": [
+    "c6e1412691",
+    "6362847ff1"
+  ],
+  "views": {
+    "left": {
+      "yaw": 92,
+      "pitch": 16,
+      "fov": 34
+    },
+    "right": {
+      "yaw": 210,
+      "pitch": 12,
+      "fov": 34
+    }
+  }
+}
