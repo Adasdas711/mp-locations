@@ -22,6 +22,7 @@ const calibrationUI = {
   lastGuidedMatch: null,
   railSignature: null,
   suggestionBatch: 0,
+  refreshSequence: 0,
 };
 function calibrationUIBlank() {
   return {
@@ -512,9 +513,7 @@ function calibrationUIUpdateGuide() {
     pane.querySelector(".calibration-step").textContent =
       side === "left"
         ? suggested
-          ? calibrationUICurrentSuggestion()?.visibility === "unverified"
-            ? "1 · Reference · check visibility"
-            : "1 · Suggested point"
+          ? "1 · Suggested point"
           : "1 · Reference"
         : "2 · Tap the same detail";
   }
@@ -558,6 +557,7 @@ function calibrationUIResetSuggestions(disabled = false) {
     reserve: [],
     selected: null,
     disabled,
+    disabledReason: disabled ? "manual" : null,
     attempted: false,
     detecting: false,
     completed: false,
@@ -580,7 +580,9 @@ function calibrationUIRenderSuggestions() {
   calibrationAutoStatus.textContent = auto?.detecting
     ? "Finding reference details…"
     : current
-      ? `Match ${count + 1} of ${target} · yellow point on the left`
+      ? count >= target
+        ? "Additional match · resolve camera ambiguity"
+        : `Match ${count + 1} of ${target} · yellow point on the left`
       : "";
   calibrationSkip.hidden = !current;
   calibrationSkip.disabled = calibrationUI.busy;
@@ -748,13 +750,59 @@ function calibrationUIRefreshSuggestions() {
       !!selected?.observations.some((o) => o.panoId === saved.left),
     );
   }
-  const auto = calibrationUI.suggestions,
-    target = calibrationUI.session?.config.minCorrespondences || 4;
-  if (calibrationUIPairMatches().length >= target && !auto.explicit) {
+  let auto = calibrationUI.suggestions;
+  const target = calibrationUI.session?.config.minCorrespondences || 4;
+  const matched = calibrationUIPairMatches().length;
+  const pairEdge = calibrationUI.session?.quality?.edges?.find(
+    (edge) =>
+      [edge.from, edge.to].includes(saved.left) &&
+      [edge.from, edge.to].includes(saved.right),
+  );
+  const needsMore =
+    !calibrationUI.session?.pending &&
+    matched >= target &&
+    pairEdge?.status === "degenerate";
+  if (auto.disabledReason === "complete" && (matched < target || needsMore)) {
+    if (needsMore) {
+      auto.disabled = false;
+      auto.disabledReason = null;
+    } else {
+      calibrationUIResetSuggestions();
+      auto = calibrationUI.suggestions;
+    }
+  }
+  if (!auto.disabled && auto.target !== target) {
+    auto.target = target;
+    const remaining = Math.max(1, target - matched);
+    if (auto.points.length < remaining)
+      auto.points.push(
+        ...auto.reserve.splice(0, remaining - auto.points.length),
+      );
+    else if (auto.points.length > remaining)
+      auto.reserve.unshift(...auto.points.splice(remaining));
+    auto.selected = auto.points.some((p) => p.id === auto.selected)
+      ? auto.selected
+      : auto.points[0]?.id || null;
+  }
+  if (matched >= target && !auto.explicit && !needsMore) {
     auto.job?.cancel();
     auto.points = [];
-    auto.reserve = [];
     auto.disabled = true;
+    auto.disabledReason = "complete";
+  }
+  if (
+    needsMore &&
+    !auto.disabled &&
+    !auto.points.length &&
+    auto.reserve.length
+  ) {
+    auto.points.push(auto.reserve.shift());
+    auto.selected = auto.points[0].id;
+    saved.selected = null;
+    calibrationUIFocusSuggestion();
+    calibrationUIMessage(
+      "These matches leave ambiguous camera positions. Match another shared detail, preferably away from the same plane, or correct a saved point.",
+    );
   }
   if (
     !auto.disabled &&
@@ -882,7 +930,7 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
         right.readyId !== saved.right
       )
         return;
-      const image = right.sampleImage({ width: 256, height: 256, pose });
+      const image = right.sampleImage({ width: 384, height: 384, pose });
       targets.push({
         width: image.width,
         height: image.height,
@@ -900,7 +948,6 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
       targets,
       geometryContext: calibrationUIVisibilityContext(),
       count: 24,
-      includeUnverified: true,
     });
     const features = await auto.job.promise;
     if (
@@ -925,9 +972,11 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
       calibrationUIResumeSuggestions();
       return;
     }
-    const used = (calibrationUI.session?.landmarks || []).flatMap((p) =>
-      p.observations.filter((o) => o.panoId === calibrationUIState().left),
-    );
+    const used = (calibrationUI.session?.landmarks || [])
+      .filter((p) => p.enabled)
+      .flatMap((p) =>
+        p.observations.filter((o) => o.panoId === calibrationUIState().left),
+      );
     const candidates = features
       .map((point, index) => ({
         ...sample.bearingAt(point.x, point.y),
@@ -962,10 +1011,8 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
     );
     calibrationUIMessage(
       auto.points.length
-        ? auto.points.some((p) => p.visibility === "unverified")
-          ? "Reference points are ready. Visibility is unverified: match the same physical detail on the right, or skip it."
-          : "Match the yellow detail on the right. The next reference point is selected automatically. Skip anything not visible in both."
-        : "No usable reference points in this view. Rotate the reference panorama to search again, choose another pair, or use Manual point.",
+        ? "Match the yellow detail on the right. The next reference point is selected automatically. Skip anything not visible in both."
+        : "No confirmed common area. Aim both panoramas at the same visible room or detail, then use Find points. Use No overlap for separate spaces.",
     );
   } catch (error) {
     if (
@@ -989,6 +1036,12 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
 calibrationSuggest.onclick = () => {
   if (calibrationUI.busy) return;
   calibrationUIResetSuggestions();
+  calibrationUIState().selected = null;
+  calibrationUIState().visibleConfirmed = false;
+  calibrationUI.placingNew = false;
+  for (const side of ["left", "right"]) calibrationUIRenderMarkers(side);
+  calibrationUIRenderPoints();
+  calibrationUIRenderStatus();
   const auto = calibrationUI.suggestions;
   auto.explicit = true;
   auto.attempted = true;
@@ -1063,9 +1116,15 @@ function calibrationUIQueueRefresh() {
 async function calibrationUIRefresh() {
   if (!calibrationUI.open) return;
   const generation = calibrationUI.generation,
+    sequence = ++calibrationUI.refreshSequence,
     saved = calibrationUIState(),
     sessions = await calibrationUIAPI().listSessions();
-  if (!calibrationUI.open || generation !== calibrationUI.generation) return;
+  if (
+    !calibrationUI.open ||
+    generation !== calibrationUI.generation ||
+    sequence !== calibrationUI.refreshSequence
+  )
+    return;
   calibrationUI.session =
     sessions.find((s) => s.id === saved.sessionId) || sessions[0] || null;
   if (calibrationUI.session) saved.sessionId = calibrationUI.session.id;
@@ -1119,7 +1178,11 @@ async function calibrationUIRefresh() {
     if (wanted && view.currentId !== wanted) {
       view.overlaySignature = null;
       await view.showPanorama(wanted, saved.views[wanted]);
-      if (!calibrationUI.open || generation !== calibrationUI.generation)
+      if (
+        !calibrationUI.open ||
+        generation !== calibrationUI.generation ||
+        sequence !== calibrationUI.refreshSequence
+      )
         return;
     } else if (!wanted) {
       view.dispose();
@@ -1218,7 +1281,7 @@ function calibrationUIRenderStatus() {
               ? "Preliminary solution"
               : "Correspondences added";
   document.querySelector("#calibrationPairStatus").textContent =
-    `${pair.length}/${session?.config.minCorrespondences || 4} matches · ${session?.config.orientationModel === "upright" ? "level horizons · " : ""}${pairStatus}`;
+    `${pair.length > (session?.config.minCorrespondences || 4) ? `${pair.length} matches (minimum ${session?.config.minCorrespondences || 4})` : `${pair.length}/${session?.config.minCorrespondences || 4} matches`} · ${session?.config.orientationModel === "upright" ? "level horizons · " : ""}${pairStatus}`;
   document.querySelector("#calibrationVisibility").checked =
     saved.visibleConfirmed;
   document.querySelector("#calibrationParallax").checked =
@@ -1493,7 +1556,9 @@ async function calibrationUIPlace(side, x, y, captured) {
     throw new Error("Wait for a valid panorama image before choosing points.");
   if (
     captured &&
-    (captured.panoId !== saved[side] || captured.sessionId !== session.id)
+    (!captured.angles ||
+      captured.panoId !== saved[side] ||
+      captured.sessionId !== session.id)
   )
     return;
   const angles = captured?.angles || view.bearingAt(x, y),
@@ -1767,23 +1832,53 @@ async function openPanoramaCalibration() {
           ).textContent = message;
       },
     });
-    let press = null;
+    let press = null,
+      gestureMoved = false;
+    const pointers = new Set();
     canvas.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      pointers.add(e.pointerId);
+      if (pointers.size > 1) {
+        press = null;
+        gestureMoved = true;
+        return;
+      }
+      gestureMoved = false;
+      const view = calibrationUI.views[side];
       press = {
         x: e.clientX,
         y: e.clientY,
         id: e.pointerId,
         panoId: calibrationUIState()[side],
+        ready: view.readyId === calibrationUIState()[side] && !!view.texture,
+        moved: false,
       };
       canvas.focus({ preventScroll: true });
     });
+    canvas.addEventListener("pointermove", (e) => {
+      if (
+        press?.id === e.pointerId &&
+        Math.hypot(e.clientX - press.x, e.clientY - press.y) >= 6
+      ) {
+        press.moved = true;
+        gestureMoved = true;
+      }
+    });
     canvas.addEventListener("pointerup", (e) => {
       const current = press;
+      pointers.delete(e.pointerId);
       press = null;
+      if (pointers.size) return;
+      const moved = gestureMoved;
+      gestureMoved = false;
       if (!calibrationUI.open || generation !== calibrationUI.generation)
         return;
       if (
         current &&
+        current.ready &&
+        !current.moved &&
+        !moved &&
+        e.button === 0 &&
         current.panoId === calibrationUIState()[side] &&
         current.id === e.pointerId &&
         Math.hypot(e.clientX - current.x, e.clientY - current.y) < 6
@@ -1799,23 +1894,43 @@ async function openPanoramaCalibration() {
               ? view.bearingAt(e.clientX, e.clientY)
               : null,
         };
-        calibrationUIAction(() =>
-          calibrationUIPlace(side, e.clientX, e.clientY, captured),
+        if (captured.angles)
+          calibrationUIAction(() =>
+            calibrationUIPlace(side, e.clientX, e.clientY, captured),
+          );
+      } else if (
+        current &&
+        !moved &&
+        !current.moved &&
+        e.button === 0 &&
+        (!current.ready || calibrationUI.views[side].readyId !== current.panoId)
+      ) {
+        calibrationUIMessage(
+          "Wait for a valid panorama image before choosing points.",
         );
       } else if (
-        side === "left" &&
-        current &&
-        Math.hypot(e.clientX - current.x, e.clientY - current.y) >= 6
+        moved &&
+        (side === "left" || !calibrationUICurrentSuggestion())
       )
         calibrationUIResumeSuggestions();
       clearTimeout(calibrationUI.saveTimer);
       calibrationUI.saveTimer = setTimeout(calibrationUISave, 200);
     });
-    canvas.addEventListener("pointercancel", () => (press = null));
+    canvas.addEventListener("pointercancel", (e) => {
+      pointers.delete(e.pointerId);
+      press = null;
+      gestureMoved = true;
+      if (!pointers.size) {
+        gestureMoved = false;
+        if (side === "left" || !calibrationUICurrentSuggestion())
+          calibrationUIResumeSuggestions();
+      }
+    });
     canvas.addEventListener(
       "wheel",
       () => {
-        if (side === "left") calibrationUIResumeSuggestions(450);
+        if (side === "left" || !calibrationUICurrentSuggestion())
+          calibrationUIResumeSuggestions(450);
         clearTimeout(calibrationUI.saveTimer);
         calibrationUI.saveTimer = setTimeout(calibrationUISave, 250);
       },
@@ -1823,7 +1938,7 @@ async function openPanoramaCalibration() {
     );
     canvas.addEventListener("keyup", (event) => {
       if (
-        side === "left" &&
+        (side === "left" || !calibrationUICurrentSuggestion()) &&
         [
           "ArrowLeft",
           "ArrowRight",
@@ -1960,7 +2075,8 @@ for (const side of ["left", "right"]) {
   };
   document.querySelector("#calibration-" + side + "-fov").oninput = (e) => {
     calibrationUI.views[side]?.setView({ fov: Number(e.target.value) });
-    if (side === "left") calibrationUIResumeSuggestions();
+    if (side === "left" || !calibrationUICurrentSuggestion())
+      calibrationUIResumeSuggestions();
     clearTimeout(calibrationUI.saveTimer);
     calibrationUI.saveTimer = setTimeout(calibrationUISave, 250);
   };

@@ -4,6 +4,7 @@ Copied from versioned npm packages, with npm registry integrity verification:
 
 | Package | Version | Files |
 | --- | --- | --- |
+| jsfeat | 0.0.8 | jsfeat-0.0.8.min.js |
 | jszip | 3.10.1 | jszip.min.js |
 | pdfjs-dist | 3.11.174 | pdf.min.js, pdf.worker.min.js |
 | three | 0.128.0 | three.min.js |
@@ -15,3 +16,5 @@ Copied from versioned npm packages, with npm registry integrity verification:
 Licenses are included alongside the files. English language data is from the Tesseract project's Apache-2.0 licensed [tessdata](https://github.com/tesseract-ocr/tessdata) distribution. All core variants are retained so the worker can choose SIMD/LSTM support at runtime. `fonts.css` intentionally leaves the editor's declared system font fallbacks in use.
 
 When refreshing dependencies, preserve signature/integrity/TLS verification, copy the corresponding licenses, run the browser integration checks, and update the service worker cache version. Keep the PDF worker version matched to PDF.js.
+
+JSFeat is loaded only inside the calibration feature worker. The worker provides its `window` export alias; the original npm bundle is unmodified. No face cascades are bundled or used.

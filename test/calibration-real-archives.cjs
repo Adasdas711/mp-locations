@@ -15,13 +15,13 @@ for(const file of files)for(const[name,options]of profiles)test(`${name}: real a
  await ready();assert.equal(await page.locator('#planTools').isVisible(),false);assert.equal(await page.locator('#calibrationEmpty').isVisible(),false);
  const layout=await page.locator('.calibration-viewport').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect(),workspace=el.closest('#calibrationWorkspace').getBoundingClientRect();return {h:r.height,top:r.top,bottom:r.bottom,workspaceBottom:workspace.bottom}}));assert.ok(layout.every(r=>r.h>=85&&r.bottom<r.workspaceBottom),JSON.stringify(layout));
  const labels=await page.locator('#calibration-left-picker option').allTextContents();assert.equal(labels.length,available.length);assert.equal(new Set(labels).size,labels.length);const initial=await page.evaluate(()=>[calibrationUIState().left,calibrationUIState().right]);assert.ok(available.find(p=>p.id===initial[0]).neighbors.includes(initial[1]),'Default pair must be linked in the tour');
- await page.waitForFunction(()=>calibrationUI.suggestions?.completed&&calibrationUI.suggestions.points.length===4,null,{timeout:45000});
+ await page.waitForFunction(()=>calibrationUI.suggestions?.completed,null,{timeout:45000});
  assert.equal(await page.evaluate(()=>calibrationUI.session.landmarks.length),0,'Reference points appear automatically without creating observations');
- assert.equal(await page.locator('#calibrationPointTrack button').count(),4);
- assert.equal(await page.locator('.calibration-pane[data-side=left] .calibration-proposal').count(),1);
+ const offered=await page.evaluate(()=>calibrationUI.suggestions.points.length);assert.equal(await page.locator('#calibrationPointTrack button').count(),offered);assert.equal(await page.evaluate(()=>calibrationUI.suggestions.points.every(p=>p.visibility==='image-supported'&&p.rightHint)),true,'No unverified source-only fallback is allowed');if(!offered)assert.match(await page.locator('#calibrationMessage').textContent(),/No confirmed common area/);
+ assert.equal(await page.locator('.calibration-pane[data-side=left] .calibration-proposal').count(),offered?1:0);
  assert.equal(await page.locator('.calibration-pane[data-side=right] .calibration-observation').count(),0);
- const batch=await page.evaluate(()=>calibrationUI.suggestions.batchId);await page.locator('#calibrationSuggest').click();await page.waitForFunction(batch=>calibrationUI.suggestions.batchId>batch&&calibrationUI.suggestions.completed&&calibrationUI.suggestions.points.length===4,batch,{timeout:45000});
- await page.locator('#calibrationPointTrack button').nth(1).click();assert.equal(await page.evaluate(()=>calibrationUICurrentSuggestion().id===calibrationUI.suggestions.points[1].id),true);
+ const batch=await page.evaluate(()=>calibrationUI.suggestions.batchId);await page.locator('#calibrationSuggest').click();await page.waitForFunction(batch=>calibrationUI.suggestions.batchId>batch&&calibrationUI.suggestions.completed,batch,{timeout:45000});
+ if(await page.locator('#calibrationPointTrack button').count()>1){await page.locator('#calibrationPointTrack button').nth(1).click();assert.equal(await page.evaluate(()=>calibrationUICurrentSuggestion().id===calibrationUI.suggestions.points[1].id),true);}
  // Return to manual collection before checking queued pointer measurements.
  await page.locator('#calibrationNewPoint').click();
  // Queue two real pointer taps while the first SDK mutation is intentionally delayed.

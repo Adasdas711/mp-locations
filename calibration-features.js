@@ -471,13 +471,7 @@
       return { visible: true, reason: "geometry-supported", rightHint };
     return unknown("unverified-target-surface", { rightHint });
   }
-  function matchVisible({
-    reference,
-    targets,
-    count = 24,
-    geometryContext,
-    includeUnverified = false,
-  }) {
+  function matchVisible({ reference, targets, count = 24, geometryContext }) {
     const source = detect({ ...reference, count }),
       target = [];
     const ray = (p) => {
@@ -548,19 +542,10 @@
       scores = descriptions.map((d) =>
         target.map((t) => similarity(d, t.descriptors)),
       ),
-      accepted = [],
-      pending = [];
+      accepted = [];
     for (let i = 0; i < source.length; i++) {
       const check = visibility(bearing(reference, source[i]), geometryContext);
       if (check.visible === false) continue;
-      if (check.visible === true) {
-        accepted.push({
-          ...source[i],
-          rightHint: check.rightHint,
-          visibility: "geometry-supported",
-        });
-        continue;
-      }
       const ranked = scores[i]
           .map((score, j) => ({ score, j }))
           .sort((a, b) => b.score - a.score),
@@ -573,16 +558,12 @@
           (1 - first.score > 0.8 * (1 - second.score) ||
             first.score - second.score < 0.025))
       ) {
-        if (includeUnverified)
-          pending.push({ ...source[i], visibility: "unverified" });
         continue;
       }
       const reverse = scores
         .map((row, index) => ({ index, score: row[first.j] }))
         .sort((a, b) => b.score - a.score);
       if (reverse[0]?.index !== i) {
-        if (includeUnverified)
-          pending.push({ ...source[i], visibility: "unverified" });
         continue;
       }
       accepted.push({
@@ -592,16 +573,63 @@
         visibility: "image-supported",
       });
     }
-    // Absence of an image match is not proof of a wall. Offer real reference
-    // corners as explicitly unverified candidates; never invent a right hint.
-    // Prefer the neighborhood of supported details over unrelated rooms.
-    if (accepted.length)
-      pending.sort(
-        (a, b) =>
-          Math.min(...accepted.map((p) => Math.hypot(p.x - a.x, p.y - a.y))) -
-          Math.min(...accepted.map((p) => Math.hypot(p.x - b.x, p.y - b.y))),
-      );
-    return [...accepted, ...pending];
+    return accepted;
+  }
+  function findShared(input) {
+    const reference = input.reference;
+    let points = PalaceCalibrationOverlap.find(reference, input.targets, detect)
+      .filter(
+        (p) =>
+          visibility(
+            PalaceCalibrationOverlap.bearing(reference, p),
+            input.geometryContext,
+          ).visible !== false,
+      )
+      .map((p) => ({
+        ...p,
+        rightHint: PalaceCalibrationOverlap.bearing(p.target, p.rightPoint),
+        visibility: "image-supported",
+      }));
+    // Four exact, distinct contexts on one photographic view can be supported
+    // even when that image has too little texture for eight ORB features.
+    if (points.length < 4)
+      for (const target of input.targets) {
+        const exact = matchVisible({
+          ...input,
+          targets: [target],
+        }).filter((p) => p.similarity >= 0.97);
+        if (exact.length >= 4) {
+          points = exact;
+          break;
+        }
+      }
+    if (points.length < 4) return [];
+    const selected = [],
+      pool = [...points];
+    while (pool.length) {
+      let best = 0,
+        score = -Infinity;
+      for (let i = 0; i < pool.length; i++) {
+        const p = pool[i],
+          distance = selected.length
+            ? Math.min(...selected.map((q) => Math.hypot(p.x - q.x, p.y - q.y)))
+            : 1,
+          value = distance * Math.sqrt(Math.max(1, p.score));
+        if (value > score) {
+          score = value;
+          best = i;
+        }
+      }
+      selected.push(pool.splice(best, 1)[0]);
+    }
+    return selected.map((p) => ({
+      x: p.x,
+      y: p.y,
+      rightHint: p.rightHint,
+      visibility: p.visibility,
+      similarity: p.similarity,
+      evidence: p.evidence,
+    }));
   }
   function start(sample) {
     let worker,
@@ -621,7 +649,7 @@
         url = URL.createObjectURL(
           new Blob(
             [
-              "const detect=" +
+              "var window=self;const detect=" +
                 detect.toString() +
                 ";const describe=" +
                 describe.toString() +
@@ -629,7 +657,9 @@
                 visibility.toString() +
                 ";const matchVisible=" +
                 matchVisible.toString() +
-                ";onmessage=e=>{try{postMessage({points:e.data.reference?matchVisible(e.data):detect(e.data)})}catch(error){postMessage({error:error.message})}}",
+                ";const findShared=" +
+                findShared.toString() +
+                ";onmessage=e=>{try{if(e.data.reference)importScripts(e.data.jsfeatURL,e.data.overlapURL);postMessage({points:e.data.reference?findShared(e.data):detect(e.data)})}catch(error){postMessage({error:error.message})}}",
             ],
             { type: "text/javascript" },
           ),
@@ -639,6 +669,16 @@
           finish(e.data.error ? new Error(e.data.error) : null, e.data.points);
         worker.onerror = () =>
           finish(new Error("Unable to analyze panorama details."));
+        if (sample.reference) {
+          sample.jsfeatURL = new URL(
+            "vendor/jsfeat-0.0.8.min.js",
+            document.baseURI,
+          ).href;
+          sample.overlapURL = new URL(
+            "calibration-overlap.js",
+            document.baseURI,
+          ).href;
+        }
         worker.postMessage(
           sample,
           sample.reference

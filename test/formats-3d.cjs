@@ -11,7 +11,10 @@ for(const [name,options]of profiles){
   const r=await page.evaluate(()=>DH.ctl.r);await page.locator('#zoomIn').click();await page.waitForFunction(r=>DH.ctl.r<r,r);
   const photo=await page.evaluate(()=>DH.photo);await page.locator('#planPhoto3d').click();assert.notEqual(await page.evaluate(()=>DH.photo),photo);
   await page.locator('#floorOverlay button[data-li="1"]').click();assert.equal(await page.evaluate(()=>state.active),1);
-  await page.locator('#planView2d').click();await page.waitForFunction(()=>planView==='2d'&&document.querySelectorAll('#plan .marker').length===2);
+  // This button changes an animated canvas mode, not the document. Wait for
+  // that observable result instead of Playwright's unrelated navigation wait.
+  const documentURL=page.url();await page.locator('#planView2d').click({noWaitAfter:true});await page.waitForFunction(()=>planView==='2d'&&document.querySelectorAll('#plan .marker').length===2,null,{timeout:20000});
+  assert.equal(page.url(),documentURL);assert.equal(await page.locator('#dollhouseCanvas').isVisible(),false);
  });
  test(`${name}: imports Zillow and Matterport 3dview, rejects corrupt archives without losing project`,async t=>{
   const {page}=await openSession(browser,t,options);const png=fs.readFileSync(path.join(__dirname,'../icons/icon-192.png'));

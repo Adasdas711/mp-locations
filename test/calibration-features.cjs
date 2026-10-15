@@ -52,10 +52,9 @@ test('Rotated camera depth rays identify actual surfaces and wrapped yaw consist
  assert.equal(result.visible,true);assert.ok(Math.abs(result.rightHint.yaw-Math.atan2(4,1)*180/Math.PI)<1e-6);assert.deepEqual(F.visibility({...p,yaw:0},{left,right,leftDepth:depth}),F.visibility(p,{left,right,leftDepth:depth}));
 });
 
-test('Automatic reference suggestions survive ambiguous appearance without claiming visibility or inventing target rays',()=>{
- const reference={...image(160,120,(x,y)=>x>=30&&x<130&&y>=25&&y<95?240:15),pose:{yaw:0,pitch:0,fov:90}},targets=[reference,{...reference,pose:{yaw:90,pitch:0,fov:90}}];
- const points=F.matchVisible({reference,targets,count:4,includeUnverified:true});assert.equal(points.length,4);assert.ok(points.every(p=>p.visibility==='unverified'&&!p.rightHint));assert.equal(F.matchVisible({reference,targets:[{...image(160,120,()=>127),pose:reference.pose}],count:4,includeUnverified:true}).length,4,'Lack of target texture does not suppress genuine source corners');
- const blocked=F.matchVisible({reference,targets,count:4,includeUnverified:true,geometryContext:{left:camera(0,0,0),right:camera(0,0,-5),geometry:{positions:plane.positions.map(v=>v===-4?v:v*4),indices:plane.indices}}});assert.deepEqual(blocked,[]);
+test('Ambiguous or absent target details never fall back to unsupported source corners',()=>{
+ const reference={...image(160,120,(x,y)=>x>=30&&x<130&&y>=25&&y<95?240:15),pose:{yaw:0,pitch:0,fov:90}};
+ for(const targets of [[reference,{...reference,pose:{yaw:90,pitch:0,fov:90}}],[{...image(160,120,()=>127),pose:reference.pose}]])assert.deepEqual(F.matchVisible({reference,targets,count:4,includeUnverified:true}),[],'Even an obsolete fallback flag cannot re-enable unverified automatic pins');
 });
 test('Occlusion tests are invariant under relative-world scale and depth holes stay unknown',()=>{
  for(const scale of [1e-5,1,1e5]){const geometry={positions:plane.positions.map(v=>v*scale),indices:plane.indices};assert.equal(F.visibility({yaw:0,pitch:0},{left:camera(0,0,0),right:camera(0,0,-5*scale),geometry,leftDepth:{width:4,height:3,data:Array(12).fill(4*scale)}}).visible,false)}
@@ -65,4 +64,9 @@ test('A doorway or exposed wall edge is not falsely rejected as the hidden inter
  const context={left:camera(0,0,0),right:camera(0,0,-5),geometry:plane},edge={yaw:Math.atan2(-3,4)*180/Math.PI,pitch:0};
  assert.equal(F.visibility({yaw:Math.atan2(-2.98,4)*180/Math.PI,pitch:0},context).visible,null,'A small measurement offset next to the exposed edge stays uncertain');assert.equal(F.visibility({yaw:Math.atan2(-2.8,4)*180/Math.PI,pitch:0},context).visible,false);assert.equal(F.visibility(edge,context).visible,null);assert.equal(F.visibility(edge,context).reason,'surface-boundary');
  assert.equal(F.visibility({yaw:0,pitch:0},context).visible,false,'A shared triangulation seam remains inside the wall');assert.equal(F.visibility({yaw:0,pitch:0},{...context,geometry:{positions:new Float32Array(plane.positions),indices:new Uint32Array(plane.indices)}}).visible,false);
+});
+
+test('Registered geometry cannot substitute for missing photographic evidence',()=>{
+ const reference={...image(160,120,(x,y)=>x>=30&&x<130&&y>=25&&y<95?240:15),pose:{yaw:0,pitch:0,fov:90}};
+ const result=F.matchVisible({reference,targets:[{...image(160,120,()=>127),pose:reference.pose}],geometryContext:{left:camera(0,0,0),right:camera(1,0,0),geometry:plane}});assert.equal(result.length,0);
 });

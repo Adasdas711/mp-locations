@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-8c62a28c8dc0c7df';
+const CACHE = 'palace-offline-bc9596d77e822c0b';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -14,6 +14,7 @@ const ASSETS = [
   "calibration-core.js",
   "calibration-features.js",
   "calibration-math.js",
+  "calibration-overlap.js",
   "calibration-preview.js",
   "calibration-worker.js",
   "camera-editor.js",
@@ -43,6 +44,8 @@ const ASSETS = [
   "vendor/eng-LICENSE",
   "vendor/eng.traineddata.gz",
   "vendor/fonts.css",
+  "vendor/jsfeat-0.0.8.min.js",
+  "vendor/jsfeat-LICENSE.txt",
   "vendor/jspdf-LICENSE",
   "vendor/jspdf.umd.min.js",
   "vendor/jszip-LICENSE.markdown",
