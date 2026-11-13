@@ -156,6 +156,7 @@
       minTriangles = options.minTriangles ?? 2,
       strongInliers = options.strongInliers ?? 40,
       support = new Map(),
+      consistent = [],
       edges = new Map(),
       neighbors = new Map();
     for (const e of estimates) {
@@ -204,6 +205,7 @@
               )
                 continue;
               triangles++;
+              consistent.push([key(a, b), key(b, c), key(a, c)]);
               // A triangle of strong pairs counts as two confirmations.
               const weight =
                 Math.min(ab.inliers, bc.inliers, ac.inliers) >= strongInliers
@@ -218,6 +220,18 @@
             }
     for (const [k, count] of support)
       if (count >= minTriangles) verified.add(k);
+    // Grow from verified geometry: a consistent triangle whose other two
+    // sides are already verified confirms its third side.
+    for (let changed = options.grow !== false; changed;) {
+      changed = false;
+      for (const sides of consistent) {
+        const missing = sides.filter((k) => !verified.has(k));
+        if (missing.length === 1) {
+          verified.add(missing[0]);
+          changed = true;
+        }
+      }
+    }
     return { verified, triangles };
   }
   /** Connected camera groups from accepted pairs; singletons are omitted. */

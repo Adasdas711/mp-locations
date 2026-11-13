@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-35e2de01930874b6';
+const CACHE = 'palace-offline-99290ceb35f261f3';
 const ASSETS = [
   "./",
   "addon-management.js",
