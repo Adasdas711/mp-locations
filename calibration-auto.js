@@ -143,20 +143,31 @@
    * own frame (dir). A triangle a,b,c is consistent when the relative yaws
    * close (yawTol) and the triangle's interior angles, measured from three
    * different cameras, have one orientation and sum to 180° (angleTol).
-   * Wrong pairwise poses almost never close such a loop.
-   * estimates: [{a, b, relYaw, dir}]. Returns the set of verified pair keys
+   * Wrong pairwise poses almost never close such a loop, but a camera whose
+   * rotation is wrong in the same way in both of its pairs (symmetric rooms)
+   * can; therefore a pair needs two consistent triangles, or one triangle
+   * whose three pairs all have at least strongInliers inliers.
+   * estimates: [{a, b, relYaw, dir, inliers?}]. Returns the set of verified pair keys
    * (pairKey) and the number of consistent triangles.
    */
   function verifyCycles(estimates, options = {}) {
     const yawTol = options.yawTol ?? 4,
       angleTol = options.angleTol ?? 10,
+      minTriangles = options.minTriangles ?? 2,
+      strongInliers = options.strongInliers ?? 40,
+      support = new Map(),
       edges = new Map(),
       neighbors = new Map();
     for (const e of estimates) {
-      edges.set(e.a + "\u0000" + e.b, { relYaw: e.relYaw, dir: e.dir });
+      edges.set(e.a + "\u0000" + e.b, {
+        relYaw: e.relYaw,
+        dir: e.dir,
+        inliers: e.inliers ?? Infinity,
+      });
       edges.set(e.b + "\u0000" + e.a, {
         relYaw: -e.relYaw,
         dir: wrap(e.dir + 180 - e.relYaw),
+        inliers: e.inliers ?? Infinity,
       });
       for (const [x, y] of [
         [e.a, e.b],
@@ -193,13 +204,20 @@
               )
                 continue;
               triangles++;
+              // A triangle of strong pairs counts as two confirmations.
+              const weight =
+                Math.min(ab.inliers, bc.inliers, ac.inliers) >= strongInliers
+                  ? 2
+                  : 1;
               for (const [x, y] of [
                 [a, b],
                 [b, c],
                 [a, c],
               ])
-                verified.add(key(x, y));
+                support.set(key(x, y), (support.get(key(x, y)) || 0) + weight);
             }
+    for (const [k, count] of support)
+      if (count >= minTriangles) verified.add(k);
     return { verified, triangles };
   }
   /** Connected camera groups from accepted pairs; singletons are omitted. */

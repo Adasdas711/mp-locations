@@ -210,6 +210,7 @@ async function calibrationAutopilotRun(options = {}) {
             b: e.pair.b,
             relYaw: e.learned.relYaw,
             dir: e.learned.dir,
+            inliers: e.learned.inliers,
           })),
       ),
       accepted = [];

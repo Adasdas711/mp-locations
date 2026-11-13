@@ -84,6 +84,7 @@ test("Loop verification accepts closed triangles and rejects inconsistent pairs"
         b: q,
         relYaw: yaw[q] - yaw[p],
         dir: bearingYaw(d) - yaw[p],
+        inliers: 100,
       };
     };
   const good = [estimate("a", "b"), estimate("b", "c"), estimate("a", "c")];
@@ -98,6 +99,12 @@ test("Loop verification accepts closed triangles and rejects inconsistent pairs"
     result = A.verifyCycles([good[0], broken, good[2]]);
     assert.equal(result.verified.size, 0, JSON.stringify(broken));
   }
+  // One triangle of weak pairs is not enough: a consistently mis-rotated
+  // camera can close a single loop.
+  assert.equal(
+    A.verifyCycles(good.map((e) => ({ ...e, inliers: 20 }))).verified.size,
+    0,
+  );
   // Without a third pair nothing can be verified.
   assert.equal(A.verifyCycles(good.slice(0, 2)).verified.size, 0);
 });
