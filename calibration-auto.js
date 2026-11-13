@@ -34,7 +34,7 @@
   function candidatePairs(panoramas, options = {}) {
     const mode = options.mode || "auto",
       nearest = options.nearest ?? 3,
-      allLimit = options.allPairsUpTo ?? 12,
+      allLimit = options.allPairsUpTo ?? 30,
       ids = panoramas.map((p) => p.id),
       known = new Set(ids),
       pairs = new Map(),

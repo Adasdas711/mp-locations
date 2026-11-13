@@ -784,8 +784,8 @@
         for (const k of fit.indices) {
           const m = remaining[k];
           raw.push({
-            ...O.bearing(a[i].sample, fa.points[m.i]),
-            rightHint: O.bearing(b[j].sample, fb.points[m.j]),
+            ...O.bearing(a[i].xfeatSample, fa.points[m.i]),
+            rightHint: O.bearing(b[j].xfeatSample, fb.points[m.j]),
           });
         }
         remaining = remaining.filter((_, k) => !used.has(k));
@@ -893,18 +893,24 @@
       model = options.xfeat || null;
     return (message) => {
       if (message.type === "add") {
+        // Planar ORB evidence uses message.views; learned features may use
+        // higher-resolution renders of the same directions (learnedViews).
         cache.set(
           message.pano,
-          message.views.map((sample) => ({
-            sample,
-            features: PalaceCalibrationOverlap.features(sample),
-            corners: detect({ ...sample, count: 128, separation: 0.025 }),
-            xfeat: model
-              ? PalaceCalibrationXFeat.detect(model, sample, {
-                  topK: options.xfeatTop ?? 512,
-                })
-              : null,
-          })),
+          message.views.map((sample, i) => {
+            const learned = message.learnedViews?.[i] || sample;
+            return {
+              sample,
+              features: PalaceCalibrationOverlap.features(sample),
+              corners: detect({ ...sample, count: 128, separation: 0.025 }),
+              xfeatSample: learned,
+              xfeat: model
+                ? PalaceCalibrationXFeat.detect(model, learned, {
+                    topK: options.xfeatTop ?? 512,
+                  })
+                : null,
+            };
+          }),
         );
         return { added: message.pano };
       }
@@ -985,11 +991,11 @@
         worker.postMessage({ ...message, id }, transfer);
       });
     return {
-      add: (pano, views) =>
-        send(
-          { type: "add", pano, views },
-          views.map((v) => v.pixels.buffer),
-        ),
+      add: (pano, views, learnedViews) =>
+        send({ type: "add", pano, views, learnedViews }, [
+          ...views.map((v) => v.pixels.buffer),
+          ...(learnedViews || []).map((v) => v.pixels.buffer),
+        ]),
       drop: (pano) => send({ type: "drop", pano }),
       pair: (a, b, options = {}) => send({ type: "pair", a, b, ...options }),
       dispose() {

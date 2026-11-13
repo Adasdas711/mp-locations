@@ -30,8 +30,9 @@ function calibrationAutopilotSurface() {
   });
   return {
     async sample(id, poses, size) {
+      let timer = null;
       const loaded = new Promise((resolve, reject) => {
-        const timer = setTimeout(
+        timer = setTimeout(
           () => reject(new Error("Panorama image did not load: " + id)),
           90000,
         );
@@ -48,9 +49,14 @@ function calibrationAutopilotSurface() {
           },
         };
       });
-      await view.showPanorama(id);
-      if (view.readyId !== id) await loaded;
-      waiting = null;
+      loaded.catch(() => {});
+      try {
+        await view.showPanorama(id);
+        if (view.readyId !== id) await loaded;
+      } finally {
+        clearTimeout(timer);
+        waiting = null;
+      }
       return poses.map((pose) => {
         const image = view.sampleImage({ width: size, height: size, pose });
         return {
@@ -145,9 +151,14 @@ async function calibrationAutopilotRun(options = {}) {
     const ensure = async (id) => {
       if (added.has(id)) return;
       progress({ phase: "sampling", panoId: id });
-      const views = await surface.sample(id, CALIBRATION_AUTOPILOT_VIEWS, 512);
+      const views = await surface.sample(id, CALIBRATION_AUTOPILOT_VIEWS, 384),
+        learnedViews = await surface.sample(
+          id,
+          CALIBRATION_AUTOPILOT_VIEWS,
+          512,
+        );
       check();
-      await analysis.add(id, views);
+      await analysis.add(id, views, learnedViews);
       added.add(id);
     };
     // Stage 3/4: every candidate pair against cached whole-sphere views.
