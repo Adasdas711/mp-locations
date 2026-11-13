@@ -161,8 +161,8 @@
    * (pairKey) and the number of consistent triangles.
    */
   function verifyCycles(estimates, options = {}) {
-    const yawTol = options.yawTol ?? 4,
-      angleTol = options.angleTol ?? 10,
+    const yawTol = options.yawTol ?? 3,
+      angleTol = options.angleTol ?? 6,
       minTriangles = options.minTriangles ?? 2,
       strongInliers = options.strongInliers ?? 40,
       support = new Map(),
@@ -230,9 +230,10 @@
             }
     for (const [k, count] of support)
       if (count >= minTriangles) verified.add(k);
-    // Grow from verified geometry: a consistent triangle whose other two
-    // sides are already verified confirms its third side.
-    for (let changed = options.grow !== false; changed;) {
+    // Optional growth from verified geometry: a consistent triangle whose
+    // other two sides are verified confirms its third side. Off by default:
+    // on real archives it propagated wrong poses through dense pair graphs.
+    for (let changed = options.grow === true; changed;) {
       changed = false;
       for (const sides of consistent) {
         const missing = sides.filter((k) => !verified.has(k));

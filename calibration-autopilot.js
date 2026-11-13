@@ -105,7 +105,7 @@ async function calibrationAutopilotRun(options = {}) {
     signal = options.signal || { cancelled: false },
     progress = (info) => options.onProgress?.(info),
     started = performance.now(),
-    minPairMatches = options.minPairMatches ?? 12,
+    minPairMatches = options.minPairMatches ?? 8,
     orientationModel = options.orientationModel || "upright",
     report = {
       version: 1,
