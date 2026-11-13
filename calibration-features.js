@@ -749,15 +749,148 @@
       findShared.toString() +
       ";const collectShared=" +
       collectShared.toString() +
+      ";const xfeatPair=" +
+      xfeatPair.toString() +
       ";const analysisSession=" +
       analysisSession.toString() +
       ";"
     );
   }
+  // Learned-feature correspondences for one panorama pair and the pair's
+  // relative pose. Views 0..3 are horizontal and compared with each other;
+  // view 4 (zenith) and 5 (nadir) only with themselves. Within each view pair,
+  // planar models are fitted sequentially; their supporting matches are then
+  // filtered by the pair's own spherical epipolar consensus.
+  function xfeatPair(a, b, options = {}) {
+    const X = PalaceCalibrationXFeat,
+      O = PalaceCalibrationOverlap,
+      M = PalaceCalibrationMath,
+      planes = options.planes ?? 3,
+      raw = [],
+      horizontal = Math.min(4, a.length, b.length),
+      viewPairs = [];
+    for (let i = 0; i < horizontal; i++)
+      for (let j = 0; j < horizontal; j++) viewPairs.push([i, j]);
+    for (let i = 4; i < Math.min(a.length, b.length); i++)
+      viewPairs.push([i, i]);
+    for (const [i, j] of viewPairs) {
+      const fa = a[i].xfeat,
+        fb = b[j].xfeat;
+      let remaining = X.match(fa, fb);
+      for (let plane = 0; plane < planes; plane++) {
+        const fit = O.model(fa.points, fb.points, remaining);
+        if (!fit.inliers || fit.inliers < (plane ? 10 : 8)) break;
+        const used = new Set(fit.indices);
+        for (const k of fit.indices) {
+          const m = remaining[k];
+          raw.push({
+            ...O.bearing(a[i].sample, fa.points[m.i]),
+            rightHint: O.bearing(b[j].sample, fb.points[m.j]),
+          });
+        }
+        remaining = remaining.filter((_, k) => !used.has(k));
+        if (remaining.length < 10) break;
+      }
+    }
+    const rays = raw.map((p) => M.ray(p.yaw, p.pitch)),
+      unique = [];
+    raw.forEach((p, i) => {
+      if (
+        unique.every(
+          (q) =>
+            rays[q][0] * rays[i][0] +
+              rays[q][1] * rays[i][1] +
+              rays[q][2] * rays[i][2] <
+            Math.cos((0.3 * Math.PI) / 180),
+        )
+      )
+        unique.push(i);
+    });
+    const points = unique.map((i) => raw[i]),
+      result = { matches: points.length, inliers: 0, status: null, points: [] };
+    if (points.length < 8) return result;
+    const threshold = options.ransacThresholdDeg ?? 0.5,
+      solved = M.calculate(
+        {
+          id: "pair",
+          cameraIds: ["a", "b"],
+          config: {
+            orientationModel: "upright",
+            minCorrespondences: 4,
+            requireVerified: false,
+            ransacThresholdDeg: threshold,
+            ransacIterations: 2000,
+            minParallaxDeg: 0.75,
+            bundleIterations: 20,
+            seed: 1,
+            distances: [],
+            referenceCameraId: "a",
+          },
+          landmarks: points.map((p, i) => ({
+            id: "l" + i,
+            enabled: true,
+            observations: [
+              { panoId: "a", yaw: p.yaw, pitch: p.pitch, verified: false },
+              { panoId: "b", ...p.rightHint, verified: false },
+            ],
+          })),
+        },
+        {},
+      );
+    result.status = solved.status;
+    const camera = solved.solution?.cameras?.b;
+    if (!camera) return result;
+    const edge = solved.quality.edges?.[0];
+    result.inliers = Array.isArray(edge?.inliers)
+      ? edge.inliers.length
+      : (edge?.inliers ?? 0);
+    const q = camera.rotation;
+    result.relYaw = (2 * Math.atan2(q.y, q.w) * 180) / Math.PI;
+    result.dir =
+      (Math.atan2(-camera.position.x, -camera.position.z) * 180) / Math.PI;
+    // Keep reconstructed, consistent correspondences spread over the sphere.
+    const good = new Set(
+        (solved.quality.landmarks || [])
+          .filter(
+            (m) =>
+              m.distances?.length === 2 &&
+              m.distances.every((d) => d.angularErrorDeg <= threshold * 2),
+          )
+          .map((m) => m.id),
+      ),
+      inliers = points.filter((_, i) => good.has("l" + i)),
+      limit = options.limit ?? 60,
+      chosen = [];
+    while (chosen.length < limit && inliers.length) {
+      let best = 0,
+        score = -Infinity;
+      inliers.forEach((p, i) => {
+        const r = M.ray(p.yaw, p.pitch),
+          d = chosen.length
+            ? Math.min(
+                ...chosen.map((c) => {
+                  const s = M.ray(c.yaw, c.pitch);
+                  return -(r[0] * s[0] + r[1] * s[1] + r[2] * s[2]);
+                }),
+              )
+            : 1;
+        if (d > score) {
+          score = d;
+          best = i;
+        }
+      });
+      chosen.push(inliers.splice(best, 1)[0]);
+    }
+    result.points = chosen;
+    return result;
+  }
   // Persistent per-project analysis state: each panorama's view samples,
   // descriptors and corners are computed once and reused for every pair.
-  function analysisSession() {
-    const cache = new Map();
+  // options.xfeat: a loaded PalaceCalibrationXFeat model enables learned
+  // features and pairwise poses in addition to the planar ORB evidence.
+  function analysisSession(options = {}) {
+    const cache = new Map(),
+      model = options.xfeat || null;
     return (message) => {
       if (message.type === "add") {
         cache.set(
@@ -766,6 +899,11 @@
             sample,
             features: PalaceCalibrationOverlap.features(sample),
             corners: detect({ ...sample, count: 128, separation: 0.025 }),
+            xfeat: model
+              ? PalaceCalibrationXFeat.detect(model, sample, {
+                  topK: options.xfeatTop ?? 512,
+                })
+              : null,
           })),
         );
         return { added: message.pano };
@@ -788,6 +926,7 @@
             limit: message.limit,
             planes: message.planes,
           }),
+          xfeat: model ? xfeatPair(a, b, { limit: message.xfeatLimit }) : null,
         };
       }
       throw new Error("Unknown analysis request.");
@@ -806,10 +945,17 @@
           [
             workerSource() +
               "importScripts(" +
-              JSON.stringify(assetURL("vendor/jsfeat-0.0.8.min.js")) +
-              "," +
-              JSON.stringify(assetURL("calibration-overlap.js")) +
-              ");const handle=analysisSession();onmessage=e=>{try{postMessage({id:e.data.id,result:handle(e.data)})}catch(error){postMessage({id:e.data.id,error:error.message})}}",
+              [
+                "vendor/jsfeat-0.0.8.min.js",
+                "calibration-overlap.js",
+                "calibration-math.js",
+                "calibration-xfeat.js",
+              ]
+                .map((name) => JSON.stringify(assetURL(name)))
+                .join(",") +
+              ");const ready=fetch(" +
+              JSON.stringify(assetURL("vendor/xfeat/xfeat-backbone.bin")) +
+              ").then(r=>{if(!r.ok)throw new Error('Feature model unavailable.');return r.arrayBuffer()}).then(b=>analysisSession({xfeat:PalaceCalibrationXFeat.load(b)}),error=>{console.warn('PALACE: learned features unavailable; using planar ORB evidence only.',error);return analysisSession()});onmessage=async e=>{try{const handle=await ready;postMessage({id:e.data.id,result:handle(e.data)})}catch(error){postMessage({id:e.data.id,error:error.message})}}",
           ],
           { type: "text/javascript" },
         ),
@@ -920,6 +1066,7 @@
     visibility,
     findShared,
     collectShared,
+    xfeatPair,
     analysisSession,
     start,
     startProject,

@@ -136,6 +136,72 @@
     );
     return { tracks, ambiguous };
   }
+  const wrap = (a) => ((((a + 180) % 360) + 360) % 360) - 180;
+  /**
+   * Loop verification for upright panoramas. Each estimate gives the yaw of
+   * b relative to a (relYaw) and the baseline direction a→b as a yaw in a's
+   * own frame (dir). A triangle a,b,c is consistent when the relative yaws
+   * close (yawTol) and the triangle's interior angles, measured from three
+   * different cameras, have one orientation and sum to 180° (angleTol).
+   * Wrong pairwise poses almost never close such a loop.
+   * estimates: [{a, b, relYaw, dir}]. Returns the set of verified pair keys
+   * (pairKey) and the number of consistent triangles.
+   */
+  function verifyCycles(estimates, options = {}) {
+    const yawTol = options.yawTol ?? 4,
+      angleTol = options.angleTol ?? 10,
+      edges = new Map(),
+      neighbors = new Map();
+    for (const e of estimates) {
+      edges.set(e.a + "\u0000" + e.b, { relYaw: e.relYaw, dir: e.dir });
+      edges.set(e.b + "\u0000" + e.a, {
+        relYaw: -e.relYaw,
+        dir: wrap(e.dir + 180 - e.relYaw),
+      });
+      for (const [x, y] of [
+        [e.a, e.b],
+        [e.b, e.a],
+      ]) {
+        if (!neighbors.has(x)) neighbors.set(x, new Set());
+        neighbors.get(x).add(y);
+      }
+    }
+    const get = (x, y) => edges.get(x + "\u0000" + y),
+      verified = new Set();
+    let triangles = 0;
+    const ids = [...neighbors.keys()].sort();
+    for (const a of ids)
+      for (const b of neighbors.get(a))
+        if (b > a)
+          for (const c of neighbors.get(b))
+            if (c > b && neighbors.get(a).has(c)) {
+              const ab = get(a, b),
+                bc = get(b, c),
+                ac = get(a, c),
+                ba = get(b, a),
+                cb = get(c, b),
+                ca = get(c, a);
+              if (Math.abs(wrap(ab.relYaw + bc.relYaw - ac.relYaw)) >= yawTol)
+                continue;
+              const ta = wrap(ac.dir - ab.dir),
+                tb = wrap(ba.dir - bc.dir),
+                tc = wrap(cb.dir - ca.dir);
+              if (!(ta > 0 === tb > 0 && tb > 0 === tc > 0)) continue;
+              if (
+                Math.abs(Math.abs(ta) + Math.abs(tb) + Math.abs(tc) - 180) >=
+                angleTol
+              )
+                continue;
+              triangles++;
+              for (const [x, y] of [
+                [a, b],
+                [b, c],
+                [a, c],
+              ])
+                verified.add(key(x, y));
+            }
+    return { verified, triangles };
+  }
   /** Connected camera groups from accepted pairs; singletons are omitted. */
   function components(ids, pairs) {
     const parent = new Map(ids.map((id) => [id, id])),
@@ -217,8 +283,10 @@
   }
   return Object.freeze({
     separation,
+    pairKey: key,
     candidatePairs,
     buildTracks,
+    verifyCycles,
     components,
     reviewDecision,
     qualityGate,

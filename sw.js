@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-bb3ccaa7c0acaf37';
+const CACHE = 'palace-offline-a3052e8a06d4021d';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -19,6 +19,7 @@ const ASSETS = [
   "calibration-overlap.js",
   "calibration-preview.js",
   "calibration-worker.js",
+  "calibration-xfeat.js",
   "camera-editor.js",
   "command-palette.js",
   "extension-operations.js",
@@ -69,6 +70,7 @@ const ASSETS = [
   "vendor/three-LICENSE",
   "vendor/three.min.js",
   "vendor/worker.min.js",
+  "vendor/xfeat/xfeat-backbone.bin",
   "workspace-presets.js",
   "world-space.js",
   "world-ui.js"

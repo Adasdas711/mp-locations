@@ -141,11 +141,11 @@ async function calibrationAutopilotRun(options = {}) {
     analysis = PalaceCalibrationFeatures.startProject();
     surface = calibrationAutopilotSurface();
     const added = new Set(),
-      accepted = [];
+      evidence = [];
     const ensure = async (id) => {
       if (added.has(id)) return;
       progress({ phase: "sampling", panoId: id });
-      const views = await surface.sample(id, CALIBRATION_AUTOPILOT_VIEWS, 384);
+      const views = await surface.sample(id, CALIBRATION_AUTOPILOT_VIEWS, 512);
       check();
       await analysis.add(id, views);
       added.add(id);
@@ -166,16 +166,21 @@ async function calibrationAutopilotRun(options = {}) {
         geometryContext: calibrationUIVisibilityContext(pair.a, pair.b),
       });
       check();
-      const ok = result.points.length >= minPairMatches;
+      const planar = result.points.length >= minPairMatches,
+        learned = result.xfeat;
       report.pairs.push({
         a: pair.a,
         b: pair.b,
         reasons: pair.reasons,
         matches: result.points.length,
         surfaces: new Set(result.points.map((p) => p.plane)).size,
-        accepted: ok,
+        planarAccepted: planar,
+        learnedMatches: learned?.matches ?? null,
+        learnedInliers: learned?.inliers ?? null,
+        learnedStatus: learned?.status ?? null,
+        accepted: planar,
       });
-      if (ok) accepted.push({ a: pair.a, b: pair.b, points: result.points });
+      evidence.push({ pair, planar, points: result.points, learned });
       for (const id of [pair.a, pair.b]) {
         remaining.set(id, remaining.get(id) - 1);
         if (!remaining.get(id) && added.has(id)) {
@@ -188,6 +193,42 @@ async function calibrationAutopilotRun(options = {}) {
     analysis = null;
     surface.dispose();
     surface = null;
+    // Learned-feature poses are accepted only when they close a loop with two
+    // other pairs (relative yaw and triangle angles): a single wrong pairwise
+    // pose almost never does. Planar ORB evidence is accepted on its own.
+    const minLearnedInliers = options.minLearnedInliers ?? 15,
+      loops = A.verifyCycles(
+        evidence
+          .filter(
+            (e) =>
+              e.learned?.status === "solved" &&
+              e.learned.inliers >= minLearnedInliers &&
+              Number.isFinite(e.learned.relYaw),
+          )
+          .map((e) => ({
+            a: e.pair.a,
+            b: e.pair.b,
+            relYaw: e.learned.relYaw,
+            dir: e.learned.dir,
+          })),
+      ),
+      accepted = [];
+    report.loopTriangles = loops.triangles;
+    evidence.forEach((e, index) => {
+      const looped = loops.verified.has(A.pairKey(e.pair.a, e.pair.b)),
+        entry = report.pairs[index];
+      entry.loopVerified = looped;
+      entry.accepted = e.planar || looped;
+      if (entry.accepted)
+        accepted.push({
+          a: e.pair.a,
+          b: e.pair.b,
+          points: [
+            ...(e.planar ? e.points : []),
+            ...(looped ? e.learned.points : []),
+          ],
+        });
+    });
     const { tracks, ambiguous } = A.buildTracks(accepted);
     report.tracks = tracks.length;
     report.ambiguousTracks = ambiguous;
