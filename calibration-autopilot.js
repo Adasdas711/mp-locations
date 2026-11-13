@@ -317,7 +317,7 @@ calibrationAutopilotControls.innerHTML =
   '<p id="calibrationAutopilotReport" class="calibration-guidance" role="status"></p>';
 calibrationDetails.querySelector("summary").after(calibrationAutopilotControls);
 calibrationUIStyle.textContent +=
-  ".calibration-autopilot{display:grid;gap:6px;margin:6px 0 10px}.calibration-autopilot button{justify-self:start}";
+  ".calibration-autopilot{display:grid;gap:6px;margin:6px 0 10px}.calibration-autopilot button{justify-self:start}.calibration-autopilot p:empty{display:none}";
 const calibrationAutopilotButton = calibrationAutopilotControls.querySelector(
   "#calibrationAutopilot",
 );
