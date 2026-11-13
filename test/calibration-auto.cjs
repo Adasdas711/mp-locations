@@ -59,6 +59,18 @@ test("Candidate pairs combine tour links, nearest registered cameras and sequenc
     10,
     "small projects compare all pairs",
   );
+  const floors = [
+    { id: "a", floor: 1 },
+    { id: "b", floor: 1 },
+    { id: "c", floor: 2, neighbors: ["a"] },
+    { id: "d", floor: 2 },
+  ];
+  assert.deepEqual(
+    A.candidatePairs(floors, { sameFloor: true }).map((p) => p.a + p.b),
+    ["ab", "ac", "cd"],
+    "other floors only through a tour link",
+  );
+  assert.equal(A.candidatePairs(floors).length, 6);
   assert.deepEqual(
     A.candidatePairs(panoramas, { mode: "links" }).map((p) => [p.a, p.b]),
     [["p00", "p39"]],
@@ -120,22 +132,42 @@ test("Batch review and application gates are conservative", () => {
       {
         id: "good",
         enabled: true,
-        observations: [{ verified: false }, { verified: false }],
+        observations: [
+          { panoId: "a", verified: false },
+          { panoId: "b", verified: false },
+        ],
       },
       {
         id: "bad",
         enabled: true,
-        observations: [{ verified: false }, { verified: false }],
+        observations: [
+          { panoId: "a", verified: false },
+          { panoId: "b", verified: false },
+        ],
       },
       {
         id: "lost",
         enabled: true,
-        observations: [{ verified: false }, { verified: false }],
+        observations: [
+          { panoId: "a", verified: false },
+          { panoId: "b", verified: false },
+        ],
+      },
+      {
+        id: "unknown",
+        enabled: true,
+        observations: [
+          { panoId: "a", verified: false },
+          { panoId: "c", verified: false },
+        ],
       },
       {
         id: "done",
         enabled: true,
-        observations: [{ verified: true }, { verified: true }],
+        observations: [
+          { panoId: "a", verified: true },
+          { panoId: "b", verified: true },
+        ],
       },
     ],
     quality: {
@@ -159,6 +191,8 @@ test("Batch review and application gates are conservative", () => {
       ],
     },
   };
+  // "lost" was not reconstructed although both of its cameras are registered:
+  // it contradicts the solution. "unknown" involves an unregistered camera.
   assert.deepEqual(A.reviewDecision(session), {
     confirm: ["good"],
     disable: ["bad", "lost"],

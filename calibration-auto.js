@@ -27,7 +27,7 @@
   const key = (a, b) => (a < b ? a + "\u0000" + b : b + "\u0000" + a);
   /**
    * Candidate pairs to analyse.
-   * panoramas: [{id, neighbors?:[id], position?:{x,y,z}}]
+   * panoramas: [{id, neighbors?:[id], position?:{x,y,z}, floor?}]
    * mode: 'auto' (links, nearest registered cameras, sequence; all pairs for
    *       small projects), 'links' or 'all'.
    */
@@ -69,7 +69,17 @@
           .forEach((q) => add(p.id, q.id, "nearest"));
       for (let i = 1; i < ids.length; i++) add(ids[i - 1], ids[i], "sequence");
     }
-    return [...pairs.values()];
+    // Panoramas on different known floors rarely share details; only a tour
+    // link (for example on a staircase) keeps such a pair.
+    const floor = new Map(panoramas.map((p) => [p.id, p.floor]));
+    return [...pairs.values()].filter(
+      (p) =>
+        !options.sameFloor ||
+        floor.get(p.a) == null ||
+        floor.get(p.b) == null ||
+        floor.get(p.a) === floor.get(p.b) ||
+        p.reasons.includes("link"),
+    );
   }
   /**
    * Merge pairwise matches into multi-view tracks. Observations of one
@@ -264,6 +274,7 @@
     const quality = session?.quality,
       limit = (session?.config?.ransacThresholdDeg ?? 0.6) * 2,
       wanted = landmarkIds ? new Set(landmarkIds) : null,
+      registered = new Set(quality?.registeredCameraIds || []),
       confirm = [],
       disable = [];
     for (const landmark of session?.landmarks || []) {
@@ -273,7 +284,15 @@
         consistent =
           metric?.distances?.length === landmark.observations.length &&
           metric.distances.every((d) => d.angularErrorDeg <= limit);
-      (consistent ? confirm : disable).push(landmark.id);
+      if (consistent) confirm.push(landmark.id);
+      // A landmark whose cameras are all registered but which was not
+      // reconstructed (or reprojects badly) contradicts the solution. One
+      // that involves an unregistered camera cannot be judged yet: keep it.
+      else if (
+        landmark.observations.every((o) => registered.has(o.panoId)) ||
+        metric?.distances?.some((d) => d.angularErrorDeg > limit)
+      )
+        disable.push(landmark.id);
     }
     return { confirm, disable };
   }

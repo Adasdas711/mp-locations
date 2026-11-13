@@ -14,6 +14,7 @@ function calibrationAutopilotPanoramas() {
         .map((d) => d.panoId || d.id || d.to)
         .filter(Boolean),
       position: world.cameras[id]?.position || null,
+      floor: p.floorId ?? null,
     }));
 }
 // Off-screen renderer reusing the shared panorama surface implementation.
@@ -104,7 +105,7 @@ async function calibrationAutopilotRun(options = {}) {
     signal = options.signal || { cancelled: false },
     progress = (info) => options.onProgress?.(info),
     started = performance.now(),
-    minPairMatches = options.minPairMatches ?? 8,
+    minPairMatches = options.minPairMatches ?? 12,
     orientationModel = options.orientationModel || "upright",
     report = {
       version: 1,
@@ -139,6 +140,7 @@ async function calibrationAutopilotRun(options = {}) {
       throw new Error("At least two panoramas with images are required.");
     const pairs = A.candidatePairs(panoramas, {
       mode: options.pairs || "auto",
+      sameFloor: options.sameFloor ?? true,
     });
     const remaining = new Map();
     for (const p of pairs)
@@ -189,6 +191,12 @@ async function calibrationAutopilotRun(options = {}) {
         learnedMatches: learned?.matches ?? null,
         learnedInliers: learned?.inliers ?? null,
         learnedStatus: learned?.status ?? null,
+        learnedRelYaw: Number.isFinite(learned?.relYaw)
+          ? +learned.relYaw.toFixed(2)
+          : null,
+        learnedDir: Number.isFinite(learned?.dir)
+          ? +learned.dir.toFixed(2)
+          : null,
         accepted: planar,
       });
       evidence.push({ pair, planar, points: result.points, learned });
