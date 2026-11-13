@@ -105,6 +105,21 @@ test("Loop verification accepts closed triangles and rejects inconsistent pairs"
     A.verifyCycles(good.map((e) => ({ ...e, inliers: 20 }))).verified.size,
     0,
   );
+  // Two weak triangles sharing a-b confirm a-b twice, but none of their
+  // other sides is verified: an isolated pair is withdrawn.
+  camera.d = [1, 0, 3];
+  yaw.d = -40;
+  const fan = [
+    estimate("a", "b"),
+    estimate("a", "c"),
+    estimate("b", "c"),
+    estimate("a", "d"),
+    estimate("b", "d"),
+  ].map((e) => ({ ...e, inliers: 20 }));
+  assert.ok(
+    A.verifyCycles(fan, { closed: false }).verified.has(A.pairKey("a", "b")),
+  );
+  assert.equal(A.verifyCycles(fan).verified.size, 0);
   // Without a third pair nothing can be verified.
   assert.equal(A.verifyCycles(good.slice(0, 2)).verified.size, 0);
 });

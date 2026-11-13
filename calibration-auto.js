@@ -243,6 +243,21 @@
         }
       }
     }
+    // A verified pair must close at least one consistent triangle whose
+    // three sides are all verified; isolated verified pairs (whose loops
+    // rely on unverified sides) are withdrawn until the set is stable.
+    for (let changed = options.closed !== false; changed;) {
+      changed = false;
+      const closed = new Set();
+      for (const sides of consistent)
+        if (sides.every((k) => verified.has(k)))
+          for (const k of sides) closed.add(k);
+      for (const k of [...verified])
+        if (!closed.has(k)) {
+          verified.delete(k);
+          changed = true;
+        }
+    }
     return { verified, triangles };
   }
   /** Connected camera groups from accepted pairs; singletons are omitted. */
