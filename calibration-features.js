@@ -631,6 +631,108 @@
       evidence: p.evidence,
     }));
   }
+  // Automatic correspondence collection over several reference and target
+  // views. Unlike findShared, the result pairs each reference bearing with the
+  // exact connecting bearing predicted by its supporting planar image model.
+  // Duplicates are merged, contradictory duplicates are discarded and the
+  // selection is spread over independent surfaces and viewing directions, so
+  // that the points do not all lie on one plane.
+  function collectShared(input) {
+    const O = PalaceCalibrationOverlap,
+      limit = Math.max(4, Math.min(80, Math.floor(input.limit ?? 40))),
+      ray = (p) => {
+        const y = (p.yaw * Math.PI) / 180,
+          q = (p.pitch * Math.PI) / 180;
+        return [
+          -Math.sin(y) * Math.cos(q),
+          Math.sin(q),
+          -Math.cos(y) * Math.cos(q),
+        ];
+      },
+      separation = (a, b) =>
+        (Math.acos(
+          Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])),
+        ) *
+          180) /
+        Math.PI;
+    const raw = O.collect(input.references, input.targets, detect, {
+      planes: input.planes,
+    })
+      .map((p) => {
+        const left = O.bearing(p.reference, p),
+          right = O.bearing(p.target, p.rightPoint);
+        return {
+          yaw: left.yaw,
+          pitch: left.pitch,
+          right,
+          leftRay: ray(left),
+          rightRay: ray(right),
+          plane: p.plane,
+          similarity: p.similarity,
+          inliers: p.evidence.inliers,
+        };
+      })
+      .filter(
+        (p) =>
+          visibility({ yaw: p.yaw, pitch: p.pitch }, input.geometryContext)
+            .visible !== false,
+      )
+      .sort((a, b) => b.similarity - a.similarity || b.inliers - a.inliers);
+    // The same physical detail seen through overlapping sample views must land
+    // on the same connecting direction; disagreement means an ambiguous match.
+    const clusters = [];
+    for (const p of raw) {
+      const cluster = clusters.find(
+        (c) => separation(c.best.leftRay, p.leftRay) < 0.6,
+      );
+      if (!cluster) clusters.push({ best: p, members: [p] });
+      else cluster.members.push(p);
+    }
+    const unique = clusters
+      .filter((c) =>
+        c.members.every((m) => separation(m.rightRay, c.best.rightRay) < 1),
+      )
+      .map((c) => ({ ...c.best, support: c.members.length }));
+    // Round-robin over surfaces; inside each surface take the candidate farthest
+    // (in angle) from everything already selected.
+    const groups = new Map();
+    for (const p of unique) {
+      if (!groups.has(p.plane)) groups.set(p.plane, []);
+      groups.get(p.plane).push(p);
+    }
+    const order = [...groups.values()].sort((a, b) => b.length - a.length),
+      selected = [];
+    while (selected.length < limit && order.some((g) => g.length))
+      for (const group of order) {
+        if (!group.length || selected.length >= limit) continue;
+        let best = 0,
+          score = -Infinity;
+        for (let i = 0; i < group.length; i++) {
+          const distance = selected.length
+            ? Math.min(
+                ...selected.map((q) => separation(q.leftRay, group[i].leftRay)),
+              )
+            : 180;
+          if (distance > score) {
+            score = distance;
+            best = i;
+          }
+        }
+        // A point closer than 1.5 degrees to a chosen one adds no geometry.
+        const [p] = group.splice(best, 1);
+        if (score >= 1.5) selected.push(p);
+      }
+    return selected.map((p) => ({
+      yaw: p.yaw,
+      pitch: p.pitch,
+      rightHint: { yaw: p.right.yaw, pitch: p.right.pitch },
+      plane: p.plane,
+      similarity: p.similarity,
+      inliers: p.inliers,
+      support: p.support,
+      visibility: "image-supported",
+    }));
+  }
   function start(sample) {
     let worker,
       url,
@@ -659,7 +761,9 @@
                 matchVisible.toString() +
                 ";const findShared=" +
                 findShared.toString() +
-                ";onmessage=e=>{try{if(e.data.reference)importScripts(e.data.jsfeatURL,e.data.overlapURL);postMessage({points:e.data.reference?findShared(e.data):detect(e.data)})}catch(error){postMessage({error:error.message})}}",
+                ";const collectShared=" +
+                collectShared.toString() +
+                ";onmessage=e=>{try{if(e.data.reference||e.data.references)importScripts(e.data.jsfeatURL,e.data.overlapURL);postMessage({points:e.data.references?collectShared(e.data):e.data.reference?findShared(e.data):detect(e.data)})}catch(error){postMessage({error:error.message})}}",
             ],
             { type: "text/javascript" },
           ),
@@ -669,7 +773,7 @@
           finish(e.data.error ? new Error(e.data.error) : null, e.data.points);
         worker.onerror = () =>
           finish(new Error("Unable to analyze panorama details."));
-        if (sample.reference) {
+        if (sample.reference || sample.references) {
           sample.jsfeatURL = new URL(
             "vendor/jsfeat-0.0.8.min.js",
             document.baseURI,
@@ -681,9 +785,11 @@
         }
         worker.postMessage(
           sample,
-          sample.reference
+          sample.reference || sample.references
             ? [
-                sample.reference.pixels.buffer,
+                ...(sample.references || [sample.reference]).map(
+                  (t) => t.pixels.buffer,
+                ),
                 ...sample.targets.map((t) => t.pixels.buffer),
               ]
             : [sample.pixels.buffer],
@@ -703,5 +809,12 @@
       },
     };
   }
-  return Object.freeze({ detect, matchVisible, visibility, start });
+  return Object.freeze({
+    detect,
+    matchVisible,
+    visibility,
+    findShared,
+    collectShared,
+    start,
+  });
 });

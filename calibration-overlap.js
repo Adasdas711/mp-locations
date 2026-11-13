@@ -185,6 +185,7 @@
     return {
       inliers: best.length,
       total: matches.length,
+      indices: best,
       H: bestH,
       points: best.map((i) => ({
         left: from[i],
@@ -282,6 +283,100 @@
     }
     return aa > 100 && bb > 100 ? ab / Math.sqrt(aa * bb) : -1;
   }
+  function area(polygon) {
+    return (
+      Math.abs(
+        polygon.reduce((sum, p, i) => {
+          const q = polygon[(i + 1) % polygon.length];
+          return sum + p.x * q.y - p.y * q.x;
+        }, 0),
+      ) / 2
+    );
+  }
+  function shifted(H, dx, dy) {
+    return [
+      H[0] + dx * H[6],
+      H[1] + dx * H[7],
+      H[2] + dx * H[8],
+      H[3] + dy * H[6],
+      H[4] + dy * H[7],
+      H[5] + dy * H[8],
+      H[6],
+      H[7],
+      H[8],
+    ];
+  }
+  // Coarse-to-fine search of a target translation that maximizes patch
+  // correlation; rejects points whose correlation peak is not unique.
+  function refineAt(reference, target, H, p) {
+    let best = {
+      H,
+      similarity: correlation(reference, target, H, p),
+      dx: 0,
+      dy: 0,
+    };
+    for (const step of [1, 0.5, 0.25]) {
+      const center = best;
+      for (let y = -2; y <= 2; y++)
+        for (let x = -2; x <= 2; x++) {
+          if (!x && !y) continue;
+          const dx = center.dx + x * step,
+            dy = center.dy + y * step;
+          if (Math.hypot(dx, dy) > 3) continue;
+          const candidate = shifted(H, dx, dy),
+            similarity = correlation(reference, target, candidate, p);
+          if (similarity > best.similarity)
+            best = { H: candidate, similarity, dx, dy };
+        }
+    }
+    return best;
+  }
+  // Candidates supported by one fitted planar model between two samples.
+  function planeCandidates(reference, target, corners, fit, refine = false) {
+    const region = hull(fit.points.map((p) => p.left)),
+      otherRegion = hull(fit.points.map((p) => p.right));
+    if (
+      area(region) < reference.width * reference.height * 0.003 ||
+      area(otherRegion) < target.width * target.height * 0.003
+    )
+      return [];
+    const candidates = [];
+    for (const p of corners) {
+      if (!inside(p, region)) continue;
+      if (!inside(warp(fit.H, p), otherRegion)) continue;
+      // The plane model is fitted to sparse features; refine its local
+      // translation at this corner so the connecting point follows the image.
+      const refined = refine ? refineAt(reference, target, fit.H, p) : null,
+        H = refined?.H || fit.H,
+        q = warp(H, p),
+        similarity =
+          refined?.similarity ?? correlation(reference, target, H, p);
+      if (!inside(q, otherRegion) || similarity < 0.75) continue;
+      // Periodic tiles can be consistent with a homography despite not
+      // identifying a unique physical detail. Reject repeated source contexts.
+      if (
+        corners.some(
+          (other) =>
+            Math.hypot(other.x - p.x, other.y - p.y) > 12 &&
+            correlation(
+              reference,
+              reference,
+              [1, 0, other.x - p.x, 0, 1, other.y - p.y, 0, 0, 1],
+              p,
+            ) > 0.97,
+        )
+      )
+        continue;
+      candidates.push({
+        ...p,
+        rightPoint: q,
+        similarity,
+        evidence: { inliers: fit.inliers, region },
+        target,
+      });
+    }
+    return candidates;
+  }
   function find(reference, targets, detect) {
     const source = features(reference),
       corners = detect({ ...reference, count: 128, separation: 0.025 });
@@ -292,53 +387,54 @@
         fit = model(source, destination, matches);
       if (!fit.inliers || fit.inliers < 8 || fit.inliers < fit.total * 0.25)
         continue;
-      const region = hull(fit.points.map((p) => p.left)),
-        otherRegion = hull(fit.points.map((p) => p.right));
-      const area = (polygon) =>
-        Math.abs(
-          polygon.reduce((sum, p, i) => {
-            const q = polygon[(i + 1) % polygon.length];
-            return sum + p.x * q.y - p.y * q.x;
-          }, 0),
-        ) / 2;
-      if (
-        area(region) < reference.width * reference.height * 0.003 ||
-        area(otherRegion) < target.width * target.height * 0.003
-      )
-        continue;
-      const candidates = [];
-      for (const p of corners) {
-        if (!inside(p, region)) continue;
-        const q = warp(fit.H, p);
-        if (!inside(q, otherRegion)) continue;
-        const similarity = correlation(reference, target, fit.H, p);
-        if (similarity < 0.75) continue;
-        // Periodic tiles can be consistent with a homography despite not
-        // identifying a unique physical detail. Reject repeated source contexts.
-        if (
-          corners.some(
-            (other) =>
-              Math.hypot(other.x - p.x, other.y - p.y) > 12 &&
-              correlation(
-                reference,
-                reference,
-                [1, 0, other.x - p.x, 0, 1, other.y - p.y, 0, 0, 1],
-                p,
-              ) > 0.97,
-          )
-        )
-          continue;
-        candidates.push({
-          ...p,
-          rightPoint: q,
-          similarity,
-          evidence: { inliers: fit.inliers, region },
-          target,
-        });
-      }
+      const candidates = planeCandidates(reference, target, corners, fit);
       if (candidates.length > result.length) result = candidates;
     }
     return result;
+  }
+  // Several reference views against several target views. Each image pair may
+  // contain more than one physical surface: after a planar model is found, its
+  // supporting matches are removed and another independent plane is fitted.
+  // Target descriptors are computed once and reused for every reference view.
+  function collect(references, targets, detect, options = {}) {
+    const planes = Math.max(1, Math.min(6, options.planes ?? 3)),
+      destinations = targets.map((t) => features(t)),
+      output = [];
+    references.forEach((reference, r) => {
+      const source = features(reference),
+        corners = detect({ ...reference, count: 128, separation: 0.025 });
+      targets.forEach((target, t) => {
+        let remaining = match(source, destinations[t]);
+        const total = remaining.length;
+        for (let plane = 0; plane < planes; plane++) {
+          const fit = model(source, destinations[t], remaining);
+          if (
+            !fit.inliers ||
+            fit.inliers < (plane ? 10 : 8) ||
+            (!plane && fit.inliers < total * 0.25)
+          )
+            break;
+          for (const candidate of planeCandidates(
+            reference,
+            target,
+            corners,
+            fit,
+            true,
+          ))
+            output.push({
+              ...candidate,
+              reference,
+              referenceIndex: r,
+              targetIndex: t,
+              plane: r + ":" + t + ":" + plane,
+            });
+          const used = new Set(fit.indices);
+          remaining = remaining.filter((_, i) => !used.has(i));
+          if (remaining.length < 10) break;
+        }
+      });
+    });
+    return output;
   }
   function bearing(sample, p) {
     const { pose = { yaw: 0, pitch: 0, fov: 90 }, width, height } = sample,
@@ -360,5 +456,5 @@
       pitch: (Math.asin(y / n) * 180) / Math.PI,
     };
   }
-  return Object.freeze({ features, match, model, find, bearing });
+  return Object.freeze({ features, match, model, find, collect, bearing });
 });

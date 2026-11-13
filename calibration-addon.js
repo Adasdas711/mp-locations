@@ -321,6 +321,19 @@ calibrationSkip.type = "button";
 calibrationSkip.textContent = "Skip point";
 calibrationSkip.hidden = true;
 calibrationSuggest.after(calibrationSkip);
+const CALIBRATION_AUTO_LABEL = "Auto match ";
+const calibrationAutoMatch = document.createElement("button");
+calibrationAutoMatch.id = "calibrationAutoMatch";
+calibrationAutoMatch.type = "button";
+calibrationAutoMatch.textContent = "Auto match";
+calibrationAutoMatch.title =
+  "Search all directions of both panoramas and save image-supported matches from several surfaces without tapping each point.";
+const calibrationConfirmAuto = document.createElement("button");
+calibrationConfirmAuto.id = "calibrationConfirmAuto";
+calibrationConfirmAuto.type = "button";
+calibrationConfirmAuto.hidden = true;
+calibrationConfirmAuto.title =
+  "Mark automatic matches that agree with the reconstruction as visible in both panoramas; disable the ones that do not.";
 const calibrationAutoStatus = document.createElement("span");
 calibrationAutoStatus.id = "calibrationAutoStatus";
 calibrationAutoStatus.setAttribute("role", "status");
@@ -355,6 +368,8 @@ calibrationMatchActions.className = "calibration-match-actions";
 calibrationSuggest.before(calibrationMatchActions);
 calibrationMatchActions.append(
   calibrationSuggest,
+  calibrationAutoMatch,
+  calibrationConfirmAuto,
   calibrationSkip,
   document.querySelector("#calibrationNewPoint"),
   document.querySelector("#calibrationAddLink"),
@@ -544,6 +559,7 @@ function calibrationUICurrentSuggestion() {
 function calibrationUIResetSuggestions(disabled = false) {
   clearTimeout(calibrationUI.suggestionTimer);
   calibrationUI.suggestions?.job?.cancel();
+  calibrationUI.suggestions?.autoJob?.cancel();
   const saved = calibrationUIState();
   calibrationUI.suggestions = {
     batchId: ++calibrationUI.suggestionBatch,
@@ -594,6 +610,12 @@ function calibrationUIRenderSuggestions() {
     !calibrationUI.views.right?.texture ||
     calibrationUI.views.right.readyId !== calibrationUIState().right ||
     !!auto?.detecting;
+  calibrationAutoMatch.disabled =
+    calibrationSuggest.disabled || !!auto?.autoMatching;
+  calibrationAutoMatch.textContent = auto?.autoMatching
+    ? "Matching…"
+    : "Auto match";
+  calibrationUIRenderAutoConfirm();
   for (const [index, p] of (auto?.points || []).entries()) {
     if (p.id !== current?.id) continue;
     const location = view?.projectBearing(p);
@@ -1033,6 +1055,220 @@ async function calibrationUIFindPoints(auto = calibrationUI.suggestions) {
     }
   }
 }
+// Automatic matches of the current pair that still await review.
+function calibrationUIPendingAutoMatches() {
+  return calibrationUIPairMatches().filter(
+    (p) =>
+      p.label.startsWith(CALIBRATION_AUTO_LABEL) &&
+      p.observations.some((o) => !o.verified),
+  );
+}
+function calibrationUIRenderAutoConfirm() {
+  const session = calibrationUI.session,
+    pending = calibrationUIPendingAutoMatches().length;
+  calibrationConfirmAuto.hidden = !pending;
+  calibrationConfirmAuto.textContent = `Confirm auto matches (${pending})`;
+  calibrationConfirmAuto.disabled =
+    calibrationUI.busy ||
+    !session?.solution ||
+    session.pending ||
+    session.solvedRevision !== session.revision;
+}
+async function calibrationUIAutoMatch() {
+  const auto = calibrationUI.suggestions,
+    saved = calibrationUIState(),
+    left = calibrationUI.views.left,
+    right = calibrationUI.views.right;
+  if (
+    !calibrationUI.open ||
+    calibrationUI.busy ||
+    !auto ||
+    auto.autoMatching ||
+    !calibrationUI.session ||
+    !saved.right
+  )
+    return;
+  auto.job?.cancel();
+  auto.detecting = false;
+  auto.autoMatching = true;
+  calibrationUIRenderSuggestions();
+  calibrationUIMessage(
+    "Searching every direction of both panoramas for shared details…",
+  );
+  let saved_count = 0;
+  const stale = () =>
+    !calibrationUI.open ||
+    auto !== calibrationUI.suggestions ||
+    left.readyId !== saved.left ||
+    right.readyId !== saved.right;
+  try {
+    const references = [],
+      targets = [],
+      worldSnapshot = state.worldSpace,
+      sceneSnapshot = state.sceneConfigurations;
+    // Whole-sphere coverage: the current views plus four horizontal directions
+    // for both panoramas, and the zenith/nadir of the connecting panorama.
+    const around = [0, 90, 180, 270].map((yaw) => ({
+      yaw,
+      pitch: 0,
+      fov: 100,
+    }));
+    for (const [view, list, poses] of [
+      [
+        left,
+        references,
+        [{ yaw: left.yaw, pitch: left.pitch, fov: left.fov }, ...around],
+      ],
+      [
+        right,
+        targets,
+        [
+          { yaw: right.yaw, pitch: right.pitch, fov: right.fov },
+          ...around,
+          { yaw: 0, pitch: 90, fov: 100 },
+          { yaw: 0, pitch: -90, fov: 100 },
+        ],
+      ],
+    ])
+      for (const pose of poses) {
+        await new Promise(requestAnimationFrame);
+        if (stale()) return;
+        const image = view.sampleImage({ width: 384, height: 384, pose });
+        list.push({
+          width: image.width,
+          height: image.height,
+          pixels: image.pixels,
+          pose: image.pose,
+        });
+      }
+    auto.autoJob = PalaceCalibrationFeatures.start({
+      references,
+      targets,
+      geometryContext: calibrationUIVisibilityContext(),
+      limit: 40,
+    });
+    const points = await auto.autoJob.promise;
+    if (
+      stale() ||
+      state.worldSpace !== worldSnapshot ||
+      state.sceneConfigurations !== sceneSnapshot
+    )
+      return;
+    const used = (calibrationUI.session?.landmarks || [])
+        .filter((p) => p.enabled)
+        .flatMap((p) => p.observations.filter((o) => o.panoId === saved.left)),
+      distinct = (p) =>
+        used.every((o) => {
+          const a = PalaceCalibrationMath.ray(p.yaw, p.pitch),
+            b = PalaceCalibrationMath.ray(o.yaw, o.pitch);
+          return (
+            a.reduce((sum, v, i) => sum + v * b[i], 0) <
+            Math.cos((0.75 * Math.PI) / 180)
+          );
+        }),
+      fresh = points.filter(distinct),
+      planes = new Set(fresh.map((p) => p.plane)).size;
+    if (fresh.length < 4) {
+      calibrationUIMessage(
+        "Automatic matching found no reliable common area for this pair. Aim both panoramas at a shared detail and use Find points, or choose No overlap for separate spaces.",
+      );
+      return;
+    }
+    await calibrationUIAction(async () => {
+      const api = calibrationUIAPI(),
+        session = calibrationUI.session,
+        start =
+          session.landmarks.filter((l) =>
+            l.label.startsWith(CALIBRATION_AUTO_LABEL),
+          ).length + 1;
+      for (const p of fresh) {
+        if (stale()) break;
+        await api.addLandmark(session.id, {
+          label: CALIBRATION_AUTO_LABEL + (start + saved_count),
+          observations: [
+            { panoId: saved.left, yaw: p.yaw, pitch: p.pitch, verified: false },
+            { panoId: saved.right, ...p.rightHint, verified: false },
+          ],
+        });
+        saved_count++;
+      }
+      saved.selected = null;
+      calibrationUISave();
+    });
+    if (stale()) return;
+    auto.points = [];
+    auto.reserve = [];
+    auto.selected = null;
+    calibrationUIMessage(
+      `Saved ${saved_count} automatic matches from ${planes} image surface${planes === 1 ? "" : "s"}. After the calculation finishes, review the preview and use Confirm auto matches.`,
+    );
+  } catch (error) {
+    if (!stale())
+      calibrationUIMessage(
+        error.message + " Use Find points or Manual point instead.",
+      );
+  } finally {
+    if (stale() && calibrationUI.open)
+      calibrationUIMessage(
+        saved_count
+          ? `Auto match stopped after saving ${saved_count} matches because the pair or view changed.`
+          : "Auto match stopped because the pair or view changed. No observations were saved; run it again.",
+      );
+    if (auto === calibrationUI.suggestions) {
+      auto.autoJob = null;
+      auto.autoMatching = false;
+      calibrationUIRenderSuggestions();
+      calibrationUIUpdateGuide();
+    }
+  }
+}
+// One review step for a whole automatic batch: matches consistent with the
+// reconstruction become verified, contradicted or unresolved ones are disabled.
+async function calibrationUIConfirmAutoMatches() {
+  const session = calibrationUI.session;
+  if (
+    !session?.solution ||
+    session.pending ||
+    session.solvedRevision !== session.revision
+  )
+    return;
+  const quality = structuredClone(session.quality),
+    limit = (session.config.ransacThresholdDeg ?? 0.6) * 2,
+    pending = calibrationUIPendingAutoMatches();
+  let confirmed = 0,
+    rejected = 0;
+  await calibrationUIAction(async () => {
+    const api = calibrationUIAPI();
+    for (const landmark of pending) {
+      const metric = quality.landmarks?.find((m) => m.id === landmark.id),
+        consistent =
+          metric?.distances?.length === landmark.observations.length &&
+          metric.distances.every((d) => d.angularErrorDeg <= limit);
+      if (consistent) {
+        await api.updateLandmark(session.id, landmark.id, {
+          observations: landmark.observations.map((o) => ({
+            ...o,
+            verified: true,
+          })),
+        });
+        confirmed++;
+      } else {
+        await api.updateLandmark(session.id, landmark.id, { enabled: false });
+        rejected++;
+      }
+    }
+  });
+  calibrationUIMessage(
+    `Confirmed ${confirmed} automatic match${confirmed === 1 ? "" : "es"}` +
+      (rejected
+        ? `; disabled ${rejected} that disagreed with the reconstruction (see Points & settings).`
+        : "."),
+  );
+}
+calibrationAutoMatch.onclick = () => calibrationUIAutoMatch();
+calibrationConfirmAuto.onclick = () => {
+  if (!calibrationUI.busy) calibrationUIConfirmAutoMatches();
+};
 calibrationSuggest.onclick = () => {
   if (calibrationUI.busy) return;
   calibrationUIResetSuggestions();

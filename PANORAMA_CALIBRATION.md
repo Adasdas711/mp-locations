@@ -12,6 +12,18 @@ The **Panorama calibration** crosshair button sits below **3D tour** in the far-
 
 Use **Manual point** before adding a feature near an existing marker. Unselected markers do not obscure the photographs or intercept taps. Drag each panorama independently to rotate it. Scroll or use its FOV slider to zoom. Markers are projected from stored spherical yaw/pitch, so changing the view does not change measurements. A focused panorama supports arrow keys and +/-.
 
+## Automatic matching of a whole pair
+
+**Auto match** collects a batch of correspondences for the current pair without a right-side tap per point.
+
+1. It samples both panoramas around the whole horizon (the current views plus four horizontal directions, and the zenith/nadir of the connecting panorama) and compares every reference view with every connecting view in the background worker. Connecting descriptors are computed once per batch.
+2. For each view pair, a planar image model is fitted, its supporting features are removed and further independent planes are fitted (up to three). Wide scenes therefore yield points on several walls, floors and objects, not four corners of one picture, which avoids the coplanar ambiguity described below. Every connecting location is refined by local patch correlation; points must lie inside both supported regions, pass correlation and the repeated-texture test, and survive known geometry/depth occlusion checks.
+3. Duplicates found through overlapping views are merged; a duplicate that predicts a different connecting direction is discarded as ambiguous. Up to 40 points are chosen round-robin over surfaces, each as far as possible (in angle) from points already chosen.
+4. Matches are saved as `Auto match N` landmarks with **unverified** observations. The core solves automatically; its robust consensus rejects inconsistent matches. Because the observations are unverified, the result stays `provisional` and Apply is disabled.
+5. **Confirm auto matches (N)** is the single review step: matches whose reprojection agrees with the reconstruction (within twice the RANSAC tolerance) become verified; contradicted or unresolved ones are disabled, not deleted, and remain visible in Points & settings. The group is recalculated and can then reach `solved`.
+
+Fewer than four supported points produce no batch and no observations. Image matching is still RGB evidence only: inspect the preview before confirming, and use Find points, Manual point or No overlap where Auto match finds nothing. Feature matching relies on moderate viewpoint changes; panoramas several metres apart in cluttered outdoor scenes may produce no automatic batch at all.
+
 ## Correct and extend observations
 
 Click a numbered marker to select and highlight the corresponding point in both views. Drag it to correct its position. Corrections clear manual visibility verification; confirm visibility again after checking the location.
@@ -93,6 +105,8 @@ Pending UI groups saved before four-point support migrate to upright four-point 
 
 The real photographic guided regression also verifies four automatically proposed artwork details. It performs no left-side placement. Expected right-side directions are independently projected through a planar homography measured from four hand-selected picture-frame corners, rather than trusting matching hints or a fixed feature order; AVIF decoding can produce different valid features on mobile. All source details must lie on the shared picture. Desktop, Android, iPhone and iPad runs require a four-point minimum, every saved observation to match the actual pointer measurement, no outliers and a stable solution. If the four-point configuration is geometrically ambiguous, the test requires an additional automatic proposal, disabled Apply while ambiguous, and successful continuation using only right-side taps. A separate numerical fixture preserves the exact four-point ambiguity and verifies that a fifth correspondence resolves it without changing solver tolerances. Private photograph files remain outside the repository; only view configuration and existing angular frame annotations are stored.
 
+
+`test/calibration-automatch.cjs` ray-casts a textured room corner (two walls and a floor) from known camera positions. It checks that automatic batches span several surfaces, that connecting directions agree with independent scene geometry, that unconfirmed batches recover the known baseline direction in upright and free solvers, that unrelated photographs produce nothing and that collection is deterministic. A browser case runs Auto match on equirectangular renders of the same scene, verifies that no observation is verified or applicable before review, and that one Confirm auto matches step reaches `solved`.
 
 `test/calibration-overlap.cjs` checks known visible/occluded image regions across independent seeded scenes, unrelated rooms, blank targets, repetitive tiles, scaled/translated views, collinear matches, deterministic output and unchanged input pixels. It verifies proposed points and right hints against independent synthetic image geometry rather than the matcher's own assertions.
 
