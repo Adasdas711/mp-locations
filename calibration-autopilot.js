@@ -276,11 +276,22 @@ async function calibrationAutopilotRun(options = {}) {
       report.groups.push(entry);
       try {
         progress({ phase: "solving", group: index + 1, total: groups.length });
+        // The best-connected camera anchors the gauge: scale then propagates
+        // through the most shared tracks.
+        const observed = new Map();
+        for (const t of groupTracks)
+          for (const o of t.observations)
+            observed.set(o.panoId, (observed.get(o.panoId) || 0) + 1);
+        const reference = [...observed].sort((x, y) => y[1] - x[1])[0]?.[0];
+        entry.referenceCameraId = reference || null;
         const session = await api.createSession({
           label: "Auto calibration " + (index + 1),
-          cameraIds,
+          cameraIds: reference
+            ? [reference, ...cameraIds.filter((id) => id !== reference)]
+            : cameraIds,
           orientationModel,
           minCorrespondences: orientationModel === "upright" ? 4 : 8,
+          ...(reference ? { referenceCameraId: reference } : {}),
         });
         entry.sessionId = session.id;
         await api.addLandmarks(
@@ -295,11 +306,14 @@ async function calibrationAutopilotRun(options = {}) {
             })),
           })),
         );
-        await api.solve(session.id);
-        let solved = await calibrationAutopilotWait(api, session.id, signal);
-        entry.initialStatus = solved.status;
+        const solve = async () => {
+          await api.solve(session.id);
+          return calibrationAutopilotWait(api, session.id, signal);
+        };
         // Batch review: keep what the reconstruction confirms.
-        if (solved.solution && solved.solvedRevision === solved.revision) {
+        const review = async (solved) => {
+          if (!solved.solution || solved.solvedRevision !== solved.revision)
+            return solved;
           const decision = A.reviewDecision(solved);
           progress({
             phase: "reviewing",
@@ -318,10 +332,39 @@ async function calibrationAutopilotRun(options = {}) {
           }
           for (const id of decision.disable)
             await api.updateLandmark(session.id, id, { enabled: false });
-          entry.confirmed = decision.confirm.length;
-          entry.disabled = decision.disable.length;
-          await api.solve(session.id);
-          solved = await calibrationAutopilotWait(api, session.id, signal);
+          entry.confirmed = (entry.confirmed || 0) + decision.confirm.length;
+          entry.disabled = (entry.disabled || 0) + decision.disable.length;
+          return decision.confirm.length || decision.disable.length
+            ? solve()
+            : solved;
+        };
+        let solved = await solve();
+        entry.initialStatus = solved.status;
+        solved = await review(solved);
+        // Cameras that still cannot be registered leave the group (their
+        // observations are removed), so the rest can be solved and applied.
+        const unregistered = solved.quality?.unregisteredCameraIds || [],
+          registered = solved.quality?.registeredCameraIds || [];
+        if (solved.solution && unregistered.length && registered.length >= 2) {
+          const drop = new Set(unregistered);
+          for (const landmark of solved.landmarks) {
+            if (!landmark.observations.some((o) => drop.has(o.panoId)))
+              continue;
+            const kept = landmark.observations.filter(
+              (o) => !drop.has(o.panoId),
+            );
+            if (kept.length >= 2)
+              await api.updateLandmark(session.id, landmark.id, {
+                observations: kept,
+              });
+            else await api.removeLandmark(session.id, landmark.id);
+          }
+          await api.updateSession(session.id, {
+            cameraIds: session.cameraIds.filter((id) => !drop.has(id)),
+          });
+          entry.removedCameraIds = unregistered;
+          report.unmatchedPanoramas.push(...unregistered);
+          solved = await review(await solve());
         }
         const q = solved.quality || {};
         entry.status = solved.status;
