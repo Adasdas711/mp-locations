@@ -845,8 +845,11 @@ function calibrationUIRefreshSuggestions() {
   }
   calibrationUIRenderSuggestions();
 }
-function calibrationUIVisibilityContext() {
-  const saved = calibrationUIState(),
+function calibrationUIVisibilityContext(
+  leftId = calibrationUIState().left,
+  rightId = calibrationUIState().right,
+) {
+  const saved = { left: leftId, right: rightId },
     world = worldData(),
     left = world.cameras[saved.left],
     right = world.cameras[saved.right];
@@ -1175,23 +1178,24 @@ async function calibrationUIAutoMatch() {
       return;
     }
     await calibrationUIAction(async () => {
-      const api = calibrationUIAPI(),
-        session = calibrationUI.session,
+      const session = calibrationUI.session,
         start =
           session.landmarks.filter((l) =>
             l.label.startsWith(CALIBRATION_AUTO_LABEL),
           ).length + 1;
-      for (const p of fresh) {
-        if (stale()) break;
-        await api.addLandmark(session.id, {
-          label: CALIBRATION_AUTO_LABEL + (start + saved_count),
+      if (stale()) return;
+      // One revision for the whole batch: one recalculation and history entry.
+      const created = await calibrationUIAPI().addLandmarks(
+        session.id,
+        fresh.map((p, i) => ({
+          label: CALIBRATION_AUTO_LABEL + (start + i),
           observations: [
             { panoId: saved.left, yaw: p.yaw, pitch: p.pitch, verified: false },
             { panoId: saved.right, ...p.rightHint, verified: false },
           ],
-        });
-        saved_count++;
-      }
+        })),
+      );
+      saved_count = created.length;
       saved.selected = null;
       calibrationUISave();
     });
@@ -1232,31 +1236,26 @@ async function calibrationUIConfirmAutoMatches() {
     session.solvedRevision !== session.revision
   )
     return;
-  const quality = structuredClone(session.quality),
-    limit = (session.config.ransacThresholdDeg ?? 0.6) * 2,
-    pending = calibrationUIPendingAutoMatches();
-  let confirmed = 0,
-    rejected = 0;
+  const pending = calibrationUIPendingAutoMatches(),
+    decision = PalaceCalibrationAuto.reviewDecision(
+      session,
+      pending.map((p) => p.id),
+    ),
+    confirmed = decision.confirm.length,
+    rejected = decision.disable.length;
   await calibrationUIAction(async () => {
     const api = calibrationUIAPI();
-    for (const landmark of pending) {
-      const metric = quality.landmarks?.find((m) => m.id === landmark.id),
-        consistent =
-          metric?.distances?.length === landmark.observations.length &&
-          metric.distances.every((d) => d.angularErrorDeg <= limit);
-      if (consistent) {
-        await api.updateLandmark(session.id, landmark.id, {
-          observations: landmark.observations.map((o) => ({
-            ...o,
-            verified: true,
-          })),
-        });
-        confirmed++;
-      } else {
-        await api.updateLandmark(session.id, landmark.id, { enabled: false });
-        rejected++;
-      }
+    for (const id of decision.confirm) {
+      const landmark = pending.find((p) => p.id === id);
+      await api.updateLandmark(session.id, id, {
+        observations: landmark.observations.map((o) => ({
+          ...o,
+          verified: true,
+        })),
+      });
     }
+    for (const id of decision.disable)
+      await api.updateLandmark(session.id, id, { enabled: false });
   });
   calibrationUIMessage(
     `Confirmed ${confirmed} automatic match${confirmed === 1 ? "" : "es"}` +

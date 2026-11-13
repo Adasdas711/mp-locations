@@ -24,6 +24,26 @@ Use **Manual point** before adding a feature near an existing marker. Unselected
 
 Fewer than four supported points produce no batch and no observations. Image matching is still RGB evidence only: inspect the preview before confirming, and use Find points, Manual point or No overlap where Auto match finds nothing. Feature matching relies on moderate viewpoint changes; panoramas several metres apart in cluttered outdoor scenes may produce no automatic batch at all.
 
+## Calibrate the whole project
+
+**Points & settings → Calibrate all panoramas** runs the same steps for every panorama, without choosing pairs:
+
+1. **Candidate pairs.** Projects with up to 12 panoramas compare every pair. Larger projects compare tour links, the three nearest already-registered cameras and consecutive panoramas in archive order. A link remains only a suggestion; a pair is accepted only with at least eight image-supported matches.
+2. **Whole-sphere views, computed once.** Each panorama is rendered off-screen into six 100° views (four horizontal, zenith and nadir) through the shared panorama surface. Descriptors and corners are computed once per panorama in one background worker and reused for all its pairs; panoramas are released after their last pair.
+3. **Multi-view tracks.** Pairwise matches of the same panorama direction (within 0.4°) are joined, so A↔B and B↔C form one landmark observed by three cameras; these tracks connect baseline scales. A chain that would hold two different directions of one panorama is discarded.
+4. **Independent groups.** Every connected set of accepted pairs becomes its own `Auto calibration N` group (`addLandmarks` stores each batch as one revision). Panoramas without accepted pairs are reported and never receive invented poses.
+5. **Review and quality gates.** After solving, each automatic landmark is confirmed when all its observations reproject within twice the RANSAC tolerance; the others are disabled. The group is solved again. **Apply automatically when quality checks pass** (off by default) applies a group only when it is `solved` and current, all its cameras are registered, nothing is occluded or degenerate, the median/mean angular errors are at most 0.35°/0.6°, outliers are at most 20% and there are at least eight inliers per camera. Every application can be reverted (Undo last application or Undo/Redo); metric projects still require a known distance.
+
+The button becomes **Stop** while running. The summary lists matched pairs, solved/applied groups and unmatched panoramas. `PalaceCalibrationAutopilot.run(options)` exposes the same run to trusted code and returns a JSON report.
+
+### Command line
+
+```
+npm run calibrate -- archive.3dview --report report.json --out calibrated.mpalace --apply
+```
+
+`scripts/auto-calibrate.cjs` opens the archive in the real application in headless Chromium (Playwright), runs the autopilot and writes the report and, with `--out`, the calibrated `.mpalace` (projects with a floor plan and local panoramas). Options: `--pairs auto|links|all`, `--free` for unrestricted eight-point orientation, `--min-pair-matches N`. Exit status 0 means every group solved (and applied with `--apply`) and every panorama was matched; 2 means the run finished with unmatched panoramas or unsolved groups; 1 means an error.
+
 ## Correct and extend observations
 
 Click a numbered marker to select and highlight the corresponding point in both views. Drag it to correct its position. Corrections clear manual visibility verification; confirm visibility again after checking the location.
@@ -105,6 +125,8 @@ Pending UI groups saved before four-point support migrate to upright four-point 
 
 The real photographic guided regression also verifies four automatically proposed artwork details. It performs no left-side placement. Expected right-side directions are independently projected through a planar homography measured from four hand-selected picture-frame corners, rather than trusting matching hints or a fixed feature order; AVIF decoding can produce different valid features on mobile. All source details must lie on the shared picture. Desktop, Android, iPhone and iPad runs require a four-point minimum, every saved observation to match the actual pointer measurement, no outliers and a stable solution. If the four-point configuration is geometrically ambiguous, the test requires an additional automatic proposal, disabled Apply while ambiguous, and successful continuation using only right-side taps. A separate numerical fixture preserves the exact four-point ambiguity and verifies that a fifth correspondence resolves it without changing solver tolerances. Private photograph files remain outside the repository; only view configuration and existing angular frame annotations are stored.
 
+
+`test/calibration-auto.cjs` checks candidate pairs, track chaining and ambiguity rejection, connected groups, batch review and every quality gate; cached whole-sphere analysis of three known cameras must reproduce their relative positions including the scale between baselines. Browser cases run Calibrate all panoramas with automatic application (an unrelated fourth panorama must stay unmatched and unposed, revert restores the world) and without it, and the command line is run end to end on a generated archive. With `PALACE_REAL_ARCHIVES_DIR`, the autopilot also runs on every private archive and may only report groups backed by accepted image pairs.
 
 `test/calibration-automatch.cjs` ray-casts a textured room corner (two walls and a floor) from known camera positions. It checks that automatic batches span several surfaces, that connecting directions agree with independent scene geometry, that unconfirmed batches recover the known baseline direction in upright and free solvers, that unrelated photographs produce nothing and that collection is deterministic. A browser case runs Auto match on equirectangular renders of the same scene, verifies that no observation is verified or applicable before review, and that one Confirm auto matches step reaches `solved`.
 

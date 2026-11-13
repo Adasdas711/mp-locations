@@ -195,6 +195,8 @@ export interface PalaceSDK {
         updateSession(sessionId: string, patch: {label?: string; cameraIds?: string[]; config?: CalibrationConfig}): Promise<CalibrationSession>;
         removeSession(sessionId: string): Promise<boolean>;
         addLandmark(sessionId: string, data: {id?: string; label?: string; enabled?: boolean; observations?: CalibrationObservation[]}): Promise<CalibrationLandmark>;
+        /** Adds 1..10000 landmarks as one revision (one recalculation, one history entry). */
+        addLandmarks(sessionId: string, data: Array<{id?: string; label?: string; enabled?: boolean; observations?: CalibrationObservation[]}>): Promise<CalibrationLandmark[]>;
         updateLandmark(sessionId: string, landmarkId: string, patch: {label?: string; enabled?: boolean; observations?: CalibrationObservation[]}): Promise<CalibrationLandmark>;
         removeLandmark(sessionId: string, landmarkId: string): Promise<true>;
         addObservation(sessionId: string, landmarkId: string, data: CalibrationObservation): Promise<CalibrationObservation>;

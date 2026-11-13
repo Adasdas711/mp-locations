@@ -143,7 +143,83 @@ function renderEquirect(C, width = 2048, height = 1024) {
     }
   return gray;
 }
+// Minimal grayscale PNG encoder (no browser needed).
+function pngGray(width, height, gray) {
+  const zlib = require("node:zlib"),
+    table = new Int32Array(256).map((_, n) => {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      return c;
+    }),
+    crc = (buffer) => {
+      let c = -1;
+      for (const b of buffer) c = table[(c ^ b) & 255] ^ (c >>> 8);
+      return (c ^ -1) >>> 0;
+    },
+    chunk = (type, data) => {
+      const length = Buffer.alloc(4),
+        body = Buffer.concat([Buffer.from(type), data]),
+        sum = Buffer.alloc(4);
+      length.writeUInt32BE(data.length);
+      sum.writeUInt32BE(crc(body));
+      return Buffer.concat([length, body, sum]);
+    },
+    header = Buffer.alloc(13),
+    raw = Buffer.alloc((width + 1) * height);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = 0;
+  for (let y = 0; y < height; y++)
+    Buffer.from(gray.buffer, gray.byteOffset + y * width, width).copy(
+      raw,
+      y * (width + 1) + 1,
+    );
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk("IHDR", header),
+    chunk("IDAT", zlib.deflateSync(raw)),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+// .mpalace archive with one equirectangular panorama per camera position.
+async function cornerArchive(cameras, { level = false } = {}) {
+  const fs = require("node:fs"),
+    path = require("node:path"),
+    Zip = require("../../vendor/jszip.min.js"),
+    zip = new Zip(),
+    panoramas = {};
+  for (const [id, C] of Object.entries(cameras)) {
+    zip.file(`panoramas/${id}.png`, pngGray(2048, 1024, renderEquirect(C)));
+    panoramas[id] = { mode: "equirect", file: `panoramas/${id}.png`, room: id };
+  }
+  const levels = [];
+  if (level) {
+    zip.file(
+      "images/level-1.png",
+      fs.readFileSync(path.join(__dirname, "../../icons/icon-192.png")),
+    );
+    levels.push({
+      name: "Floor 1",
+      named: true,
+      floorId: 1,
+      w: 192,
+      h: 192,
+      image: "images/level-1.png",
+      labels: [],
+      markers: [],
+      walls: [],
+    });
+  }
+  zip.file(
+    "palace.json",
+    JSON.stringify({ name: "Room corner", levels, panoramas }),
+  );
+  return zip.generateAsync({ type: "nodebuffer" });
+}
 module.exports = {
+  pngGray,
+  cornerArchive,
   render,
   renderEquirect,
   project,

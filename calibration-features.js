@@ -657,6 +657,8 @@
         Math.PI;
     const raw = O.collect(input.references, input.targets, detect, {
       planes: input.planes,
+      referenceData: input.referenceData,
+      targetFeatures: input.targetFeatures,
     })
       .map((p) => {
         const left = O.bearing(p.reference, p),
@@ -733,6 +735,126 @@
       visibility: "image-supported",
     }));
   }
+  function workerSource() {
+    return (
+      "var window=self;const detect=" +
+      detect.toString() +
+      ";const describe=" +
+      describe.toString() +
+      ";const visibility=" +
+      visibility.toString() +
+      ";const matchVisible=" +
+      matchVisible.toString() +
+      ";const findShared=" +
+      findShared.toString() +
+      ";const collectShared=" +
+      collectShared.toString() +
+      ";const analysisSession=" +
+      analysisSession.toString() +
+      ";"
+    );
+  }
+  // Persistent per-project analysis state: each panorama's view samples,
+  // descriptors and corners are computed once and reused for every pair.
+  function analysisSession() {
+    const cache = new Map();
+    return (message) => {
+      if (message.type === "add") {
+        cache.set(
+          message.pano,
+          message.views.map((sample) => ({
+            sample,
+            features: PalaceCalibrationOverlap.features(sample),
+            corners: detect({ ...sample, count: 128, separation: 0.025 }),
+          })),
+        );
+        return { added: message.pano };
+      }
+      if (message.type === "drop") {
+        cache.delete(message.pano);
+        return { dropped: message.pano };
+      }
+      if (message.type === "pair") {
+        const a = cache.get(message.a),
+          b = cache.get(message.b);
+        if (!a || !b) throw new Error("Panorama views were not analysed.");
+        return {
+          points: collectShared({
+            references: a.map((v) => v.sample),
+            targets: b.map((v) => v.sample),
+            referenceData: a,
+            targetFeatures: b.map((v) => v.features),
+            geometryContext: message.geometryContext,
+            limit: message.limit,
+            planes: message.planes,
+          }),
+        };
+      }
+      throw new Error("Unknown analysis request.");
+    };
+  }
+  function assetURL(name) {
+    return new URL(name, document.baseURI).href;
+  }
+  // Worker-backed analysis of a whole project. Requests are serialized.
+  function startProject() {
+    const pending = new Map();
+    let sequence = 0,
+      closed = false;
+    const url = URL.createObjectURL(
+        new Blob(
+          [
+            workerSource() +
+              "importScripts(" +
+              JSON.stringify(assetURL("vendor/jsfeat-0.0.8.min.js")) +
+              "," +
+              JSON.stringify(assetURL("calibration-overlap.js")) +
+              ");const handle=analysisSession();onmessage=e=>{try{postMessage({id:e.data.id,result:handle(e.data)})}catch(error){postMessage({id:e.data.id,error:error.message})}}",
+          ],
+          { type: "text/javascript" },
+        ),
+      ),
+      worker = new Worker(url);
+    const fail = (error) => {
+      for (const { reject } of pending.values()) reject(error);
+      pending.clear();
+    };
+    worker.onmessage = (e) => {
+      const task = pending.get(e.data.id);
+      if (!task) return;
+      pending.delete(e.data.id);
+      e.data.error
+        ? task.reject(new Error(e.data.error))
+        : task.resolve(e.data.result);
+    };
+    worker.onerror = (event) => {
+      event.preventDefault?.();
+      fail(new Error(event.message || "Unable to analyze panoramas."));
+    };
+    const send = (message, transfer = []) =>
+      new Promise((resolve, reject) => {
+        if (closed) return reject(new Error("Panorama analysis was closed."));
+        const id = ++sequence;
+        pending.set(id, { resolve, reject });
+        worker.postMessage({ ...message, id }, transfer);
+      });
+    return {
+      add: (pano, views) =>
+        send(
+          { type: "add", pano, views },
+          views.map((v) => v.pixels.buffer),
+        ),
+      drop: (pano) => send({ type: "drop", pano }),
+      pair: (a, b, options = {}) => send({ type: "pair", a, b, ...options }),
+      dispose() {
+        if (closed) return;
+        closed = true;
+        worker.terminate();
+        URL.revokeObjectURL(url);
+        fail(new Error("Panorama analysis was closed."));
+      },
+    };
+  }
   function start(sample) {
     let worker,
       url,
@@ -751,19 +873,8 @@
         url = URL.createObjectURL(
           new Blob(
             [
-              "var window=self;const detect=" +
-                detect.toString() +
-                ";const describe=" +
-                describe.toString() +
-                ";const visibility=" +
-                visibility.toString() +
-                ";const matchVisible=" +
-                matchVisible.toString() +
-                ";const findShared=" +
-                findShared.toString() +
-                ";const collectShared=" +
-                collectShared.toString() +
-                ";onmessage=e=>{try{if(e.data.reference||e.data.references)importScripts(e.data.jsfeatURL,e.data.overlapURL);postMessage({points:e.data.references?collectShared(e.data):e.data.reference?findShared(e.data):detect(e.data)})}catch(error){postMessage({error:error.message})}}",
+              workerSource() +
+                "onmessage=e=>{try{if(e.data.reference||e.data.references)importScripts(e.data.jsfeatURL,e.data.overlapURL);postMessage({points:e.data.references?collectShared(e.data):e.data.reference?findShared(e.data):detect(e.data)})}catch(error){postMessage({error:error.message})}}",
             ],
             { type: "text/javascript" },
           ),
@@ -774,14 +885,8 @@
         worker.onerror = () =>
           finish(new Error("Unable to analyze panorama details."));
         if (sample.reference || sample.references) {
-          sample.jsfeatURL = new URL(
-            "vendor/jsfeat-0.0.8.min.js",
-            document.baseURI,
-          ).href;
-          sample.overlapURL = new URL(
-            "calibration-overlap.js",
-            document.baseURI,
-          ).href;
+          sample.jsfeatURL = assetURL("vendor/jsfeat-0.0.8.min.js");
+          sample.overlapURL = assetURL("calibration-overlap.js");
         }
         worker.postMessage(
           sample,
@@ -815,6 +920,8 @@
     visibility,
     findShared,
     collectShared,
+    analysisSession,
     start,
+    startProject,
   });
 });

@@ -99,6 +99,7 @@ All operations below return Promises except event factories. They use existing `
 | updateSession(id,patch) | Complete session after invalidation/revision increment. | scene.write |
 | removeSession(id) | true, cancels its job and removes its data. | scene.write |
 | addLandmark(id,data) | Normalized landmark, UUID default ID. | scene.write |
+| addLandmarks(id,list) | Array of normalized landmarks added as one revision (1..10000). | scene.write |
 | updateLandmark(id,landmarkId,patch) | Landmark; patch label/enabled/observations. | scene.write |
 | removeLandmark(id,landmarkId) | true; missing landmark rejects. | scene.write |
 | addObservation(id,landmarkId,data) | `{panoId,yaw,pitch,verified}`; duplicate camera observation rejects. | scene.write |

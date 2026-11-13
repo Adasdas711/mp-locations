@@ -395,14 +395,19 @@
   // Several reference views against several target views. Each image pair may
   // contain more than one physical surface: after a planar model is found, its
   // supporting matches are removed and another independent plane is fitted.
-  // Target descriptors are computed once and reused for every reference view.
+  // Target descriptors are computed once and reused for every reference view;
+  // callers analysing many pairs can pass precomputed referenceData
+  // ({features, corners} per reference) and targetFeatures.
   function collect(references, targets, detect, options = {}) {
     const planes = Math.max(1, Math.min(6, options.planes ?? 3)),
-      destinations = targets.map((t) => features(t)),
+      destinations = options.targetFeatures || targets.map((t) => features(t)),
       output = [];
     references.forEach((reference, r) => {
-      const source = features(reference),
-        corners = detect({ ...reference, count: 128, separation: 0.025 });
+      const cached = options.referenceData?.[r],
+        source = cached?.features || features(reference),
+        corners =
+          cached?.corners ||
+          detect({ ...reference, count: 128, separation: 0.025 });
       targets.forEach((target, t) => {
         let remaining = match(source, destinations[t]);
         const total = remaining.length;
