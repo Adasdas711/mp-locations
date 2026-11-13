@@ -384,12 +384,17 @@
     });
     return { points, descriptors };
   }
-  /** Mutual nearest neighbours with cosine similarity above minCos. */
-  function match(a, b, minCos = 0.82) {
+  /**
+   * Mutual nearest neighbours with cosine similarity above minCos. With
+   * ratio < 1, the best match must also be clearly better than the second
+   * best: (1 - best) < ratio * (1 - second).
+   */
+  function match(a, b, minCos = 0.82, ratio = 1) {
     const na = a.points.length,
       nb = b.points.length,
       best = new Int32Array(na).fill(-1),
       bestValue = new Float32Array(na).fill(-2),
+      second = new Float32Array(na).fill(-2),
       reverse = new Int32Array(nb).fill(-1),
       reverseValue = new Float32Array(nb).fill(-2),
       A = a.descriptors,
@@ -401,9 +406,10 @@
         let s = 0;
         for (let k = 0; k < 64; k++) s += A[oi + k] * B[oj + k];
         if (s > bestValue[i]) {
+          second[i] = bestValue[i];
           bestValue[i] = s;
           best[i] = j;
-        }
+        } else if (s > second[i]) second[i] = s;
         if (s > reverseValue[j]) {
           reverseValue[j] = s;
           reverse[j] = i;
@@ -413,7 +419,12 @@
     const out = [];
     for (let i = 0; i < na; i++) {
       const j = best[i];
-      if (j >= 0 && reverse[j] === i && bestValue[i] > minCos)
+      if (
+        j >= 0 &&
+        reverse[j] === i &&
+        bestValue[i] > minCos &&
+        1 - bestValue[i] < ratio * (1 - second[i])
+      )
         out.push({ i, j, distance: 1 - bestValue[i] });
     }
     return out;

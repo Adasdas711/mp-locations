@@ -758,14 +758,15 @@
   }
   // Learned-feature correspondences for one panorama pair and the pair's
   // relative pose. Views 0..3 are horizontal and compared with each other;
-  // view 4 (zenith) and 5 (nadir) only with themselves. Within each view pair,
-  // planar models are fitted sequentially; their supporting matches are then
-  // filtered by the pair's own spherical epipolar consensus.
+  // view 4 (zenith) and 5 (nadir) only with themselves. Distinctive mutual
+  // matches (ratio test) from all view pairs are pooled, the most similar
+  // ones kept, and the pair's spherical epipolar consensus selects inliers.
+  // Unlike planar grouping, this keeps correct matches on objects at
+  // different depths.
   function xfeatPair(a, b, options = {}) {
     const X = PalaceCalibrationXFeat,
       O = PalaceCalibrationOverlap,
       M = PalaceCalibrationMath,
-      planes = options.planes ?? 3,
       raw = [],
       horizontal = Math.min(4, a.length, b.length),
       viewPairs = [];
@@ -776,36 +777,34 @@
     for (const [i, j] of viewPairs) {
       const fa = a[i].xfeat,
         fb = b[j].xfeat;
-      let remaining = X.match(fa, fb);
-      for (let plane = 0; plane < planes; plane++) {
-        const fit = O.model(fa.points, fb.points, remaining);
-        if (!fit.inliers || fit.inliers < (plane ? 10 : 8)) break;
-        const used = new Set(fit.indices);
-        for (const k of fit.indices) {
-          const m = remaining[k];
-          raw.push({
-            ...O.bearing(a[i].xfeatSample, fa.points[m.i]),
-            rightHint: O.bearing(b[j].xfeatSample, fb.points[m.j]),
-          });
-        }
-        remaining = remaining.filter((_, k) => !used.has(k));
-        if (remaining.length < 10) break;
-      }
+      for (const m of X.match(
+        fa,
+        fb,
+        options.minCos ?? 0.8,
+        options.ratio ?? 0.9,
+      ))
+        raw.push({
+          ...O.bearing(a[i].xfeatSample, fa.points[m.i]),
+          rightHint: O.bearing(b[j].xfeatSample, fb.points[m.j]),
+          distance: m.distance,
+        });
     }
+    raw.sort((p, q) => p.distance - q.distance);
     const rays = raw.map((p) => M.ray(p.yaw, p.pitch)),
       unique = [];
-    raw.forEach((p, i) => {
+    const pool = options.pool ?? 300,
+      close = Math.cos((0.3 * Math.PI) / 180);
+    for (let i = 0; i < raw.length && unique.length < pool; i++)
       if (
         unique.every(
           (q) =>
             rays[q][0] * rays[i][0] +
               rays[q][1] * rays[i][1] +
               rays[q][2] * rays[i][2] <
-            Math.cos((0.3 * Math.PI) / 180),
+            close,
         )
       )
         unique.push(i);
-    });
     const points = unique.map((i) => raw[i]),
       result = { matches: points.length, inliers: 0, status: null, points: [] };
     if (points.length < 8) return result;

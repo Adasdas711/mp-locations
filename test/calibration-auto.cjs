@@ -43,14 +43,14 @@ function assertGeometry(positions, tolerance) {
 }
 
 test("Candidate pairs combine tour links, nearest registered cameras and sequence", () => {
-  const panoramas = Array.from({ length: 20 }, (_, i) => ({
+  const panoramas = Array.from({ length: 40 }, (_, i) => ({
     id: "p" + String(i).padStart(2, "0"),
-    neighbors: i === 0 ? ["p19"] : [],
+    neighbors: i === 0 ? ["p39"] : [],
     position: { x: i * 2, y: 0, z: 0 },
   }));
   const pairs = A.candidatePairs(panoramas),
     has = (a, b) => pairs.some((p) => p.a === a && p.b === b);
-  assert.ok(has("p00", "p19"), "tour link");
+  assert.ok(has("p00", "p39"), "tour link");
   assert.ok(has("p05", "p07"), "nearest registered camera");
   assert.ok(!has("p00", "p10"), "large projects are not compared exhaustively");
   assert.equal(new Set(pairs.map((p) => p.a + p.b)).size, pairs.length);
@@ -61,7 +61,7 @@ test("Candidate pairs combine tour links, nearest registered cameras and sequenc
   );
   assert.deepEqual(
     A.candidatePairs(panoramas, { mode: "links" }).map((p) => [p.a, p.b]),
-    [["p00", "p19"]],
+    [["p00", "p39"]],
   );
 });
 test("Pairwise matches chain into multi-view tracks; contradictory chains are discarded", () => {
