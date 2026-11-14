@@ -860,4 +860,4 @@ globe radar transparent
 
 ## SDK 1.7: spherical calibration core
 
-Полный контракт `tour.world.calibration`, математический алгоритм, единицы, фоновые задания, подтверждённое применение и ограничения — [CALIBRATION_SDK.md](CALIBRATION_SDK.md). Встроенный системный аддон [Panorama calibration](PANORAMA_CALIBRATION.md) предоставляет двухоконный интерфейс сопоставления точек и использует это ядро. Системные модули получают тот же контракт через `window.PalaceAPI.tour.world.calibration`.
+Полный контракт `tour.world.calibration`, математический алгоритм, единицы, фоновые задания, подтверждённое применение и ограничения — [CALIBRATION_SDK.md](CALIBRATION_SDK.md). Встроенного интерфейса калибровки нет: доступен только этот API. Системные модули получают тот же контракт через `window.PalaceAPI.tour.world.calibration`.

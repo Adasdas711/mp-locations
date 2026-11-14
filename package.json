@@ -6,7 +6,6 @@
     "test": "node scripts/test.cjs",
     "update:offline": "node scripts/update-offline.cjs",
     "package:addon": "node scripts/package-addon.cjs",
-    "calibrate": "node scripts/auto-calibrate.cjs",
     "build:html": "node scripts/build-html.cjs",
     "build": "npm run build:html && npm run update:offline"
   },

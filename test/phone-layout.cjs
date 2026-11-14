@@ -59,16 +59,4 @@ for(const [name,options]of phones){
    const search=await page.locator('#settingsSearch').evaluate(el=>({font:parseFloat(getComputedStyle(el).fontSize),padding:parseFloat(getComputedStyle(el).paddingLeft)}));assert.ok(search.font>=16&&search.padding>=36);
   }
  });
- test(`${name}: calibration controls stay bounded and leave both panoramas usable`,async t=>{
-  const {page}=await openSession(browser,t,options);await page.locator('#calibrationTool').tap();await page.waitForFunction(()=>calibrationUI.open&&!calibrationUI.busy);
-  for(const size of [0,1,2]){
-   await page.evaluate(size=>PALACE_UI.setSize(size),size);
-   assert.ok(await page.locator('.calibration-viewport').evaluateAll(els=>els.every(el=>el.clientHeight>=85)));
-   assert.equal(await page.locator('.calibration-navigation').evaluate(el=>getComputedStyle(el).overflowX),'auto');
-   await page.locator('#calibrationCameras').tap();await page.locator('#calibrationCameraPanel').waitFor({state:'visible'});await page.locator('#calibrationCamerasClose').tap();
-   await page.locator('#calibrationDetails summary').tap();await page.waitForFunction(()=>document.querySelector('#calibrationDetails').open);
-   await page.locator('#calibrationDetails summary').tap();await bounded(page);
-  }
-  await page.locator('#calibrationClose').tap();await page.waitForFunction(()=>!calibrationUI.open);
- });
 }

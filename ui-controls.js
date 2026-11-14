@@ -72,16 +72,6 @@ html.phone .tool-settings-info>span {font-size:12px}
 html.phone #settingsModal .addon-card {padding:12px 0}
 /* Floating plugin menus must escape their trigger lane. */
 html.phone #settingsModal .addon-card>.persistence-actions {overflow:visible;max-width:none}
-html.phone #calibrationWorkspace {font-size:12px;padding:6px;gap:4px}
-html.phone #calibrationWorkspace .calibration-header strong {font-size:12px}
-html.phone #calibrationWorkspace .calibration-navigation,html.phone #calibrationWorkspace .calibration-result-actions {
- min-width:0;max-width:100%;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;
-}
-html.phone #calibrationWorkspace .calibration-navigation button,html.phone #calibrationWorkspace .calibration-result-actions button {flex:none;white-space:nowrap}
-html.phone #calibrationWorkspace .calibration-navigation button {font-size:11px;min-height:30px;padding:4px 7px}
-html.phone #calibrationWorkspace .calibration-matchbar {min-width:0}
-html.phone #calibrationWorkspace .calibration-details {max-width:calc(100% - 16px)}
-html.phone #calibrationWorkspace .calibration-preview-camera,html.phone #calibrationCameraList {min-width:0}
 @media(max-width:650px) {
  html.phone .settings-sidebar {padding:10px 12px;flex-basis:170px;max-height:170px;min-height:110px}
  html.phone .settings-nav-group {margin-bottom:12px}

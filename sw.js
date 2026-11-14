@@ -1,6 +1,6 @@
 /* Bump the cache version whenever any app-shell asset changes. */
 'use strict';
-const CACHE = 'palace-offline-ac94cd01320325e9';
+const CACHE = 'palace-offline-4ab8b4d05288acca';
 const ASSETS = [
   "./",
   "addon-management.js",
@@ -10,16 +10,9 @@ const ASSETS = [
   "app-api.js",
   "app.js",
   "appearance.js",
-  "calibration-addon.js",
-  "calibration-auto.js",
-  "calibration-autopilot.js",
   "calibration-core.js",
-  "calibration-features.js",
   "calibration-math.js",
-  "calibration-overlap.js",
-  "calibration-preview.js",
   "calibration-worker.js",
-  "calibration-xfeat.js",
   "camera-editor.js",
   "command-palette.js",
   "extension-operations.js",
@@ -32,7 +25,6 @@ const ASSETS = [
   "manifest.webmanifest",
   "mobile-controls.js",
   "mobile.js",
-  "panorama-surface.js",
   "persistence.js",
   "pwa.js",
   "scene-camera.js",
@@ -47,8 +39,6 @@ const ASSETS = [
   "vendor/eng-LICENSE",
   "vendor/eng.traineddata.gz",
   "vendor/fonts.css",
-  "vendor/jsfeat-0.0.8.min.js",
-  "vendor/jsfeat-LICENSE.txt",
   "vendor/jspdf-LICENSE",
   "vendor/jspdf.umd.min.js",
   "vendor/jszip-LICENSE.markdown",
@@ -70,7 +60,6 @@ const ASSETS = [
   "vendor/three-LICENSE",
   "vendor/three.min.js",
   "vendor/worker.min.js",
-  "vendor/xfeat/xfeat-backbone.bin",
   "workspace-presets.js",
   "world-space.js",
   "world-ui.js"
