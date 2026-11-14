@@ -1,71 +1,287 @@
-const {test,before,after}=require('node:test'),assert=require('node:assert/strict');
-const {profiles,openSession}=require('./support/fixtures.cjs'),{launchBrowser}=require('./support/browser.cjs');let browser;
-before(async()=>browser=await launchBrowser());after(async()=>browser?.close());
-for(const [name,options]of profiles)test(`${name}: cone exits with 3D; camera tool shows selected graph and direct +/- controls`,async t=>{
- const {page}=await openSession(browser,t,options);
- await page.evaluate(()=>{state.layout='split';applyLayout();setActiveLocalPano('a',false);drawPlan();if(!document.querySelector('#plan .plan-view-cone'))renderPlanViewCone(document.querySelector('#plan'),state.panoramas.a)});
- await page.waitForFunction(()=>document.querySelectorAll('#plan .plan-view-cone').length===1);
- if(await page.evaluate(()=>state.layout==='split')&&await page.locator('#btnSplit').isVisible())await page.locator('#btnSplit').click();else await page.evaluate(()=>{state.layout='plan';applyLayout()});
- await page.waitForFunction(()=>state.layout==='plan');
- assert.equal(await page.locator('#plan .plan-view-cone').count(),0);assert.equal(await page.evaluate(()=>planCone.el),null);
- await page.evaluate(()=>{state.panoramas.c={...state.panoramas.b,room:'Camera C',planPx:{x:160,y:30},destinations:[]};resetHistory()});
- await page.locator('#abTour').click();await page.waitForFunction(()=>state.layout==='tour');await page.keyboard.press('c');await page.waitForFunction(()=>state.layout==='plan'&&state.tool==='camera');
- await page.waitForFunction(()=>document.querySelectorAll('.camera-link-lines line.selected').length===1);
- assert.equal(await page.locator('#plan .plan-cam[data-pano="a"]').evaluate(el=>el.classList.contains('camera-edit-selected')),true);
- assert.equal(await page.locator('#plan .plan-cam[data-pano="b"]').evaluate(el=>el.classList.contains('camera-edit-connected')),true);
- assert.equal(await page.locator('#cameraEditor').count(),0);
- const marker=await page.locator('#plan .plan-cam[data-pano="a"]').boundingBox(),trash=await page.locator('#cameraEditorDelete').boundingBox(),flag=await page.locator('#cameraEditorStart').boundingBox();
- assert.ok(trash.x+trash.width/2>marker.x+marker.width/2&&trash.y+trash.height/2<marker.y+marker.height/2,'Trash is top right');
- assert.ok(flag.x+flag.width/2<marker.x+marker.width/2&&flag.y+flag.height/2>marker.y+marker.height/2,'Flag is bottom left');
- assert.equal(await page.locator('#cameraEditorLinks').count(),0);
- const plus=page.locator('#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]');
- const badge=await plus.boundingBox(),peer=await page.locator('#plan .plan-cam[data-pano="c"]').boundingBox();assert.ok(Math.abs(badge.width/peer.width-.34)<.02,'Corner actions are proportional to markers');
- assert.equal(await page.locator('[data-tool="camera"] use').getAttribute('href'),'#i-camera-edit');
- await plus.click();await page.waitForFunction(()=>state.panoramas.a.destinations.some(d=>d.panoId==='c'));
- assert.equal(await page.locator('.camera-link-lines line.selected').count(),2);
- assert.equal(await page.locator('#plan .plan-cam.camera-edit-connected').count(),2);
- await page.locator('#plan .plan-cam[data-pano="c"] .camera-action[data-action="remove-link"]').click();
- assert.equal(await page.locator('.camera-link-lines line.selected').count(),1);assert.equal(await page.locator('#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]').count(),1);
- await page.locator('#plan .plan-cam[data-pano="b"]').click();
- assert.equal(await page.evaluate(()=>editedCameraId),'b');
- assert.equal(await page.locator('#plan .plan-cam[data-pano="b"] #cameraEditorDelete').count(),1);
- assert.equal(await page.locator('#plan .plan-cam[data-pano="a"] .camera-action[data-action="remove-link"]').count(),1);
- assert.equal(await page.locator('#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]').count(),1);
- await page.locator('#plan .plan-cam[data-pano="a"]').click();
- await page.locator('#cameraEditorStart').click();await page.locator('#cameraEditorStart').click();assert.equal(await page.evaluate(()=>state.startPano),'a');
- assert.equal(await page.locator('#cameraEditorStart').getAttribute('aria-pressed'),'true');
- assert.equal(await page.locator('#cameraEditorStart').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(245, 179, 1)');
- assert.equal(await page.locator('.camera-edit-selected .cam-start').count(),0,'Selected initial camera has only one visible flag');
- assert.equal(await page.locator('.camera-edit-selected [data-action="set-start"]').isVisible(),true);
- await page.locator('#plan .plan-cam[data-pano="b"]').click();
- assert.equal(await page.locator('#plan .cam-start').count(),0,'Legacy flags are never rendered in camera editing');
- await page.locator('#plan .plan-cam[data-pano="a"]').click();
- await page.locator('#cameraEditorDelete').click();await page.locator('#askNo').click();assert.equal(await page.evaluate(()=>!!state.panoramas.a),true);
- await page.locator('#cameraEditorDelete').click();await page.locator('#askYes').click();await page.keyboard.press('Control+z');await page.waitForFunction(()=>!!state.panoramas.a&&state.startPano==='a');
-});
+const { test, before, after } = require("node:test"),
+  assert = require("node:assert/strict");
+const { profiles, openSession } = require("./support/fixtures.cjs"),
+  { launchBrowser } = require("./support/browser.cjs");
+let browser;
+before(async () => (browser = await launchBrowser()));
+after(async () => browser?.close());
+for (const [name, options] of profiles)
+  test(`${name}: cone exits with 3D; camera tool shows selected graph and direct +/- controls`, async (t) => {
+    const { page } = await openSession(browser, t, options);
+    await page.evaluate(() => {
+      state.layout = "split";
+      applyLayout();
+      setActiveLocalPano("a", false);
+      drawPlan();
+      if (!document.querySelector("#plan .plan-view-cone"))
+        renderPlanViewCone(document.querySelector("#plan"), state.panoramas.a);
+    });
+    await page.waitForFunction(
+      () => document.querySelectorAll("#plan .plan-view-cone").length === 1,
+    );
+    if (
+      (await page.evaluate(() => state.layout === "split")) &&
+      (await page.locator("#btnSplit").isVisible())
+    )
+      await page.locator("#btnSplit").click();
+    else
+      await page.evaluate(() => {
+        state.layout = "plan";
+        applyLayout();
+      });
+    await page.waitForFunction(() => state.layout === "plan");
+    assert.equal(await page.locator("#plan .plan-view-cone").count(), 0);
+    assert.equal(await page.evaluate(() => planCone.el), null);
+    await page.evaluate(() => {
+      state.panoramas.c = {
+        ...state.panoramas.b,
+        room: "Camera C",
+        planPx: { x: 160, y: 30 },
+        destinations: [],
+      };
+      resetHistory();
+    });
+    await page.locator("#abTour").click();
+    await page.waitForFunction(() => state.layout === "tour");
+    await page.keyboard.press("c");
+    await page.waitForFunction(
+      () => state.layout === "plan" && state.tool === "camera",
+    );
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(".camera-link-lines line.selected").length ===
+        1,
+    );
+    assert.equal(
+      await page
+        .locator('#plan .plan-cam[data-pano="a"]')
+        .evaluate((el) => el.classList.contains("camera-edit-selected")),
+      true,
+    );
+    assert.equal(
+      await page
+        .locator('#plan .plan-cam[data-pano="b"]')
+        .evaluate((el) => el.classList.contains("camera-edit-connected")),
+      true,
+    );
+    assert.equal(await page.locator("#cameraEditor").count(), 0);
+    const marker = await page
+        .locator('#plan .plan-cam[data-pano="a"]')
+        .boundingBox(),
+      trash = await page.locator("#cameraEditorDelete").boundingBox(),
+      flag = await page.locator("#cameraEditorStart").boundingBox();
+    assert.ok(
+      trash.x + trash.width / 2 > marker.x + marker.width / 2 &&
+        trash.y + trash.height / 2 < marker.y + marker.height / 2,
+      "Trash is top right",
+    );
+    assert.ok(
+      flag.x + flag.width / 2 < marker.x + marker.width / 2 &&
+        flag.y + flag.height / 2 > marker.y + marker.height / 2,
+      "Flag is bottom left",
+    );
+    assert.equal(await page.locator("#cameraEditorLinks").count(), 0);
+    const plus = page.locator(
+      '#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]',
+    );
+    const badge = await plus.boundingBox(),
+      peer = await page.locator('#plan .plan-cam[data-pano="c"]').boundingBox();
+    assert.ok(
+      Math.abs(badge.width / peer.width - 0.34) < 0.02,
+      "Corner actions are proportional to markers",
+    );
+    assert.equal(
+      await page.locator('[data-tool="camera"] use').getAttribute("href"),
+      "#i-camera-edit",
+    );
+    await plus.click();
+    await page.waitForFunction(() =>
+      state.panoramas.a.destinations.some((d) => d.panoId === "c"),
+    );
+    assert.equal(
+      await page.locator(".camera-link-lines line.selected").count(),
+      2,
+    );
+    assert.equal(
+      await page.locator("#plan .plan-cam.camera-edit-connected").count(),
+      2,
+    );
+    await page
+      .locator(
+        '#plan .plan-cam[data-pano="c"] .camera-action[data-action="remove-link"]',
+      )
+      .click();
+    assert.equal(
+      await page.locator(".camera-link-lines line.selected").count(),
+      1,
+    );
+    assert.equal(
+      await page
+        .locator(
+          '#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]',
+        )
+        .count(),
+      1,
+    );
+    await page.locator('#plan .plan-cam[data-pano="b"]').click();
+    assert.equal(await page.evaluate(() => editedCameraId), "b");
+    assert.equal(
+      await page
+        .locator('#plan .plan-cam[data-pano="b"] #cameraEditorDelete')
+        .count(),
+      1,
+    );
+    assert.equal(
+      await page
+        .locator(
+          '#plan .plan-cam[data-pano="a"] .camera-action[data-action="remove-link"]',
+        )
+        .count(),
+      1,
+    );
+    assert.equal(
+      await page
+        .locator(
+          '#plan .plan-cam[data-pano="c"] .camera-action[data-action="add-link"]',
+        )
+        .count(),
+      1,
+    );
+    await page.locator('#plan .plan-cam[data-pano="a"]').click();
+    await page.locator("#cameraEditorStart").click();
+    await page.locator("#cameraEditorStart").click();
+    assert.equal(await page.evaluate(() => state.startPano), "a");
+    assert.equal(
+      await page.locator("#cameraEditorStart").getAttribute("aria-pressed"),
+      "true",
+    );
+    assert.equal(
+      await page
+        .locator("#cameraEditorStart")
+        .evaluate((el) => getComputedStyle(el).backgroundColor),
+      "rgb(245, 179, 1)",
+    );
+    assert.equal(
+      await page.locator(".camera-edit-selected .cam-start").count(),
+      0,
+      "Selected initial camera has only one visible flag",
+    );
+    assert.equal(
+      await page
+        .locator('.camera-edit-selected [data-action="set-start"]')
+        .isVisible(),
+      true,
+    );
+    await page.locator('#plan .plan-cam[data-pano="b"]').click();
+    assert.equal(
+      await page.locator("#plan .cam-start").count(),
+      0,
+      "Legacy flags are never rendered in camera editing",
+    );
+    await page.locator('#plan .plan-cam[data-pano="a"]').click();
+    await page.locator("#cameraEditorDelete").click();
+    await page.locator("#askNo").click();
+    assert.equal(await page.evaluate(() => !!state.panoramas.a), true);
+    await page.locator("#cameraEditorDelete").click();
+    await page.locator("#askYes").click();
+    await page.keyboard.press("Control+z");
+    await page.waitForFunction(
+      () => !!state.panoramas.a && state.startPano === "a",
+    );
+  });
 
-test('existing initial-camera badge cannot overlap +/- when entering editing without a redraw',async t=>{
- const {page}=await openSession(browser,t,profiles[0][1]);
- await page.evaluate(()=>{state.layout='split';state.tool='select';setStartPano('b');applyLayout();drawPlan()});
- await page.waitForFunction(()=>document.querySelector('[data-pano="b"] .cam-start'));
- const normal=await page.locator('#plan .plan-cam[data-pano="b"]').evaluate(el=>{const cam=el.getBoundingClientRect(),flag=el.querySelector('.cam-start').getBoundingClientRect();return {left:flag.x+flag.width/2<cam.x+cam.width/2,bottom:flag.y+flag.height/2>cam.y+cam.height/2}});
- assert.deepEqual(normal,{left:true,bottom:true});
- await page.evaluate(()=>{state.tool='camera';syncTools();selectCameraForEditing('a')});
- assert.equal(await page.locator('#plan .cam-start').count(),0);
- assert.equal(await page.locator('[data-pano="b"] [data-action="remove-link"]').count(),1);
- assert.equal(await page.locator('#plan [data-action="set-start"]').count(),1);
- await page.evaluate(()=>selectCameraForEditing('b'));
- assert.equal(await page.locator('#plan .cam-start').count(),0);
- assert.equal(await page.locator('[data-pano="b"] [data-action="set-start"]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(245, 179, 1)');
+test("existing initial-camera badge cannot overlap +/- when entering editing without a redraw", async (t) => {
+  const { page } = await openSession(browser, t, profiles[0][1]);
+  await page.evaluate(() => {
+    state.layout = "split";
+    state.tool = "select";
+    setStartPano("b");
+    applyLayout();
+    drawPlan();
+  });
+  await page.waitForFunction(() =>
+    document.querySelector('[data-pano="b"] .cam-start'),
+  );
+  const normal = await page
+    .locator('#plan .plan-cam[data-pano="b"]')
+    .evaluate((el) => {
+      const cam = el.getBoundingClientRect(),
+        flag = el.querySelector(".cam-start").getBoundingClientRect();
+      return {
+        left: flag.x + flag.width / 2 < cam.x + cam.width / 2,
+        bottom: flag.y + flag.height / 2 > cam.y + cam.height / 2,
+      };
+    });
+  assert.deepEqual(normal, { left: true, bottom: true });
+  await page.evaluate(() => {
+    state.tool = "camera";
+    syncTools();
+    selectCameraForEditing("a");
+  });
+  assert.equal(await page.locator("#plan .cam-start").count(), 0);
+  assert.equal(
+    await page.locator('[data-pano="b"] [data-action="remove-link"]').count(),
+    1,
+  );
+  assert.equal(
+    await page.locator('#plan [data-action="set-start"]').count(),
+    1,
+  );
+  await page.evaluate(() => selectCameraForEditing("b"));
+  assert.equal(await page.locator("#plan .cam-start").count(), 0);
+  assert.equal(
+    await page
+      .locator('[data-pano="b"] [data-action="set-start"]')
+      .evaluate((el) => getComputedStyle(el).backgroundColor),
+    "rgb(245, 179, 1)",
+  );
 });
-for(const [name,options]of profiles)test(`${name}: editor cameras keep equal sizes without 3D active styling`,async t=>{
- const {page}=await openSession(browser,t,options);
- await page.evaluate(()=>{state.layout='split';applyLayout();setActiveLocalPano('a',false);drawPlan()});
- await page.locator('[data-tool="camera"]').click();
- let sizes=await page.locator('#plan .plan-cam').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().width));assert.ok(Math.abs(sizes[0]-sizes[1])<.01);
- assert.equal(await page.locator('#plan .plan-cam.active').count(),0);
- await page.locator('#plan .plan-cam[data-pano="b"]').click();assert.equal(await page.locator('#plan .plan-cam[data-pano="b"]').evaluate(node=>node.classList.contains('camera-edit-selected')),true);
- assert.equal(await page.locator('#plan .plan-cam[data-pano="a"]').evaluate(node=>node.classList.contains('camera-edit-selected')),false);
- sizes=await page.locator('#plan .plan-cam').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().width));assert.ok(Math.abs(sizes[0]-sizes[1])<.01);
- await page.evaluate(()=>{state.tool='select';state.layout='split';applyLayout();drawPlan()});assert.equal(await page.locator('#plan .plan-cam[data-pano="a"]').evaluate(node=>node.classList.contains('active')),true);
-});
+for (const [name, options] of profiles)
+  test(`${name}: editor cameras keep equal sizes without 3D active styling`, async (t) => {
+    const { page } = await openSession(browser, t, options);
+    await page.evaluate(() => {
+      state.layout = "split";
+      applyLayout();
+      setActiveLocalPano("a", false);
+      drawPlan();
+    });
+    await page.locator('[data-tool="camera"]').click();
+    let sizes = await page
+      .locator("#plan .plan-cam")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getBoundingClientRect().width),
+      );
+    assert.ok(Math.abs(sizes[0] - sizes[1]) < 0.01);
+    assert.equal(await page.locator("#plan .plan-cam.active").count(), 0);
+    await page.locator('#plan .plan-cam[data-pano="b"]').click();
+    assert.equal(
+      await page
+        .locator('#plan .plan-cam[data-pano="b"]')
+        .evaluate((node) => node.classList.contains("camera-edit-selected")),
+      true,
+    );
+    assert.equal(
+      await page
+        .locator('#plan .plan-cam[data-pano="a"]')
+        .evaluate((node) => node.classList.contains("camera-edit-selected")),
+      false,
+    );
+    sizes = await page
+      .locator("#plan .plan-cam")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getBoundingClientRect().width),
+      );
+    assert.ok(Math.abs(sizes[0] - sizes[1]) < 0.01);
+    await page.evaluate(() => {
+      state.tool = "select";
+      state.layout = "split";
+      applyLayout();
+      drawPlan();
+    });
+    assert.equal(
+      await page
+        .locator('#plan .plan-cam[data-pano="a"]')
+        .evaluate((node) => node.classList.contains("active")),
+      true,
+    );
+  });

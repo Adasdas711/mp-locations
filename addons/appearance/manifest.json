@@ -5,10 +5,7 @@
   "apiVersion": 1,
   "main": "main.js",
   "description": "Install themes and icon sets, import your own JSON and customize them independently.",
-  "permissions": [
-    "ui.control",
-    "ui.contribute"
-  ],
+  "permissions": ["ui.control", "ui.contribute"],
   "contributes": {
     "commands": [
       {

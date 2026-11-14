@@ -78,16 +78,16 @@ node scripts/package-addon.cjs /absolute/path/my-addon /absolute/path/my-addon.p
 
 Ограничения пакета:
 
-| Что | Ограничение |
-| --- | --- |
-| Размер выбранного ZIP | До `8 * 1024 * 1024` байт |
-| Суммарный распакованный размер | До `8 * 1024 * 1024` байт |
-| Один распакованный файл | До `8 * 1024 * 1024` байт |
-| Количество файлов, без директорий | Не более 100 |
-| Путь файла | Менее 200 символов; без абсолютного пути, `\\`, пустых сегментов, `.` и `..` |
-| Текстовые файлы | Корректный UTF-8, декодирование строгое |
-| Бинарные изображения | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`; преобразуются в data URL |
-| SVG | UTF-8 текст; для значка используется как data URL |
+| Что                               | Ограничение                                                                  |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| Размер выбранного ZIP             | До `8 * 1024 * 1024` байт                                                    |
+| Суммарный распакованный размер    | До `8 * 1024 * 1024` байт                                                    |
+| Один распакованный файл           | До `8 * 1024 * 1024` байт                                                    |
+| Количество файлов, без директорий | Не более 100                                                                 |
+| Путь файла                        | Менее 200 символов; без абсолютного пути, `\\`, пустых сегментов, `.` и `..` |
+| Текстовые файлы                   | Корректный UTF-8, декодирование строгое                                      |
+| Бинарные изображения              | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`; преобразуются в data URL          |
+| SVG                               | UTF-8 текст; для значка используется как data URL                            |
 
 Произвольный бинарный файл, например `.wasm`, `.woff` или `.bin`, не загружается как бинарный ресурс пакета: все файлы, кроме перечисленных растровых изображений, декодируются как UTF-8. При необходимости включи base64/data URL в текстовый ресурс и используй только возможности браузерного sandbox.
 
@@ -102,43 +102,75 @@ node scripts/package-addon.cjs /absolute/path/my-addon /absolute/path/my-addon.p
   "description": "What this addon does.",
   "version": "1.0.0",
   "apiVersion": 1,
-  "engines": {"palace": ">=1.4.0 <2.0.0"},
+  "engines": { "palace": ">=1.4.0 <2.0.0" },
   "main": "main.js",
-  "permissions": ["project.read", "markers.write", "ui.contribute", "keybindings.write"],
+  "permissions": [
+    "project.read",
+    "markers.write",
+    "ui.contribute",
+    "keybindings.write"
+  ],
   "contributes": {
     "commands": [
-      {"id": "my.addon.open", "title": "Open addon panel"},
-      {"id": "my.addon.center", "title": "Add locus at center"}
+      { "id": "my.addon.open", "title": "Open addon panel" },
+      { "id": "my.addon.center", "title": "Add locus at center" }
     ],
-    "panels": [
-      {"id": "my.addon.panel", "title": "My addon"}
-    ],
+    "panels": [{ "id": "my.addon.panel", "title": "My addon" }],
     "activityBar": [
-      {"id": "my.addon.activity", "title": "My addon", "icon": "icon.svg", "command": "my.addon.open"}
+      {
+        "id": "my.addon.activity",
+        "title": "My addon",
+        "icon": "icon.svg",
+        "command": "my.addon.open"
+      }
     ],
     "toolbars": [
-      {"id": "my.addon.center-tool", "title": "Add locus", "location": "plan", "icon": "pin", "command": "my.addon.center"}
+      {
+        "id": "my.addon.center-tool",
+        "title": "Add locus",
+        "location": "plan",
+        "icon": "pin",
+        "command": "my.addon.center"
+      }
     ],
     "settings": [
-      {"key": "note", "title": "Default note", "description": "Text for a new locus.", "type": "string", "default": "Created by addon"},
-      {"key": "showCount", "title": "Show locus count", "type": "boolean", "default": true},
-      {"key": "limit", "title": "Display limit", "type": "number", "min": 1, "max": 100, "default": 10}
+      {
+        "key": "note",
+        "title": "Default note",
+        "description": "Text for a new locus.",
+        "type": "string",
+        "default": "Created by addon"
+      },
+      {
+        "key": "showCount",
+        "title": "Show locus count",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "limit",
+        "title": "Display limit",
+        "type": "number",
+        "min": 1,
+        "max": 100,
+        "default": 10
+      }
     ]
   }
 }
 ```
 
-| Поле | Требование |
-| --- | --- |
-| `id` | 3–80 символов, regex `^[a-z][a-z0-9.-]{2,79}$`; стабильный ID для обновлений |
-| `name` | Непустая строка до 120 символов |
-| `description` | Необязательное текстовое описание для карточки |
-| `version` | Строка из трёх числовых частей `major.minor.patch`, без `v`, prerelease и build suffix |
-| `apiVersion` | Число `1` |
-| `main` | Безопасный путь существующего текстового `.js` внутри ZIP |
-| `permissions` | Обязательный массив разрешений из следующего раздела; может быть пустым |
-| `engines.palace` | Необязательное требование к версии SDK |
-| `contributes` | Необязательный объект деклараций |
+| Поле             | Требование                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| `id`             | 3–80 символов, regex `^[a-z][a-z0-9.-]{2,79}$`; стабильный ID для обновлений           |
+| `name`           | Непустая строка до 120 символов                                                        |
+| `description`    | Необязательное текстовое описание для карточки                                         |
+| `version`        | Строка из трёх числовых частей `major.minor.patch`, без `v`, prerelease и build suffix |
+| `apiVersion`     | Число `1`                                                                              |
+| `main`           | Безопасный путь существующего текстового `.js` внутри ZIP                              |
+| `permissions`    | Обязательный массив разрешений из следующего раздела; может быть пустым                |
+| `engines.palace` | Необязательное требование к версии SDK                                                 |
+| `contributes`    | Необязательный объект деклараций                                                       |
 
 ID команд, панелей и кнопок должны начинаться с `manifest.id + '.'` и быть уникальными **между всеми четырьмя группами**. Суммарно не более 60 элементов в `commands + panels + activityBar + toolbars`. У каждого обязательны `id` и непустой `title` до 120 символов. У кнопки `command` ссылается на объявленную команду; у toolbar обязателен допустимый `location`. Кнопки требуют `ui.contribute` уже при проверке manifest.
 
@@ -148,21 +180,21 @@ VSCode-поля `activationEvents`, `extensionDependencies`, `configuration` и 
 
 ## 6. Разрешения: фактическая проверка хоста
 
-| Разрешение | Защищённые действия |
-| --- | --- |
-| `project.read` | `project.read`; доставка `onProjectChanged` |
-| `metadata.write` | `project.updateMetadata` |
-| `markers.write` | Все методы `markers` |
-| `plan.read` | `plan.read` |
-| `plan.write` | `plan.add/remove/rename/move/merge/split/transform`, `plan.walls.*` |
-| `tour.read` | `tour.read` |
-| `tour.write` | `tour.add/remove/loadPanorama/update/connect/setStart` |
-| `view.control` | `plan.select`, `tour.select/pose`, `view.read/set` |
-| `ui.control` | `ui.execute/theme/scale/setToolVisible/iconTheme` |
-| `ui.contribute` | Manifest-кнопки `activityBar/toolbars`, `ui.overlay`, `ui.registerAppearance/removeAppearance` |
-| `archive.read` | `archive.list/read/export/download/meta.read` |
-| `archive.write` | `archive.write/remove/meta.write` |
-| `keybindings.write` | `keybindings.register/unregister` |
+| Разрешение          | Защищённые действия                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| `project.read`      | `project.read`; доставка `onProjectChanged`                                                    |
+| `metadata.write`    | `project.updateMetadata`                                                                       |
+| `markers.write`     | Все методы `markers`                                                                           |
+| `plan.read`         | `plan.read`                                                                                    |
+| `plan.write`        | `plan.add/remove/rename/move/merge/split/transform`, `plan.walls.*`                            |
+| `tour.read`         | `tour.read`                                                                                    |
+| `tour.write`        | `tour.add/remove/loadPanorama/update/connect/setStart`                                         |
+| `view.control`      | `plan.select`, `tour.select/pose`, `view.read/set`                                             |
+| `ui.control`        | `ui.execute/theme/scale/setToolVisible/iconTheme`                                              |
+| `ui.contribute`     | Manifest-кнопки `activityBar/toolbars`, `ui.overlay`, `ui.registerAppearance/removeAppearance` |
+| `archive.read`      | `archive.list/read/export/download/meta.read`                                                  |
+| `archive.write`     | `archive.write/remove/meta.write`                                                              |
+| `keybindings.write` | `keybindings.register/unregister`                                                              |
 
 Отдельное разрешение **не требуется** для `commands.register`, `ui.showMessage`, `theme.read`, `storage.*`, `assets.read`, `settings.*`, `onSettingsChanged`, `ui.tools/themes/commands/iconThemes`, `keybindings.list`. `ui.showPanel` проверяет декларацию панели в manifest, но отдельного permission у него нет.
 
@@ -175,14 +207,18 @@ VSCode-поля `activationEvents`, `extensionDependencies`, `configuration` и 
 ```js
 let disposables = [];
 
-exports.activate = async api => {
-  disposables.push(api.commands.register('my.addon.open', async () => {
-    await api.ui.showPanel('my.addon.panel', '<h2>My addon</h2>');
-  }));
+exports.activate = async (api) => {
+  disposables.push(
+    api.commands.register("my.addon.open", async () => {
+      await api.ui.showPanel("my.addon.panel", "<h2>My addon</h2>");
+    }),
+  );
 
-  disposables.push(api.onProjectChanged(project => {
-    // Обнови собственную панель. Не записывай проект без условия.
-  }));
+  disposables.push(
+    api.onProjectChanged((project) => {
+      // Обнови собственную панель. Не записывай проект без условия.
+    }),
+  );
 };
 
 exports.deactivate = () => {
@@ -193,11 +229,11 @@ exports.deactivate = () => {
 
 `activate(api)` обязателен; может быть синхронным или возвращать Promise. `deactivate()` необязателен; `api` аргументом в него не передаётся. Сохрани нужные ссылки в области модуля. Он вызывается при выгрузке iframe, без ожидания асинхронной очистки: важные записи выполняй заранее, а не в `deactivate`.
 
-| Операция | Таймаут |
-| --- | --- |
+| Операция             | Таймаут                         |
+| -------------------- | ------------------------------- |
 | Один SDK RPC к хосту | 10 секунд, ошибка `API timeout` |
-| Активация | 12 секунд |
-| Команда | 15 секунд |
+| Активация            | 12 секунд                       |
+| Команда              | 15 секунд                       |
 
 Таймаут не является API отмены уже начавшейся операции. Разбивай длительные задачи и не держи `activate` занятым ожиданием пользователя.
 
@@ -206,9 +242,9 @@ exports.deactivate = () => {
 Колбэки подписок должны сами обрабатывать асинхронные ошибки:
 
 ```js
-api.onProjectChanged(project => {
-  refreshPanel(project).catch(error => {
-    const node = document.querySelector('#addonStatus');
+api.onProjectChanged((project) => {
+  refreshPanel(project).catch((error) => {
+    const node = document.querySelector("#addonStatus");
     if (node) node.textContent = error.message;
   });
 });
@@ -221,13 +257,13 @@ api.onProjectChanged(project => {
 ## 8. Модель данных и общие соглашения
 
 ```ts
-type LevelIndex = number;          // целый индекс с нуля
-type MarkerIndex = number;         // целый индекс с нуля внутри этажа
-type CameraId = string;            // ключ объекта api.tour.read()
+type LevelIndex = number; // целый индекс с нуля
+type MarkerIndex = number; // целый индекс с нуля внутри этажа
+type CameraId = string; // ключ объекта api.tour.read()
 type FloorId = string | number | null;
-type Point = {x: number; y: number};
-type Layout = 'plan' | 'tour' | 'split' | 'split-rev';
-type PlanView = '2d' | '3d';
+type Point = { x: number; y: number };
+type Layout = "plan" | "tour" | "split" | "split-rev";
+type PlanView = "2d" | "3d";
 ```
 
 Координаты плана — пиксели исходного изображения, начало в левом верхнем углу; масштаб экрана не меняет их. Для локуса, камеры или стены числовые координаты должны быть конечными и попадать в `0 <= x <= floor.w`, `0 <= y <= floor.h`.
@@ -239,7 +275,8 @@ function fileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error || new Error('Unable to read file'));
+    reader.onerror = () =>
+      reject(reader.error || new Error("Unable to read file"));
     reader.readAsDataURL(file);
   });
 }
@@ -253,18 +290,18 @@ function fileAsDataURL(file) {
 
 ### 9.1 Команды
 
-| Метод | Результат и особенности |
-| --- | --- |
+| Метод                                | Результат и особенности                                                                                                                                                                                       |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `api.commands.register(id, handler)` | Синхронно `{dispose()}`. Команда должна быть объявлена в manifest. `handler` может возвращать значение/Promise; собственные вызовы не должны предполагать, что пользовательские аргументы команды существуют. |
 
 Повторная регистрация того же ID заменяет обработчик в текущем iframe. `dispose()` снимает его. Общего публичного `commands.execute` нет: для собственных действий вызывай общую функцию своего модуля. Для штатных действий см. `ui.commands/execute`.
 
 ### 9.2 Проект и метаданные
 
-| Метод | Результат |
-| --- | --- |
-| `api.project.read()` | `ProjectSummary`, компактная копия без байтов изображений/панорам |
-| `api.project.updateMetadata(patch)` | Обновлённый `ProjectSummary` |
+| Метод                               | Результат                                                         |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| `api.project.read()`                | `ProjectSummary`, компактная копия без байтов изображений/панорам |
+| `api.project.updateMetadata(patch)` | Обновлённый `ProjectSummary`                                      |
 
 ```js
 // Пример формы ProjectSummary; значения зависят от открытого дворца.
@@ -284,29 +321,29 @@ function fileAsDataURL(file) {
 
 ### 9.3 Локусы
 
-| Метод | Результат/аргументы |
-| --- | --- |
-| `api.markers.add({level,x,y,note?})` | `{level,index}` нового локуса |
-| `api.markers.remove({level,index})` | `true` |
+| Метод                                     | Результат/аргументы                               |
+| ----------------------------------------- | ------------------------------------------------- |
+| `api.markers.add({level,x,y,note?})`      | `{level,index}` нового локуса                     |
+| `api.markers.remove({level,index})`       | `true`                                            |
 | `api.markers.update({level,index,patch})` | `true`; поля patch: `x`, `y`, `note`, `localPano` |
 
 `note` — строка до 50 000 символов. Добавление ограничено 100 локусами на этаж. `localPano` связывает локус с существующей камерой; `null` снимает привязку. При изменении части координат проверяется итоговая точка с учётом остальных полей. Дополнительные поля patch отклоняются. После удаления/перестановки перечитай индексы.
 
 ### 9.4 Планы и этажи
 
-| Метод | Результат/поведение |
-| --- | --- |
-| `api.plan.read(level?)` | Полная копия этажа, по умолчанию активного; содержит `src`, `w`, `h`, `markers`, `walls` и другие данные редактора |
-| `api.plan.add({src,name?,floorId?})` | Индекс добавленного этажа; он становится активным |
-| `api.plan.remove(level)` | `true`; удаляет этаж, корректирует активный индекс |
-| `api.plan.rename({level,name})` | `true` |
-| `api.plan.select(level)` | `true`; требует `view.control`, недоступен во время повторения |
-| `api.plan.move({from,to})` | `true`; переставляет этаж |
-| `api.plan.merge({from,to})` | `true` после запроса штатного объединения; `from !== to`; открывает штатный режим размещения частей |
-| `api.plan.split(level)` | `true` после вызова разделения; содержательный результат есть у плана с несколькими частями |
-| `api.plan.transform({rotation})` | `true`; задаёт угол отображения плана в градусах, не переписывает пиксели исходной картинки |
-| `api.plan.walls.add({level,x1,y1,x2,y2})` | Индекс добавленной стены |
-| `api.plan.walls.remove({level,index})` | `true` |
+| Метод                                     | Результат/поведение                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `api.plan.read(level?)`                   | Полная копия этажа, по умолчанию активного; содержит `src`, `w`, `h`, `markers`, `walls` и другие данные редактора |
+| `api.plan.add({src,name?,floorId?})`      | Индекс добавленного этажа; он становится активным                                                                  |
+| `api.plan.remove(level)`                  | `true`; удаляет этаж, корректирует активный индекс                                                                 |
+| `api.plan.rename({level,name})`           | `true`                                                                                                             |
+| `api.plan.select(level)`                  | `true`; требует `view.control`, недоступен во время повторения                                                     |
+| `api.plan.move({from,to})`                | `true`; переставляет этаж                                                                                          |
+| `api.plan.merge({from,to})`               | `true` после запроса штатного объединения; `from !== to`; открывает штатный режим размещения частей                |
+| `api.plan.split(level)`                   | `true` после вызова разделения; содержательный результат есть у плана с несколькими частями                        |
+| `api.plan.transform({rotation})`          | `true`; задаёт угол отображения плана в градусах, не переписывает пиксели исходной картинки                        |
+| `api.plan.walls.add({level,x1,y1,x2,y2})` | Индекс добавленной стены                                                                                           |
+| `api.plan.walls.remove({level,index})`    | `true`                                                                                                             |
 
 При `plan.add` необязательный `name` обрезается до 100 символов; по умолчанию `New floor`. `floorId` — строка/число, при отсутствии используется `null`. Загрузка, завершившаяся после смены проекта, отклоняется с `Project changed during loading.`
 
@@ -316,13 +353,13 @@ function fileAsDataURL(file) {
 
 ### 9.5 Вид и панорамы
 
-| Метод | Результат/поведение |
-| --- | --- |
-| `api.view.read()` | `{layout,planView,zoom,rotation,activeCamera,yaw,pitch,fov}` |
-| `api.view.set({layout?,planView?,zoom?})` | Фактический `ViewState` после применения |
-| `api.tour.read()` | Объект `{[cameraId]: Camera}` с локальными данными панорам |
-| `api.tour.select(id)` | `true`; открывает просмотр панорамы указанной камеры |
-| `api.tour.pose({yaw?,pitch?,fov?})` | Фактический `ViewState` |
+| Метод                                     | Результат/поведение                                          |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| `api.view.read()`                         | `{layout,planView,zoom,rotation,activeCamera,yaw,pitch,fov}` |
+| `api.view.set({layout?,planView?,zoom?})` | Фактический `ViewState` после применения                     |
+| `api.tour.read()`                         | Объект `{[cameraId]: Camera}` с локальными данными панорам   |
+| `api.tour.select(id)`                     | `true`; открывает просмотр панорамы указанной камеры         |
+| `api.tour.pose({yaw?,pitch?,fov?})`       | Фактический `ViewState`                                      |
 
 Все методы `view` требуют `view.control`, включая чтение. `view.set`, `tour.select`, `tour.pose` недоступны во время повторения. На маленьком экране редактор может скорректировать layout. Для 3D-плана нужны этажи и работающий WebGL; при неудаче редактор может показать уведомление и остаться в `2d` — смотри возвращённый `planView`.
 
@@ -332,14 +369,14 @@ function fileAsDataURL(file) {
 
 ### 9.6 Создание и редактирование камер
 
-| Метод | Результат/поведение |
-| --- | --- |
-| `api.tour.add({id?,level?,room?,planPx?,src?})` | `{id}` новой камеры |
-| `api.tour.loadPanorama({id,src})` | `{id}`; заменяет панораму камеры |
-| `api.tour.remove(id)` | `true`; удаляет камеру, её связи, назначение начальной и привязки локусов |
-| `api.tour.update({id,patch})` | `true`; patch: `room`, `hidden`, `headingDeg`, `navYawOffsetDeg`, `planPx` |
-| `api.tour.connect({from,to,add})` | `true`, если изменился двусторонний переход, иначе `false` |
-| `api.tour.setStart(idOrNull)` | `true`; назначает начальную камеру или сбрасывает её |
+| Метод                                           | Результат/поведение                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------- |
+| `api.tour.add({id?,level?,room?,planPx?,src?})` | `{id}` новой камеры                                                        |
+| `api.tour.loadPanorama({id,src})`               | `{id}`; заменяет панораму камеры                                           |
+| `api.tour.remove(id)`                           | `true`; удаляет камеру, её связи, назначение начальной и привязки локусов  |
+| `api.tour.update({id,patch})`                   | `true`; patch: `room`, `hidden`, `headingDeg`, `navYawOffsetDeg`, `planPx` |
+| `api.tour.connect({from,to,add})`               | `true`, если изменился двусторонний переход, иначе `false`                 |
+| `api.tour.setStart(idOrNull)`                   | `true`; назначает начальную камеру или сбрасывает её                       |
 
 `level` — индекс, по умолчанию активный. Без `id` создаётся UUID. Явный ID — 1–100 символов `a-zA-Z0-9._-`, уникальный; `__proto__`, `constructor`, `prototype` запрещены. `room` — строка до 1000 символов. Для этажа без `floorId` идентификатор назначается автоматически.
 
@@ -348,29 +385,31 @@ function fileAsDataURL(file) {
 `planPx: {x,y}` задаёт позицию на этаже камеры; `planPx: null` убирает позицию. `hidden` — boolean; углы — конечные числа. `connect` добавляет/удаляет оба направления; не создаёт дубликаты. Возвращает `false`, если камеры отсутствуют, одинаковы или нужное состояние уже есть. Начальная ориентация `startYaw` через `setStart` не задаётся: этот метод принимает только ID/null.
 
 ```js
-const {id} = await api.tour.add({
-  level: 0, room: 'Entrance', planPx: {x: 100, y: 80},
-  src: api.assets.read('images/panorama.jpg')
+const { id } = await api.tour.add({
+  level: 0,
+  room: "Entrance",
+  planPx: { x: 100, y: 80 },
+  src: api.assets.read("images/panorama.jpg"),
 });
 await api.tour.setStart(id);
 // При наличии другой камеры:
-await api.tour.connect({from: id, to: 'other-camera-id', add: true});
+await api.tour.connect({ from: id, to: "other-camera-id", add: true });
 ```
 
 ### 9.7 Интерфейс, кнопки и безопасные слои
 
-| Метод | Результат/поведение |
-| --- | --- |
-| `api.ui.showMessage(text)` | `true`; сообщение в строке состояния, до 2000 символов |
-| `api.ui.showPanel(id,html)` | `undefined`; открывает объявленную панель и заменяет её HTML в собственном iframe |
-| `api.ui.commands()` | `[{id,title}]` из текущего реестра штатных горячих клавиш/команд |
-| `api.ui.execute(id)` | `true` после вызова команды; не ожидает весь её асинхронный внутренний процесс |
-| `api.ui.tools()` | `[{id,title,owner,visible}]` существующих инструментов |
-| `api.ui.setToolVisible(id,visible)` | `true`; сохраняет видимость в этом браузере |
-| `api.ui.themes()` | `[{id,title}]` встроенных и зарегистрированных тем |
-| `api.ui.theme(id)` | `ThemeState` после переключения |
-| `api.ui.scale(size)` | Переданное `0`, `1` или `2`: Small, Medium, Large |
-| `api.ui.overlay(input)` | `true`; создание/замена/удаление безопасного графического слоя |
+| Метод                               | Результат/поведение                                                               |
+| ----------------------------------- | --------------------------------------------------------------------------------- |
+| `api.ui.showMessage(text)`          | `true`; сообщение в строке состояния, до 2000 символов                            |
+| `api.ui.showPanel(id,html)`         | `undefined`; открывает объявленную панель и заменяет её HTML в собственном iframe |
+| `api.ui.commands()`                 | `[{id,title}]` из текущего реестра штатных горячих клавиш/команд                  |
+| `api.ui.execute(id)`                | `true` после вызова команды; не ожидает весь её асинхронный внутренний процесс    |
+| `api.ui.tools()`                    | `[{id,title,owner,visible}]` существующих инструментов                            |
+| `api.ui.setToolVisible(id,visible)` | `true`; сохраняет видимость в этом браузере                                       |
+| `api.ui.themes()`                   | `[{id,title}]` встроенных и зарегистрированных тем                                |
+| `api.ui.theme(id)`                  | `ThemeState` после переключения                                                   |
+| `api.ui.scale(size)`                | Переданное `0`, `1` или `2`: Small, Medium, Large                                 |
+| `api.ui.overlay(input)`             | `true`; создание/замена/удаление безопасного графического слоя                    |
 
 Список `ui.commands()` динамический: он включает зарегистрированные shortcut-команды активных аддонов, но не обязан содержать каждую manifest-команду или каждый дополнительный пункт Command Palette. Выбирай ID из возвращённого списка. Например, не предполагается публичный `edit.undo` только потому, что Undo есть в палитре. Во время повторения `ui.execute` разрешает только `review.start`, `file.save`, `hotkeys.open`.
 
@@ -393,13 +432,34 @@ addon.layer.<overlay.id>           # графический слой
 
 ```js
 await api.ui.overlay({
-  id: 'my.addon.highlight', title: 'Addon highlight', location: 'plan',
+  id: "my.addon.highlight",
+  title: "Addon highlight",
+  location: "plan",
   shapes: [
-    {type: 'circle', cx: 120, cy: 80, r: 20, stroke: '#4da3ff', fill: 'none', 'stroke-width': 2},
-    {type: 'text', x: 120, y: 50, text: 'Selected', fill: '#4da3ff', 'font-size': 14}
-  ]
+    {
+      type: "circle",
+      cx: 120,
+      cy: 80,
+      r: 20,
+      stroke: "#4da3ff",
+      fill: "none",
+      "stroke-width": 2,
+    },
+    {
+      type: "text",
+      x: 120,
+      y: 50,
+      text: "Selected",
+      fill: "#4da3ff",
+      "font-size": 14,
+    },
+  ],
 });
-await api.ui.overlay({id: 'my.addon.highlight', location: 'plan', remove: true});
+await api.ui.overlay({
+  id: "my.addon.highlight",
+  location: "plan",
+  remove: true,
+});
 ```
 
 `location`: `plan` или `tour`; ID начинается с ID аддона и точки. До 500 фигур `circle`, `rect`, `line`, `text`. Разрешены только `x,y,x1,y1,x2,y2,width,height,r,cx,cy,stroke,fill,stroke-width,opacity,font-size,text`. Числа конечные, абсолютное значение до 100 000. `text` — только у `text`, до 2000 символов. `stroke/fill`: hex, `none` или буквенное имя цвета; не URL/CSS-выражение.
@@ -408,28 +468,36 @@ await api.ui.overlay({id: 'my.addon.highlight', location: 'plan', remove: true})
 
 ### 9.8 Оформление: темы и системные значки
 
-| Метод | Результат |
-| --- | --- |
+| Метод                                              | Результат                                                        |
+| -------------------------------------------------- | ---------------------------------------------------------------- |
 | `api.ui.registerAppearance({themes?,iconThemes?})` | `{themes: string[], iconThemes: string[]}` зарегистрированных ID |
-| `api.ui.removeAppearance()` | `true` |
-| `api.ui.iconThemes()` | `[{id,title,active}]` |
-| `api.ui.iconTheme(id)` | Выбранный ID; `system.default` восстанавливает системные значки |
-| `api.theme.read()` | `ThemeState`, без отдельного разрешения |
+| `api.ui.removeAppearance()`                        | `true`                                                           |
+| `api.ui.iconThemes()`                              | `[{id,title,active}]`                                            |
+| `api.ui.iconTheme(id)`                             | Выбранный ID; `system.default` восстанавливает системные значки  |
+| `api.theme.read()`                                 | `ThemeState`, без отдельного разрешения                          |
 
 ```js
 await api.ui.registerAppearance({
-  themes: [{
-    id: 'my.addon.ocean', title: 'Ocean', base: 'darcula', mode: 'dark',
-    colors: {accent: '#168a9c', focus: '#168a9c', btn: '#168a9c'},
-    canvas: {bg: '#101d2b', walls: '#168a9c'}
-  }],
-  iconThemes: [{
-    id: 'my.addon.icons', title: 'My icons',
-    icons: {'i-folder': [{d: 'M2 3H6L8 5H14V13H2Z', filled: false}]}
-  }]
+  themes: [
+    {
+      id: "my.addon.ocean",
+      title: "Ocean",
+      base: "darcula",
+      mode: "dark",
+      colors: { accent: "#168a9c", focus: "#168a9c", btn: "#168a9c" },
+      canvas: { bg: "#101d2b", walls: "#168a9c" },
+    },
+  ],
+  iconThemes: [
+    {
+      id: "my.addon.icons",
+      title: "My icons",
+      icons: { "i-folder": [{ d: "M2 3H6L8 5H14V13H2Z", filled: false }] },
+    },
+  ],
 });
-await api.ui.theme('my.addon.ocean');
-await api.ui.iconTheme('my.addon.icons');
+await api.ui.theme("my.addon.ocean");
+await api.ui.iconTheme("my.addon.icons");
 ```
 
 За один каталог аддона — до 30 тем и наборов значков суммарно. ID начинается с ID аддона и точки, regex `^[-a-z0-9.]{3,120}$`; title — непустая строка до 100 символов. ID системного или чужого оформления заменить нельзя. Вся входная коллекция проверяется до регистрации; повторный вызов заменяет **весь каталог этого аддона**, а не добавляет один элемент.
@@ -454,7 +522,10 @@ status statusFg statusItem statusItemFg activityFg activityInactive hover
 
 ```ts
 {
-  name: string; background: string; foreground: string; accent: string;
+  name: string;
+  background: string;
+  foreground: string;
+  accent: string;
   colorScheme: string;
   ui: Record<string, string>; // значения CSS-переменных ниже
 }
@@ -464,16 +535,16 @@ status statusFg statusItem statusItemFg activityFg activityInactive hover
 
 ### 9.9 Исходный архив и meta.json
 
-| Метод | Результат |
-| --- | --- |
-| `api.archive.list()` | `[{path}]` файлов исходного открытого ZIP с учётом правок |
-| `api.archive.read({path,encoding?})` | `{path,encoding,data}`; `text` по умолчанию, либо `base64` |
-| `api.archive.write({path,encoding,data})` | `true`; для `meta.json` — результат его записи, который может быть `false` |
-| `api.archive.remove(path)` | `true`; для `meta.json` может быть `false`, если изменение не требуется |
-| `api.archive.meta.read()` | JSON-объект или `null` при отсутствии файла; невалидный JSON отклоняет запрос |
-| `api.archive.meta.write(objectOrNull)` | Boolean: изменилось ли содержимое; `null` удаляет `meta.json` |
-| `api.archive.export()` | `{name,encoding:'base64',data}` ZIP с правками |
-| `api.archive.download()` | `{name}`; хост скачивает исходную копию ZIP с правками, имя получает суффикс `-edited` |
+| Метод                                     | Результат                                                                              |
+| ----------------------------------------- | -------------------------------------------------------------------------------------- |
+| `api.archive.list()`                      | `[{path}]` файлов исходного открытого ZIP с учётом правок                              |
+| `api.archive.read({path,encoding?})`      | `{path,encoding,data}`; `text` по умолчанию, либо `base64`                             |
+| `api.archive.write({path,encoding,data})` | `true`; для `meta.json` — результат его записи, который может быть `false`             |
+| `api.archive.remove(path)`                | `true`; для `meta.json` может быть `false`, если изменение не требуется                |
+| `api.archive.meta.read()`                 | JSON-объект или `null` при отсутствии файла; невалидный JSON отклоняет запрос          |
+| `api.archive.meta.write(objectOrNull)`    | Boolean: изменилось ли содержимое; `null` удаляет `meta.json`                          |
+| `api.archive.export()`                    | `{name,encoding:'base64',data}` ZIP с правками                                         |
+| `api.archive.download()`                  | `{name}`; хост скачивает исходную копию ZIP с правками, имя получает суффикс `-edited` |
 
 Нужен ранее открытый `.mplace`/`.mpalace`/`.3dview` архив. Для дворца, созданного только из картинок, исходного ZIP может не быть. Ошибка: `Open an archive first.`
 
@@ -481,20 +552,24 @@ status statusFg statusItem statusItemFg activityFg activityInactive hover
 
 Штатный экспорт `.mpalace/.mplace` заново создаёт файлы из текущего состояния редактора. Он добавляет новые дополнительные файлы из правок и актуальный `meta.json`, но сформированные файлы проекта имеют приоритет; удаления/замены старых служебных файлов исходного ZIP не являются способом изменить этот штатный экспорт. Для точной исходной копии с заменами/удалениями используй `archive.export/download`.
 
-| Ограничение | Значение |
-| --- | --- |
-| Один читаемый/записываемый файл | До 16 MiB декодированных данных |
-| Сумма содержимого правок | До 32 MiB; для base64 используется оценка длины × 0,75 |
-| Число уникальных путей правок, включая удаления | До 200 |
-| `meta.json` | JSON-объект или null, до 1 MiB UTF-8 после форматирования |
-| Путь | 1–512 символов, без абсолютного пути, `\\`, управляющих символов, пустых сегментов, `.` и `..` |
+| Ограничение                                     | Значение                                                                                       |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Один читаемый/записываемый файл                 | До 16 MiB декодированных данных                                                                |
+| Сумма содержимого правок                        | До 32 MiB; для base64 используется оценка длины × 0,75                                         |
+| Число уникальных путей правок, включая удаления | До 200                                                                                         |
+| `meta.json`                                     | JSON-объект или null, до 1 MiB UTF-8 после форматирования                                      |
+| Путь                                            | 1–512 символов, без абсолютного пути, `\\`, управляющих символов, пустых сегментов, `.` и `..` |
 
 Повторная запись одного пути заменяет его правку. Для бинарных данных используй `base64`; `text` читается строгим UTF-8. `meta.json` нельзя заменить массивом, числом или строкой. Запись `meta.json` через `archive.write` тоже проходит специальную проверку объекта.
 
 ```js
-const meta = await api.archive.meta.read() || {};
-await api.archive.meta.write({...meta, myAddon: {version: 1}});
-await api.archive.write({path: 'addons/my-addon/info.txt', encoding: 'text', data: 'Added by my addon'});
+const meta = (await api.archive.meta.read()) || {};
+await api.archive.meta.write({ ...meta, myAddon: { version: 1 } });
+await api.archive.write({
+  path: "addons/my-addon/info.txt",
+  encoding: "text",
+  data: "Added by my addon",
+});
 const files = await api.archive.list();
 const exported = await api.archive.export();
 // exported.data — base64 всего ZIP, не отдельного файла.
@@ -504,11 +579,11 @@ SDK не имеет произвольного `downloadBlob` для файло�
 
 ### 9.10 Горячие клавиши
 
-| Метод | Результат |
-| --- | --- |
-| `api.keybindings.register({id,command,key})` | `{id,key}` с фактической привязкой |
-| `api.keybindings.unregister(id)` | Boolean: существовала ли собственная привязка |
-| `api.keybindings.list()` | `[{id,title,key,owner}]` текущего реестра; `owner` — ID аддона или `system` |
+| Метод                                        | Результат                                                                   |
+| -------------------------------------------- | --------------------------------------------------------------------------- |
+| `api.keybindings.register({id,command,key})` | `{id,key}` с фактической привязкой                                          |
+| `api.keybindings.unregister(id)`             | Boolean: существовала ли собственная привязка                               |
+| `api.keybindings.list()`                     | `[{id,title,key,owner}]` текущего реестра; `owner` — ID аддона или `system` |
 
 ID привязки начинается с ID аддона и точки, regex `^[-a-z0-9.]{3,120}$`. Команда должна быть объявлена **и уже зарегистрирована**. До 30 привязок на аддон. Повторная регистрация своего ID заменяет привязку. Нельзя снять чужую/системную привязку.
 
@@ -523,13 +598,15 @@ Space, Enter, Home, End, PageUp, PageDown
 `Ctrl` в приложении соответствует также ⌘ на macOS. `Ctrl+Shift+KeyP` и `Ctrl+Alt+KeyT` зарезервированы; конфликты с текущими командами/фиксированными действиями отвергаются. Пользовательское переназначение Hotkeys может заменить переданный `key` или сделать его пустым: используй результат регистрации/список.
 
 ```js
-api.commands.register('my.addon.open', openPanel);
+api.commands.register("my.addon.open", openPanel);
 try {
   await api.keybindings.register({
-    id: 'my.addon.open-key', command: 'my.addon.open', key: 'Ctrl+Alt+Shift+KeyU'
+    id: "my.addon.open-key",
+    command: "my.addon.open",
+    key: "Ctrl+Alt+Shift+KeyU",
   });
 } catch (error) {
-  await api.ui.showMessage('Shortcut unavailable: ' + error.message);
+  await api.ui.showMessage("Shortcut unavailable: " + error.message);
   // Кнопка/команда остаются доступны; не ломай активацию из-за конфликта.
 }
 ```
@@ -538,15 +615,15 @@ try {
 
 ### 9.11 Собственное хранилище, ресурсы и настройки
 
-| Метод | Результат |
-| --- | --- |
-| `api.storage.get(key)` | Сохранённое значение или `null` |
-| `api.storage.set(key,value)` | `true` |
-| `api.assets.read(path)` | **Синхронно** текст UTF-8 или data URL растрового изображения из пакета |
-| `api.settings.read()` | Объект текущих значений объявленных настроек |
-| `api.settings.update(patch)` | Полный объект настроек после записи |
-| `api.onSettingsChanged(handler)` | **Синхронно** `{dispose()}` |
-| `api.onProjectChanged(handler)` | **Синхронно** `{dispose()}`; см. жизненный цикл |
+| Метод                            | Результат                                                               |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| `api.storage.get(key)`           | Сохранённое значение или `null`                                         |
+| `api.storage.set(key,value)`     | `true`                                                                  |
+| `api.assets.read(path)`          | **Синхронно** текст UTF-8 или data URL растрового изображения из пакета |
+| `api.settings.read()`            | Объект текущих значений объявленных настроек                            |
+| `api.settings.update(patch)`     | Полный объект настроек после записи                                     |
+| `api.onSettingsChanged(handler)` | **Синхронно** `{dispose()}`                                             |
+| `api.onProjectChanged(handler)`  | **Синхронно** `{dispose()}`; см. жизненный цикл                         |
 
 `storage` доступен только текущему аддону. Ключ — строка до 100 символов, запрещены `__proto__`, `constructor`, `prototype`. Используй JSON-совместимые значения; длина сериализованного значения не более 100 000 символов на ключ. Публичных `storage.list/delete` нет; для обозначения отсутствия можно записать `null` или обновить собственную структуру.
 
@@ -565,17 +642,20 @@ try {
 `html` — строка до 200 000 символов. Встроенные `<script>` при установке через `innerHTML` не исполняются. Обработчики устанавливай из `main.js` **после** `await showPanel`:
 
 ```js
-await api.ui.showPanel('my.addon.panel', `
+await api.ui.showPanel(
+  "my.addon.panel",
+  `
   <h2>My addon</h2>
   <input id="myFile" type="file" accept="image/png,image/jpeg,image/webp,image/avif">
   <button id="myRun" type="button">Run</button>
   <p id="myStatus" role="status" aria-live="polite"></p>
-`);
-document.querySelector('#myRun').onclick = async () => {
+`,
+);
+document.querySelector("#myRun").onclick = async () => {
   try {
     // Выполни действие через API.
   } catch (error) {
-    document.querySelector('#myStatus').textContent = error.message;
+    document.querySelector("#myStatus").textContent = error.message;
   }
 };
 ```
@@ -584,14 +664,27 @@ document.querySelector('#myRun').onclick = async () => {
 
 ```css
 button {
-  font: inherit; padding: 7px 12px; border-radius: 6px;
+  font: inherit;
+  padding: 7px 12px;
+  border-radius: 6px;
   border: 1px solid var(--line, #454545);
   background: var(--vscode-button-bg, #3b3b3b);
   color: var(--vscode-button-fg, var(--text, #ddd));
 }
-.muted { color: var(--muted, #aaa); }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; }
-input, select, textarea { max-width: 100%; box-sizing: border-box; }
+.muted {
+  color: var(--muted, #aaa);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+input,
+select,
+textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}
 ```
 
 Панель автоматически получает обновления цветовых переменных при смене темы. Отдельного публичного события темы нет; для программного чтения используй `theme.read`. Размер UI родительского приложения не является обещанием масштабировать произвольный пиксельный layout аддона: делай панель адаптивной, с переносом текста/кнопок, без фиксированной ширины больше iframe. Сохраняй aria-label, состояния disabled и удобные для касания кнопки.
@@ -626,12 +719,16 @@ form-action 'none'; base-uri 'none'
 
 ```js
 registerSystemAddon({
-  id: 'system.my-module',
-  title: 'My module',
-  description: 'Built-in module description.',
-  settingsPage: 'my-module', // необязательно, существующая внутренняя страница
-  activate() { /* установить обработчики приложения */ },
-  deactivate() { /* снять обработчики приложения */ }
+  id: "system.my-module",
+  title: "My module",
+  description: "Built-in module description.",
+  settingsPage: "my-module", // необязательно, существующая внутренняя страница
+  activate() {
+    /* установить обработчики приложения */
+  },
+  deactivate() {
+    /* снять обработчики приложения */
+  },
 });
 ```
 
@@ -639,10 +736,10 @@ registerSystemAddon({
 
 Текущие зарегистрированные системные модули:
 
-| ID | Назначение |
-| --- | --- |
-| `system.history` | Change history: локальные версии, просмотр изменений, восстановление с резервной версией; до 50 версий на дворец |
-| `system.command-palette` | Command Palette: поиск штатных и активных аддонных команд |
+| ID                         | Назначение                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `system.history`           | Change history: локальные версии, просмотр изменений, восстановление с резервной версией; до 50 версий на дворец          |
+| `system.command-palette`   | Command Palette: поиск штатных и активных аддонных команд                                                                 |
 | `system.workspace-presets` | Workspace Presets: сохранение/импорт/экспорт тем, значков, размеров, видимости и компоновки без замены содержимого дворца |
 
 Они находятся в **Settings → Core plugins**, имеют переключатели и шестерёнки настроек и не зависят от community Modular mode. Подразделы Canvas, Camera editor, 3D viewer, Minimap также показывают группы встроенных инструментов; не каждый такой раздел является отдельным зарегистрированным lifecycle-аддоном.
@@ -692,20 +789,51 @@ PALACE_TEST_FILES=addons.cjs PALACE_PROFILES=Android npm test
   "description": "Working SDK 1.4 example: overview panel, loci, settings, storage and a shortcut.",
   "version": "1.0.0",
   "apiVersion": 1,
-  "engines": {"palace": ">=1.4.0 <2.0.0"},
+  "engines": { "palace": ">=1.4.0 <2.0.0" },
   "main": "main.js",
-  "permissions": ["project.read", "markers.write", "ui.contribute", "keybindings.write"],
+  "permissions": [
+    "project.read",
+    "markers.write",
+    "ui.contribute",
+    "keybindings.write"
+  ],
   "contributes": {
     "commands": [
-      {"id": "ai.starter.open", "title": "Open AI starter"},
-      {"id": "ai.starter.center", "title": "Add locus at center"}
+      { "id": "ai.starter.open", "title": "Open AI starter" },
+      { "id": "ai.starter.center", "title": "Add locus at center" }
     ],
-    "panels": [{"id": "ai.starter.panel", "title": "AI starter"}],
-    "activityBar": [{"id": "ai.starter.activity", "title": "AI starter", "icon": "icon.svg", "command": "ai.starter.open"}],
-    "toolbars": [{"id": "ai.starter.center-tool", "title": "Add locus at center", "icon": "pin", "location": "plan", "command": "ai.starter.center"}],
+    "panels": [{ "id": "ai.starter.panel", "title": "AI starter" }],
+    "activityBar": [
+      {
+        "id": "ai.starter.activity",
+        "title": "AI starter",
+        "icon": "icon.svg",
+        "command": "ai.starter.open"
+      }
+    ],
+    "toolbars": [
+      {
+        "id": "ai.starter.center-tool",
+        "title": "Add locus at center",
+        "icon": "pin",
+        "location": "plan",
+        "command": "ai.starter.center"
+      }
+    ],
     "settings": [
-      {"key": "note", "title": "Default note", "description": "Text saved in a newly created locus.", "type": "string", "default": "Created by AI starter"},
-      {"key": "showCount", "title": "Show locus count", "type": "boolean", "default": true}
+      {
+        "key": "note",
+        "title": "Default note",
+        "description": "Text saved in a newly created locus.",
+        "type": "string",
+        "default": "Created by AI starter"
+      },
+      {
+        "key": "showCount",
+        "title": "Show locus count",
+        "type": "boolean",
+        "default": true
+      }
     ]
   }
 }
@@ -714,25 +842,35 @@ PALACE_TEST_FILES=addons.cjs PALACE_PROFILES=Android npm test
 `main.js`:
 
 ```js
-'use strict';
+"use strict";
 
-let disposables = [], settings = {}, addonApi, created = 0, creationQueue = Promise.resolve();
+let disposables = [],
+  settings = {},
+  addonApi,
+  created = 0,
+  creationQueue = Promise.resolve();
 
 function paint(project) {
-  const name = document.querySelector('#starterName');
+  const name = document.querySelector("#starterName");
   if (!name) return;
   name.textContent = project.name;
-  const count = document.querySelector('#starterCount');
+  const count = document.querySelector("#starterCount");
   count.hidden = !settings.showCount;
-  count.textContent = 'Loci: ' + project.levels.reduce((sum, floor) => sum + floor.markers.length, 0);
-  document.querySelector('#starterCreated').textContent = 'Created by this addon: ' + created;
+  count.textContent =
+    "Loci: " +
+    project.levels.reduce((sum, floor) => sum + floor.markers.length, 0);
+  document.querySelector("#starterCreated").textContent =
+    "Created by this addon: " + created;
   const floor = project.levels[project.active];
-  document.querySelector('#starterAdd').disabled = !floor || !(floor.w > 0 && floor.h > 0) || project.mode !== 'edit';
+  document.querySelector("#starterAdd").disabled =
+    !floor || !(floor.w > 0 && floor.h > 0) || project.mode !== "edit";
 }
 
-async function refresh() { paint(await addonApi.project.read()); }
+async function refresh() {
+  paint(await addonApi.project.read());
+}
 function showError(error) {
-  const status = document.querySelector('#starterStatus');
+  const status = document.querySelector("#starterStatus");
   if (status) status.textContent = error.message || String(error);
 }
 
@@ -743,20 +881,38 @@ function addCenter() {
 }
 
 async function createCenter() {
-  const project = await addonApi.project.read(), floor = project.levels[project.active];
-  if (!floor || !(floor.w > 0 && floor.h > 0)) throw new Error('Open a floor plan first.');
-  const result = await addonApi.markers.add({level: floor.index, x: floor.w / 2, y: floor.h / 2, note: settings.note});
+  const project = await addonApi.project.read(),
+    floor = project.levels[project.active];
+  if (!floor || !(floor.w > 0 && floor.h > 0))
+    throw new Error("Open a floor plan first.");
+  const result = await addonApi.markers.add({
+    level: floor.index,
+    x: floor.w / 2,
+    y: floor.h / 2,
+    note: settings.note,
+  });
   // A storage failure does not undo the locus already created in the project.
   const next = created + 1;
-  try { await addonApi.storage.set('created', next); created = next; }
-  catch (error) { showError(new Error('Locus added, but the addon counter could not be saved: ' + error.message)); }
+  try {
+    await addonApi.storage.set("created", next);
+    created = next;
+  } catch (error) {
+    showError(
+      new Error(
+        "Locus added, but the addon counter could not be saved: " +
+          error.message,
+      ),
+    );
+  }
   await refresh();
-  await addonApi.ui.showMessage('Locus added at the center of the floor');
+  await addonApi.ui.showMessage("Locus added at the center of the floor");
   return result;
 }
 
 async function openPanel() {
-  await addonApi.ui.showPanel('ai.starter.panel', `
+  await addonApi.ui.showPanel(
+    "ai.starter.panel",
+    `
     <style>
       h2{font-size:20px;margin:0 0 12px}.muted{color:var(--muted,#aaa)}
       button{font:inherit;padding:9px 12px;border-radius:6px;border:1px solid var(--line,#454545);background:var(--vscode-button-bg,#3b3b3b);color:var(--vscode-button-fg,var(--text,#ddd))}
@@ -768,40 +924,66 @@ async function openPanel() {
     <label>Default note<input id="starterNote" type="text" maxlength="2000" aria-label="Default note"></label>
     <div class="actions"><button id="starterAdd" type="button">Add locus at center</button><button id="starterSave" type="button">Save note</button></div>
     <p id="starterStatus" role="status" aria-live="polite"></p>
-  `);
-  const note = document.querySelector('#starterNote'); note.value = settings.note;
-  document.querySelector('#starterAdd').onclick = async event => {
-    const button = event.currentTarget; button.disabled = true;
-    try { await addCenter(); } catch (error) { showError(error); }
-    finally { try { await refresh(); } catch (error) { showError(error); } }
-  };
-  document.querySelector('#starterSave').onclick = async event => {
-    const button = event.currentTarget; button.disabled = true;
+  `,
+  );
+  const note = document.querySelector("#starterNote");
+  note.value = settings.note;
+  document.querySelector("#starterAdd").onclick = async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
     try {
-      settings = await addonApi.settings.update({note: note.value});
-      document.querySelector('#starterStatus').textContent = 'Note saved.';
-    } catch (error) { showError(error); }
-    finally { button.disabled = false; }
+      await addCenter();
+    } catch (error) {
+      showError(error);
+    } finally {
+      try {
+        await refresh();
+      } catch (error) {
+        showError(error);
+      }
+    }
+  };
+  document.querySelector("#starterSave").onclick = async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      settings = await addonApi.settings.update({ note: note.value });
+      document.querySelector("#starterStatus").textContent = "Note saved.";
+    } catch (error) {
+      showError(error);
+    } finally {
+      button.disabled = false;
+    }
   };
   await refresh();
 }
 
-exports.activate = async api => {
-  addonApi = api; settings = await api.settings.read();
-  const stored = await api.storage.get('created'); created = Number.isSafeInteger(stored) && stored >= 0 ? stored : 0;
-  disposables.push(api.commands.register('ai.starter.open', openPanel));
-  disposables.push(api.commands.register('ai.starter.center', addCenter));
+exports.activate = async (api) => {
+  addonApi = api;
+  settings = await api.settings.read();
+  const stored = await api.storage.get("created");
+  created = Number.isSafeInteger(stored) && stored >= 0 ? stored : 0;
+  disposables.push(api.commands.register("ai.starter.open", openPanel));
+  disposables.push(api.commands.register("ai.starter.center", addCenter));
   disposables.push(api.onProjectChanged(paint));
-  disposables.push(api.onSettingsChanged(next => {
-    settings = next;
-    const note = document.querySelector('#starterNote');
-    if (note && document.activeElement !== note) note.value = next.note;
-    refresh().catch(showError);
-  }));
+  disposables.push(
+    api.onSettingsChanged((next) => {
+      settings = next;
+      const note = document.querySelector("#starterNote");
+      if (note && document.activeElement !== note) note.value = next.note;
+      refresh().catch(showError);
+    }),
+  );
   try {
-    await api.keybindings.register({id: 'ai.starter.open-key', command: 'ai.starter.open', key: 'Ctrl+Alt+Shift+KeyU'});
+    await api.keybindings.register({
+      id: "ai.starter.open-key",
+      command: "ai.starter.open",
+      key: "Ctrl+Alt+Shift+KeyU",
+    });
   } catch (error) {
-    await api.ui.showMessage('AI starter shortcut unavailable: ' + error.message);
+    await api.ui.showMessage(
+      "AI starter shortcut unavailable: " + error.message,
+    );
   }
 };
 
@@ -835,18 +1017,18 @@ globe radar transparent
 
 ## Приложение B. Исходники, определяющие контракт
 
-| Файл | Роль |
-| --- | --- |
-| `addons.js` | Проверка ZIP/manifest, sandbox, SDK, RPC, базовые разрешения, команды и lifecycle |
-| `app-api.js` | Компактный проект, локусы, метаданные и базовая тема |
-| `interfaces.js` | Планы/стены, просмотр/тур, кнопки, безопасные SVG-слои, видимость инструментов |
-| `appearance.js` | Валидированные темы и наборы SVG-путей, ownership/lifecycle оформления |
-| `extension-operations.js` | Камеры/панорамы, исходный архив/meta.json и пользовательские горячие клавиши |
-| `addon-management.js` | SDK 1.7, engines, объявленные настройки/события, обновления и журнал |
-| `ui-controls.js` | Общие стили iframe и расширенный ThemeState |
-| `system-addons.js` | Доверенные системные модули; не community SDK |
-| `history-addon.js`, `command-palette.js`, `workspace-presets.js` | Реализации трёх встроенных модулей |
-| `scripts/package-addon.cjs` | Сборка локального ZIP-пакета |
+| Файл                                                             | Роль                                                                              |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `addons.js`                                                      | Проверка ZIP/manifest, sandbox, SDK, RPC, базовые разрешения, команды и lifecycle |
+| `app-api.js`                                                     | Компактный проект, локусы, метаданные и базовая тема                              |
+| `interfaces.js`                                                  | Планы/стены, просмотр/тур, кнопки, безопасные SVG-слои, видимость инструментов    |
+| `appearance.js`                                                  | Валидированные темы и наборы SVG-путей, ownership/lifecycle оформления            |
+| `extension-operations.js`                                        | Камеры/панорамы, исходный архив/meta.json и пользовательские горячие клавиши      |
+| `addon-management.js`                                            | SDK 1.7, engines, объявленные настройки/события, обновления и журнал              |
+| `ui-controls.js`                                                 | Общие стили iframe и расширенный ThemeState                                       |
+| `system-addons.js`                                               | Доверенные системные модули; не community SDK                                     |
+| `history-addon.js`, `command-palette.js`, `workspace-presets.js` | Реализации трёх встроенных модулей                                                |
+| `scripts/package-addon.cjs`                                      | Сборка локального ZIP-пакета                                                      |
 
 При разработке для будущей версии сначала проверь `api.version` и фактические исходники. Не добавляй несуществующий API на основании похожих названий в VSCode или Obsidian.
 

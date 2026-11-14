@@ -4,13 +4,13 @@ This supplements [ADDONS_AI_GUIDE.md](ADDONS_AI_GUIDE.md). Runtime API version i
 
 ## Permissions and compatibility
 
-| API | Permission | Legacy permission also accepted |
-| --- | --- | --- |
-| `tour.anchors.create/update/remove/clear` | `anchors.write` | `tour.write` |
-| `tour.anchors.get/list`, anchor events | `anchors.read` | `tour.read` |
-| `tour.scene.getInfo/raycast/project/unproject`, readiness | `scene.read` | `tour.read` |
-| `tour.scene.configure` | `scene.write` | `tour.write` |
-| `tour.camera.*`, `tour.playback.*`, camera/playback events | `camera.control` | `view.control` |
+| API                                                        | Permission       | Legacy permission also accepted |
+| ---------------------------------------------------------- | ---------------- | ------------------------------- |
+| `tour.anchors.create/update/remove/clear`                  | `anchors.write`  | `tour.write`                    |
+| `tour.anchors.get/list`, anchor events                     | `anchors.read`   | `tour.read`                     |
+| `tour.scene.getInfo/raycast/project/unproject`, readiness  | `scene.read`     | `tour.read`                     |
+| `tour.scene.configure`                                     | `scene.write`    | `tour.write`                    |
+| `tour.camera.*`, `tour.playback.*`, camera/playback events | `camera.control` | `view.control`                  |
 
 `focusAnchor` and `moveTo({anchorId})` also need `anchors.read`. Playback start also needs `scene.read`, and `anchors.read` when stops reference anchors. Changing project anchors or scene configurations requires Edit mode. Camera operations require no active review session. Disabling an addon cancels its camera animation and tour; its project anchors remain saved. No raw renderer, arbitrary parent-page JavaScript or external model URLs are exposed.
 
@@ -20,11 +20,11 @@ Each panorama has its own right-handed coordinate frame: capture point is `(0,0,
 
 `capabilities` reports `anchors`, `raycast`, `syntheticDistancePlacement`, `translation`, `occlusion` and supported `styles`.
 
-| Scene data | Placement and occlusion | Camera movement |
-| --- | --- | --- |
-| Photo only | Actual scene objects with perspective; chosen distance is synthetic; no wall occlusion | Rotation/FOV and panorama switching |
-| Registered radial depth | Raycast and depth occlusion where valid samples exist | Rotation/FOV and panorama switching |
-| Registered solid geometry | Surface raycast, occlusion and perspective/parallax for geometry | Real camera translation |
+| Scene data                | Placement and occlusion                                                                | Camera movement                     |
+| ------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------- |
+| Photo only                | Actual scene objects with perspective; chosen distance is synthetic; no wall occlusion | Rotation/FOV and panorama switching |
+| Registered radial depth   | Raycast and depth occlusion where valid samples exist                                  | Rotation/FOV and panorama switching |
+| Registered solid geometry | Surface raycast, occlusion and perspective/parallax for geometry                       | Real camera translation             |
 
 A translated photo background remains a spherical background, not reconstructed photographic 6DoF. Declaring units does not calibrate geometry. Imported dollhouse presence alone does not establish the capture pose; a provider must explicitly register its origin/rotation. The panoramic background radius is 500; place anchors inside the supported camera clip range, normally within the photo sphere. Fully immersive textured reconstruction and movement collision avoidance are not supplied.
 
@@ -34,14 +34,14 @@ A translated photo background remains a spherical background, not reconstructed 
 
 Style: `{type:'sphere'|'billboard'|'sprite'|'model',color:'#RRGGBB',size,opacity,icon?,model?}`. Defaults: sphere, `#3592c4`, size `.35`, opacity `1`. `icon` is a raster image data URL, not an external URL or SVG. `model` supplies a triangle mesh `{positions:number[],indices?:number[],uvs?:number[]}`; it is required for model style. Billboards/sprites face the camera; spheres/models retain spatial rotation. Label sprites are rendered in the same scene. Visible interactive objects respond to pointer/touch clicks and hover; dragging the panorama does not activate an anchor. Movement is exposed through `update`, not an implicit drag gizmo.
 
-| Method | Result and behavior |
-| --- | --- |
-| `tour.anchors.create(input)` | Complete normalized Anchor3D. `id` defaults to UUID, `panoId` to active panorama; position required. Duplicate ID rejects. |
+| Method                          | Result and behavior                                                                                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tour.anchors.create(input)`    | Complete normalized Anchor3D. `id` defaults to UUID, `panoId` to active panorama; position required. Duplicate ID rejects.                                      |
 | `tour.anchors.update(id,patch)` | Complete updated Anchor3D. ID cannot change. Style merges partially; position and rotation require all XYZ; metadata replaces previous object, null removes it. |
-| `tour.anchors.remove(id)` | Boolean: false if absent. |
-| `tour.anchors.get(id)` | Complete cloned Anchor3D; missing ID rejects. |
-| `tour.anchors.list(panoId?)` | Cloned Anchor3D array for specified/current panorama. |
-| `tour.anchors.clear(panoId)` | Number removed. |
+| `tour.anchors.remove(id)`       | Boolean: false if absent.                                                                                                                                       |
+| `tour.anchors.get(id)`          | Complete cloned Anchor3D; missing ID rejects.                                                                                                                   |
+| `tour.anchors.list(panoId?)`    | Cloned Anchor3D array for specified/current panorama.                                                                                                           |
+| `tour.anchors.clear(panoId)`    | Number removed.                                                                                                                                                 |
 
 Anchors are actual Three.js objects in the panorama scene, not SVG screen overlays. Their world positions stay fixed while the camera rotates. They participate in geometry depth testing and are selectable through pointer interactions or `focusAnchor`. Project serialization, archive export/import, local autosave, Undo/Redo and Change history include anchors and scene configurations. Deleting a panorama removes its anchors/configuration; Undo restores them.
 
@@ -68,13 +68,13 @@ Geometry is already in the panorama coordinate frame. Alternative: `geometry:{so
 
 Depth map width `4..256`, height `3..128`, row-major distances `0..100000`; zero means missing. At column x and row y: yaw=`2π*x/width`, pitch=`π/2-π*y/(height-1)`; position=`distance*(-sin(yaw)*cos(pitch),sin(pitch),-cos(yaw)*cos(pitch))`. Column zero faces -Z, the top row +Y. A provider must reorient/resample its source depth image to this convention. Adjacent valid samples form occluding triangles; missing/discontinuous depth cannot prove occlusion and interpolation is approximate.
 
-| Method | Input → result |
-| --- | --- |
-| `tour.scene.getInfo(panoId?)` | Existing specified/current panorama → SceneInfo; does not require open renderer. |
-| `tour.scene.configure(panoId,input|null)` | Registered data → SceneInfo; persistent Edit-mode mutation. |
-| `tour.scene.raycast(input)` | `{screenPosition:{x,y,space?}}` OR `{origin:{x,y,z},direction:{x,y,z}}`, optional `includeAnchors`, optional fallback `distance` → nearest `{panoId,position,distance,synthetic,source,anchorId?}` or null. |
-| `tour.scene.project(position)` | XYZ → `{x,y,depth,visible,occluded,panoId}`; normalized screen coordinates, radial depth. |
-| `tour.scene.unproject(screenPosition,depth)` | Screen point and radial depth → XYZ. This is chosen-distance projection, not automatic measured depth. |
+| Method                                       | Input → result                                                                                                                                                                                              |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tour.scene.getInfo(panoId?)`                | Existing specified/current panorama → SceneInfo; does not require open renderer.                                                                                                                            |
+| `tour.scene.configure(panoId,input           | null)`                                                                                                                                                                                                      | Registered data → SceneInfo; persistent Edit-mode mutation. |
+| `tour.scene.raycast(input)`                  | `{screenPosition:{x,y,space?}}` OR `{origin:{x,y,z},direction:{x,y,z}}`, optional `includeAnchors`, optional fallback `distance` → nearest `{panoId,position,distance,synthetic,source,anchorId?}` or null. |
+| `tour.scene.project(position)`               | XYZ → `{x,y,depth,visible,occluded,panoId}`; normalized screen coordinates, radial depth.                                                                                                                   |
+| `tour.scene.unproject(screenPosition,depth)` | Screen point and radial depth → XYZ. This is chosen-distance projection, not automatic measured depth.                                                                                                      |
 
 Screen coordinates default to normalized `0..1`; `space:'pixels'` uses CSS pixels relative to the canvas. `project.visible` means in front, inside the viewport and not occluded; `occluded` separately reports geometry blocking. Screen input must be within the viewport. Scene queries that use the active camera require readiness. Raycast returns real geometry first, including anchors only when requested. If no real hit and fallback distance `.1..400` is provided, returns `synthetic:true`; otherwise null. Synthetic fallback must not be presented as a measured surface. Unproject depth `.01..100000`.
 
@@ -82,14 +82,14 @@ Screen coordinates default to normalized `0..1`; `space:'pixels'` uses CSS pixel
 
 `tour.select(id)` retains its old request-only behavior. Follow it with `await tour.waitForPanoramaReady(id,{timeout:8000})`, which resolves `{panoId,ready:true,hasImage,scene}` after a rendered frame with the panorama texture (or explicit image-less panorama). Timeout accepts `1..20000` milliseconds. Changing panorama/project, renderer disposal, addon shutdown, failed image loading and timeout reject instead of silently succeeding. Use this before camera/projection APIs. Camera animation promises resolve at their target pose; starting another animation rejects the previous promise with `ANIMATION_CANCELLED`.
 
-| Method | Result |
-| --- | --- |
-| `tour.camera.getPose()` | `{panoId,position:{x,y,z},yaw,pitch,roll,fov}`. |
-| `tour.camera.setPose(pose)` | Final CameraPose3D; partial pose plus `duration`, `easing`. Nonzero translation without registered solid geometry rejects. |
-| `tour.camera.lookAt(position,options?)` | Final pose facing XYZ. Target at camera origin rejects. |
-| `tour.camera.moveTo(target,options?)` | `{pose,mode,translated}`; target may contain `panoId`, `anchorId`, `position`, `pose`, or direct XYZ. Modes: translation, panorama-switch, rotation-only. Photo/depth-only scene turns/switches instead of claiming physical translation. |
-| `tour.camera.focusAnchor(id,options?)` | Switches to anchor panorama, waits for readiness, selects anchor and turns to it; resolves final pose. |
-| `tour.camera.stopAnimation()` | Boolean indicating cancelled animation; also pauses playing auto tour. |
+| Method                                  | Result                                                                                                                                                                                                                                    |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tour.camera.getPose()`                 | `{panoId,position:{x,y,z},yaw,pitch,roll,fov}`.                                                                                                                                                                                           |
+| `tour.camera.setPose(pose)`             | Final CameraPose3D; partial pose plus `duration`, `easing`. Nonzero translation without registered solid geometry rejects.                                                                                                                |
+| `tour.camera.lookAt(position,options?)` | Final pose facing XYZ. Target at camera origin rejects.                                                                                                                                                                                   |
+| `tour.camera.moveTo(target,options?)`   | `{pose,mode,translated}`; target may contain `panoId`, `anchorId`, `position`, `pose`, or direct XYZ. Modes: translation, panorama-switch, rotation-only. Photo/depth-only scene turns/switches instead of claiming physical translation. |
+| `tour.camera.focusAnchor(id,options?)`  | Switches to anchor panorama, waits for readiness, selects anchor and turns to it; resolves final pose.                                                                                                                                    |
+| `tour.camera.stopAnimation()`           | Boolean indicating cancelled animation; also pauses playing auto tour.                                                                                                                                                                    |
 
 Animation options `{duration:0..8000,easing:'linear'|'easeInOut'|'easeOut'}`; default instant/easeInOut. Camera yaw normalized to `[0,360)`, pitch clamped `[-85,85]`, roll normalized around ±180, FOV clamped `[30,150]`. Coordinates are panorama-local. Manual pointer/wheel control pauses playback and cancels its animation. Leaving panorama view, switching project or disabling owner stops movement. There is no collision detection or inferred navigation between disconnected camera positions.
 
@@ -117,36 +117,51 @@ Payloads:
 Manifest permissions: `['tour.read','view.control','ui.control','scene.read','anchors.read','anchors.write','camera.control']`, engine `>=1.5.0 <2.0.0`. Run the following from a command handler after the user opens a palace. The API variable lives inside activate; do not redeclare reserved top-level loader identifiers.
 
 ```js
-exports.activate = async function(api) {
-  const subscription = api.tour.onAnchorClick(async ({anchor}) => {
-    try { await api.ui.showMessage('Clicked: ' + anchor.label); }
-    catch (error) { console.error(error); }
+exports.activate = async function (api) {
+  const subscription = api.tour.onAnchorClick(async ({ anchor }) => {
+    try {
+      await api.ui.showMessage("Clicked: " + anchor.label);
+    } catch (error) {
+      console.error(error);
+    }
   });
   await subscription.ready;
-  api.commands.register('example.place-anchor', async () => {
+  api.commands.register("example.place-anchor", async () => {
     const cameras = await api.tour.read();
     const ids = Object.keys(cameras);
-    if (!ids.length) throw new Error('Open a palace with panoramas first.');
+    if (!ids.length) throw new Error("Open a palace with panoramas first.");
     await api.tour.select(ids[0]);
     await api.tour.waitForPanoramaReady(ids[0]);
     const hit = await api.tour.scene.raycast({
-      screenPosition: {x:.5,y:.5}, distance:10
+      screenPosition: { x: 0.5, y: 0.5 },
+      distance: 10,
     });
     const anchor = await api.tour.anchors.create({
-      panoId:ids[0], position:hit.position, label:'Example locus',
-      style:{type:'sphere',color:'#3592c4',size:.4},
-      metadata:{syntheticPlacement:hit.synthetic}
+      panoId: ids[0],
+      position: hit.position,
+      label: "Example locus",
+      style: { type: "sphere", color: "#3592c4", size: 0.4 },
+      metadata: { syntheticPlacement: hit.synthetic },
     });
     await api.tour.anchors.update(anchor.id, {
-      position:{x:anchor.position.x+1,y:anchor.position.y,z:anchor.position.z}
+      position: {
+        x: anchor.position.x + 1,
+        y: anchor.position.y,
+        z: anchor.position.z,
+      },
     });
-    await api.tour.camera.focusAnchor(anchor.id,{duration:600});
+    await api.tour.camera.focusAnchor(anchor.id, { duration: 600 });
     const pose = await api.tour.camera.getPose();
     console.log(pose);
-    await api.tour.playback.start({stops:ids.map(panoId=>({
-      panoId, ...(panoId===anchor.panoId?{anchorId:anchor.id}:{}),
-      duration:1000,hold:2000
-    })),loop:false});
+    await api.tour.playback.start({
+      stops: ids.map((panoId) => ({
+        panoId,
+        ...(panoId === anchor.panoId ? { anchorId: anchor.id } : {}),
+        duration: 1000,
+        hold: 2000,
+      })),
+      loop: false,
+    });
   });
 };
 ```

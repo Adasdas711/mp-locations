@@ -15,10 +15,10 @@ The world is right-handed: +X right, +Y up, -Z forward. Default units are arbitr
 Camera registration:
 
 ```js
-await api.tour.world.setCameraTransform('camera-a', {
-  position: {x:0,y:1.6,z:0},
-  rotation: {x:0,y:0,z:0,w:1}, // quaternion: panorama-local -> world
-  fov:75 // vertical degrees
+await api.tour.world.setCameraTransform("camera-a", {
+  position: { x: 0, y: 1.6, z: 0 },
+  rotation: { x: 0, y: 0, z: 0, w: 1 }, // quaternion: panorama-local -> world
+  fov: 75, // vertical degrees
 });
 ```
 
@@ -32,18 +32,18 @@ Registered FOV is the baseline used when selecting that camera. `tour.pose`, `to
 
 Every method in the following tables returns a Promise. Errors reject rather than return fabricated spatial data. Event factories return subscriptions synchronously.
 
-| Method | Input → output | Permission |
-| --- | --- | --- |
-| `tour.world.getCameraTransform(panoId?)` | Existing registered panorama → `{panoId,position,rotation,fov}` clone; defaults active. | scene.read |
+| Method                                        | Input → output                                                                                                                                     | Permission  |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `tour.world.getCameraTransform(panoId?)`      | Existing registered panorama → `{panoId,position,rotation,fov}` clone; defaults active.                                                            | scene.read  |
 | `tour.world.setCameraTransform(panoId,input)` | Position required for initial registration; subsequent patches may change position, quaternion and/or FOV. Complete normalized transform returned. | scene.write |
-| `tour.world.removeCameraTransform(panoId)` | Boolean; leaves global objects intact. | scene.write |
-| `tour.world.listCameras()` | Registered camera transform array; excludes unregistered cameras. | scene.read |
-| `tour.world.getInfo()` | `{units,handedness,axes,registered,panoId,occlusion,effectiveOcclusion,selectedObjectId,objectCount,cameraCount}`. | scene.read |
-| `tour.world.configure(input)` | `{units?,geometry?}` → WorldInfo. `geometry:null` removes shared geometry and resets Geometry mode to none. | scene.write |
-| `tour.world.localToWorld(position,panoId?)` | Panorama-local XYZ → world XYZ. | scene.read |
-| `tour.world.worldToLocal(position,panoId?)` | World XYZ → panorama-local XYZ. | scene.read |
-| `tour.world.project(position)` | World XYZ → normalized `{panoId,x,y,depth,visible,occluded}` for active view. | scene.read |
-| `tour.world.raycast(input)` | Active registered view → hit record described below. | scene.read |
+| `tour.world.removeCameraTransform(panoId)`    | Boolean; leaves global objects intact.                                                                                                             | scene.write |
+| `tour.world.listCameras()`                    | Registered camera transform array; excludes unregistered cameras.                                                                                  | scene.read  |
+| `tour.world.getInfo()`                        | `{units,handedness,axes,registered,panoId,occlusion,effectiveOcclusion,selectedObjectId,objectCount,cameraCount}`.                                 | scene.read  |
+| `tour.world.configure(input)`                 | `{units?,geometry?}` → WorldInfo. `geometry:null` removes shared geometry and resets Geometry mode to none.                                        | scene.write |
+| `tour.world.localToWorld(position,panoId?)`   | Panorama-local XYZ → world XYZ.                                                                                                                    | scene.read  |
+| `tour.world.worldToLocal(position,panoId?)`   | World XYZ → panorama-local XYZ.                                                                                                                    | scene.read  |
+| `tour.world.project(position)`                | World XYZ → normalized `{panoId,x,y,depth,visible,occluded}` for active view.                                                                      | scene.read  |
+| `tour.world.raycast(input)`                   | Active registered view → hit record described below.                                                                                               | scene.read  |
 
 Conversion/projection/raycast methods need an initialized ready panorama renderer. For inactive-camera conversion, select any view first; conversion still uses the specified camera registration. Raycast only accepts the **active** panorama: explicitly `await tour.select(id)` and `await tour.waitForPanoramaReady(id)` first. An inactive raycast rejects `PANORAMA_NOT_ACTIVE`; it does not silently navigate. Data-only CRUD/registration/info do not require a renderer.
 
@@ -53,22 +53,25 @@ Conversion/projection/raycast methods need an initialized ready panorama rendere
 
 ```js
 const object = await api.tour.world.objects.create({
-  id:'locus-001', position:{x:2,y:1.2,z:-6},
-  rotation:{x:0,y:0,z:0,w:1}, scale:{x:1,y:1,z:1},
-  label:'Shared locus', style:{type:'sphere',color:'#ff0000',size:.4},
-  metadata:{name:'Locus 1'}
+  id: "locus-001",
+  position: { x: 2, y: 1.2, z: -6 },
+  rotation: { x: 0, y: 0, z: 0, w: 1 },
+  scale: { x: 1, y: 1, z: 1 },
+  label: "Shared locus",
+  style: { type: "sphere", color: "#ff0000", size: 0.4 },
+  metadata: { name: "Locus 1" },
 });
 ```
 
 Complete normalized WorldObject: `{id,type:'world',position,rotation,scale,label,visible,interactive,style,metadata?}`. It has no `panoId`. Passing `panoId` rejects. Rotation is a quaternion; scale is nonuniform XYZ. Style supports **sphere, cube, billboard, sprite, model**, color, size, opacity, optional raster icon and model triangle data. Sphere size is radius, cube size is half-edge. Models use `style.model:{positions,indices?,uvs?}` and `style.size` as mesh scale. Models/cubes have real changed perspective between cameras; billboards intentionally face the current viewer.
 
-| Method | Result | Permission |
-| --- | --- | --- |
-| `tour.world.objects.create(data)` | Complete WorldObject; ID defaults UUID. | anchors.write |
+| Method                                | Result                                                                                                                                                                           | Permission    |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `tour.world.objects.create(data)`     | Complete WorldObject; ID defaults UUID.                                                                                                                                          | anchors.write |
 | `tour.world.objects.update(id,patch)` | Complete updated WorldObject. ID/type/panoId cannot change. Style shallow-merges; XYZ position/scale and quaternion replace as complete values; metadata replaces, null removes. | anchors.write |
-| `tour.world.objects.remove(id)` | false if absent, otherwise true; disappears from every camera. | anchors.write |
-| `tour.world.objects.get(id)` | Complete clone; missing ID rejects `OBJECT_NOT_FOUND`. | anchors.read |
-| `tour.world.objects.list()` | Complete cloned array of all world objects, independent of active view. | anchors.read |
+| `tour.world.objects.remove(id)`       | false if absent, otherwise true; disappears from every camera.                                                                                                                   | anchors.write |
+| `tour.world.objects.get(id)`          | Complete clone; missing ID rejects `OBJECT_NOT_FOUND`.                                                                                                                           | anchors.read  |
+| `tour.world.objects.list()`           | Complete cloned array of all world objects, independent of active view.                                                                                                          | anchors.read  |
 
 Mutations require Edit mode. Visibility/interactivity false affects rendering/picking. Clicking selects the entity, draws a 3D highlight and emits ObjectClicked. API `update` or the UI's Move selected changes its world position for all cameras. Camera transform changes never modify object coordinates. Objects survive deleting/unregistering a camera and disabling their creating addon.
 
@@ -88,14 +91,14 @@ Shared geometry input:
 
 ```js
 await api.tour.world.configure({
-  units:'meters',
-  geometry:{
-    positions:[-5,0,-8, 5,0,-8, 5,3,-8, -5,0,-8, 5,3,-8, -5,3,-8],
-    render:'occlusion', // invisible depth-only, or solid
-    color:'#777777'
-  }
+  units: "meters",
+  geometry: {
+    positions: [-5, 0, -8, 5, 0, -8, 5, 3, -8, -5, 0, -8, 5, 3, -8, -5, 3, -8],
+    render: "occlusion", // invisible depth-only, or solid
+    color: "#777777",
+  },
 });
-await api.tour.world.occlusion.setMode('geometry');
+await api.tour.world.occlusion.setMode("geometry");
 ```
 
 Triangle positions are **world** XYZ; optional indices and UVs use SDK 1.5 validation. Maximum 30000 vertices and 180000 triangle indices. Alternative `{source:'dollhouse',origin:{x,y,z},rotation:{x,y,z},render,color}` uses an imported model: source Z-up is converted to Three.js Y-up, then origin/XYZ Euler radians apply **model-to-world** placement. Unlike local scene.configure's capture pose, this world geometry transform is not inverted. Register known camera capture poses in the same world. No automatic extraction of unknown extrinsics is claimed.
@@ -106,8 +109,10 @@ Panorama radial depth map convention remains [SCENE_SDK.md](SCENE_SDK.md). Depth
 
 ```js
 const result = await api.tour.world.raycast({
-  panoId:'camera-a', screenX:450, screenY:320,
-  distance:10 // optional explicit fallback if no real hit
+  panoId: "camera-a",
+  screenX: 450,
+  screenY: 320,
+  distance: 10, // optional explicit fallback if no real hit
 });
 ```
 

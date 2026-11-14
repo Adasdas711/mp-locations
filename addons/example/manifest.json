@@ -5,11 +5,7 @@
   "apiVersion": 1,
   "main": "main.js",
   "description": "Example plugin: palace statistics and adding a locus at the center of the active floor.",
-  "permissions": [
-    "project.read",
-    "markers.write",
-    "ui.contribute"
-  ],
+  "permissions": ["project.read", "markers.write", "ui.contribute"],
   "contributes": {
     "commands": [
       {

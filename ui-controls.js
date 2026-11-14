@@ -1,5 +1,5 @@
 /* Shared control styles for the application and isolated plugin panels. */
-'use strict';
+"use strict";
 const PALACE_CONTROL_CSS = `
 :where(.dialog,.ctx-menu,.arrange-bar,.canvas-ctl,.palace-plugin-surface) select,
 :where(.dialog,.palace-plugin-surface) input:where(:not([type]),[type=text],[type=search],[type=url],[type=email],[type=password],[type=number]),
@@ -81,21 +81,82 @@ html.phone #settingsModal .addon-card>.persistence-actions {overflow:visible;max
  html.phone .settings-sidebar::after {left:34px;top:33px}
 }
 `;
-const sharedControlsStyle = document.createElement('style');
-sharedControlsStyle.id = 'palaceSharedControls'; sharedControlsStyle.textContent = PALACE_CONTROL_CSS;
+const sharedControlsStyle = document.createElement("style");
+sharedControlsStyle.id = "palaceSharedControls";
+sharedControlsStyle.textContent = PALACE_CONTROL_CSS;
 document.head.append(sharedControlsStyle);
 const controlsTheme = PalaceAPI.theme;
-window.PalaceAPI = Object.freeze({...PalaceAPI,theme(){
- const theme = controlsTheme(),style=getComputedStyle(document.documentElement);
- return {...theme,ui:Object.fromEntries(['--text','--muted','--line','--panel','--bg','--blue','--vscode-input-bg','--vscode-button-bg','--vscode-button-fg','--t-hover','--t-font-ui'].map(key=>[key,style.getPropertyValue(key).trim()])),colorScheme:style.colorScheme};
-}});
-function styleAddonHostDocument(source){
- const helper = `function applySharedTheme(theme){document.body.style.background=theme.background;document.body.style.color=theme.foreground;for(const [key,value]of Object.entries(theme.ui||{}))if(typeof value==='string')document.documentElement.style.setProperty(key,value);if(['dark','light','normal'].includes(theme.colorScheme))document.documentElement.style.colorScheme=theme.colorScheme;}`;
- return source.replace('<body>','<body class="palace-plugin-surface">').replace('document.body.style.background=theme.background;document.body.style.color=theme.foreground;', 'applySharedTheme(theme);').replace('</head>', '<style id="palaceSharedControls">'+PALACE_CONTROL_CSS+'\nbody{font-family:var(--t-font-ui,system-ui)}\n</style></head>')
-  .replace("const modules=new Map();",helper+"window.addEventListener('message',event=>{if(event.source===parent&&event.data?.channel===data.channel&&event.data.type==='themeChanged')applySharedTheme(event.data.theme)});const modules=new Map();");
+window.PalaceAPI = Object.freeze({
+  ...PalaceAPI,
+  theme() {
+    const theme = controlsTheme(),
+      style = getComputedStyle(document.documentElement);
+    return {
+      ...theme,
+      ui: Object.fromEntries(
+        [
+          "--text",
+          "--muted",
+          "--line",
+          "--panel",
+          "--bg",
+          "--blue",
+          "--vscode-input-bg",
+          "--vscode-button-bg",
+          "--vscode-button-fg",
+          "--t-hover",
+          "--t-font-ui",
+        ].map((key) => [key, style.getPropertyValue(key).trim()]),
+      ),
+      colorScheme: style.colorScheme,
+    };
+  },
+});
+function styleAddonHostDocument(source) {
+  const helper = `function applySharedTheme(theme){document.body.style.background=theme.background;document.body.style.color=theme.foreground;for(const [key,value]of Object.entries(theme.ui||{}))if(typeof value==='string')document.documentElement.style.setProperty(key,value);if(['dark','light','normal'].includes(theme.colorScheme))document.documentElement.style.colorScheme=theme.colorScheme;}`;
+  return source
+    .replace("<body>", '<body class="palace-plugin-surface">')
+    .replace(
+      "document.body.style.background=theme.background;document.body.style.color=theme.foreground;",
+      "applySharedTheme(theme);",
+    )
+    .replace(
+      "</head>",
+      '<style id="palaceSharedControls">' +
+        PALACE_CONTROL_CSS +
+        "\nbody{font-family:var(--t-font-ui,system-ui)}\n</style></head>",
+    )
+    .replace(
+      "const modules=new Map();",
+      helper +
+        "window.addEventListener('message',event=>{if(event.source===parent&&event.data?.channel===data.channel&&event.data.type==='themeChanged')applySharedTheme(event.data.theme)});const modules=new Map();",
+    );
+}
+const controlsApplyTheme = applyTheme;
+applyTheme = function (...args) {
+  const result = controlsApplyTheme(...args),
+    theme = PalaceAPI.theme();
+  for (const host of typeof addonHosts === "undefined"
+    ? []
+    : addonHosts.values())
+    host.frame.contentWindow?.postMessage(
+      { channel: host.channel, type: "themeChanged", theme },
+      "*",
+    );
+  return result;
 };
-const controlsApplyTheme=applyTheme;
-applyTheme=function(...args){const result=controlsApplyTheme(...args),theme=PalaceAPI.theme();for(const host of (typeof addonHosts==='undefined'?[]:addonHosts.values()))host.frame.contentWindow?.postMessage({channel:host.channel,type:'themeChanged',theme},'*');return result;};
 
-function finishSharedControls(){document.head.append(sharedControlsStyle);const theme=PalaceAPI.theme();for(const host of addonHosts.values())host.frame.contentWindow?.postMessage({channel:host.channel,type:'themeChanged',theme},'*');}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',finishSharedControls,{once:true});else finishSharedControls();
+function finishSharedControls() {
+  document.head.append(sharedControlsStyle);
+  const theme = PalaceAPI.theme();
+  for (const host of addonHosts.values())
+    host.frame.contentWindow?.postMessage(
+      { channel: host.channel, type: "themeChanged", theme },
+      "*",
+    );
+}
+if (document.readyState === "loading")
+  document.addEventListener("DOMContentLoaded", finishSharedControls, {
+    once: true,
+  });
+else finishSharedControls();

@@ -29,8 +29,8 @@ node scripts/package-addon.cjs addons/example /tmp/example.palace-addon
   "main": "main.js",
   "permissions": ["project.read", "markers.write"],
   "contributes": {
-    "commands": [{"id": "my.addon.center", "title": "Добавить локус"}],
-    "panels": [{"id": "my.addon.panel", "title": "Моя панель"}]
+    "commands": [{ "id": "my.addon.center", "title": "Добавить локус" }],
+    "panels": [{ "id": "my.addon.panel", "title": "Моя панель" }]
   }
 }
 ```
@@ -40,30 +40,35 @@ node scripts/package-addon.cjs addons/example /tmp/example.palace-addon
 ## Активация
 
 ```js
-exports.activate = api => {
-  api.commands.register('my.addon.center', async () => {
+exports.activate = (api) => {
+  api.commands.register("my.addon.center", async () => {
     const project = await api.project.read();
     const floor = project.levels[project.active];
-    if (!floor) throw new Error('Нет активного плана');
-    await api.markers.add({level: floor.index, x: floor.w / 2, y: floor.h / 2, note: 'Центр'});
-    await api.ui.showMessage('Локус добавлен');
+    if (!floor) throw new Error("Нет активного плана");
+    await api.markers.add({
+      level: floor.index,
+      x: floor.w / 2,
+      y: floor.h / 2,
+      note: "Центр",
+    });
+    await api.ui.showMessage("Локус добавлен");
   });
 };
 ```
 
-| API | Поведение |
-| --- | --- |
-| `api.commands.register(id, handler)` | Регистрирует асинхронную команду; возвращает `{dispose()}` |
-| `api.project.read()` | Возвращает копию метаданных, этажей, локусов и камер; без изображений и панорамных байтов |
-| `api.project.updateMetadata(patch)` | Изменяет `name`, `purpose`, `source`, `explain`, `notes`; требует `metadata.write` |
-| `api.markers.add({level,x,y,note})` | Добавляет локус в границах указанного этажа; требует `markers.write` |
-| `api.markers.remove({level,index})` | Удаляет локус; требует `markers.write` |
-| `api.ui.showMessage(text)` | Показывает сообщение в строке состояния |
-| `api.ui.showPanel(id, html)` | Открывает объявленную HTML-панель в изолированном iframe |
-| `api.theme.read()` | Возвращает имя темы и основные цвета |
-| `api.storage.get(key)` / `set(key,value)` | Читает/сохраняет собственные JSON-настройки аддона |
-| `api.assets.read(path)` | Синхронно читает текстовый ресурс внутри пакета |
-| `api.onProjectChanged(handler)` | Подписка на изменения проекта; требует `project.read`, возвращает `{dispose()}` |
+| API                                       | Поведение                                                                                 |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `api.commands.register(id, handler)`      | Регистрирует асинхронную команду; возвращает `{dispose()}`                                |
+| `api.project.read()`                      | Возвращает копию метаданных, этажей, локусов и камер; без изображений и панорамных байтов |
+| `api.project.updateMetadata(patch)`       | Изменяет `name`, `purpose`, `source`, `explain`, `notes`; требует `metadata.write`        |
+| `api.markers.add({level,x,y,note})`       | Добавляет локус в границах указанного этажа; требует `markers.write`                      |
+| `api.markers.remove({level,index})`       | Удаляет локус; требует `markers.write`                                                    |
+| `api.ui.showMessage(text)`                | Показывает сообщение в строке состояния                                                   |
+| `api.ui.showPanel(id, html)`              | Открывает объявленную HTML-панель в изолированном iframe                                  |
+| `api.theme.read()`                        | Возвращает имя темы и основные цвета                                                      |
+| `api.storage.get(key)` / `set(key,value)` | Читает/сохраняет собственные JSON-настройки аддона                                        |
+| `api.assets.read(path)`                   | Синхронно читает текстовый ресурс внутри пакета                                           |
+| `api.onProjectChanged(handler)`           | Подписка на изменения проекта; требует `project.read`, возвращает `{dispose()}`           |
 
 Изменение проекта разрешено только в режиме редактирования, вне повторения; правки участвуют в отмене, автосохранении и экспорте. API возвращает Promise, кроме регистрации, assets и подписки. Исключение команды отображается в менеджере. Ошибка активации отключает её команды. Отключение уничтожает iframe; `deactivate` — необязательный хук, на завершение асинхронной очистки полагаться нельзя.
 
@@ -77,59 +82,81 @@ HTML панели находится внутри собственного ifram
 
 Сохраняется `apiVersion: 1`: старые аддоны совместимы. Новые разрешения:
 
-| Разрешение | Доступ |
-| --- | --- |
-| `plan.read` | Чтение этажа, включая локальное изображение |
-| `plan.write` | Создание/удаление/переименование/перестановка/совмещение/разделение этажей, стены и поворот |
-| `tour.read` | Камеры и локальные панорамные данные |
-| `tour.write` | Метаданные камер, положение на плане, переходы и начальная камера |
-| `view.control` | Выбор этажа/камеры, план/3D/разделение, масштаб и ракурс |
-| `ui.control` | Системные команды, тема, размер UI и видимость инструментов |
-| `ui.contribute` | Собственные значки, панели инструментов и графические слои |
+| Разрешение      | Доступ                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| `plan.read`     | Чтение этажа, включая локальное изображение                                                 |
+| `plan.write`    | Создание/удаление/переименование/перестановка/совмещение/разделение этажей, стены и поворот |
+| `tour.read`     | Камеры и локальные панорамные данные                                                        |
+| `tour.write`    | Метаданные камер, положение на плане, переходы и начальная камера                           |
+| `view.control`  | Выбор этажа/камеры, план/3D/разделение, масштаб и ракурс                                    |
+| `ui.control`    | Системные команды, тема, размер UI и видимость инструментов                                 |
+| `ui.contribute` | Собственные значки, панели инструментов и графические слои                                  |
 
 ```json
 {
   "permissions": ["project.read", "ui.contribute", "view.control"],
   "contributes": {
-    "commands": [{"id": "my.addon.open", "title": "Моя панель"}],
-    "panels": [{"id": "my.addon.panel", "title": "Моя панель"}],
-    "activityBar": [{"id": "my.addon.activity", "title": "Мой аддон", "icon": "icon.svg", "command": "my.addon.open"}],
-    "toolbars": [{"id": "my.addon.tool", "title": "Открыть", "location": "tour", "icon": "cube", "command": "my.addon.open"}]
+    "commands": [{ "id": "my.addon.open", "title": "Моя панель" }],
+    "panels": [{ "id": "my.addon.panel", "title": "Моя панель" }],
+    "activityBar": [
+      {
+        "id": "my.addon.activity",
+        "title": "Мой аддон",
+        "icon": "icon.svg",
+        "command": "my.addon.open"
+      }
+    ],
+    "toolbars": [
+      {
+        "id": "my.addon.tool",
+        "title": "Открыть",
+        "location": "tour",
+        "icon": "cube",
+        "command": "my.addon.open"
+      }
+    ]
   }
 }
 ```
 
 Значок: имя встроенной иконки (`pin`, `cube`, `floorplan`, `braces` и др.) либо файл SVG/PNG/JPEG/WebP/AVIF из пакета. Для `toolbars.location` доступны `plan`, `tour`, `header`, `status`. Кнопки выполняют зарегистрированную команду. Отключение/удаление аддона удаляет его кнопки и графические слои. Пакет поддерживает бинарные изображения этих форматов; `api.assets.read()` возвращает для них data URL.
 
-| API | Параметры |
-| --- | --- |
-| `api.plan.read(level)` | Полная копия этажа; без аргумента — активный |
-| `api.plan.add({name,src,floorId})` | Добавить этаж из локального data URL изображения |
-| `api.plan.remove(level)` / `rename({level,name})` | Удалить / переименовать этаж |
-| `api.plan.select(level)` / `move({from,to})` | Выбрать / переставить этаж |
-| `api.plan.merge({from,to})` / `split(level)` | Совместить / разделить планы; совмещение открывает штатный режим размещения |
-| `api.plan.transform({rotation})` | Поворот активного плана |
-| `api.plan.walls.add({level,x1,y1,x2,y2})` / `remove({level,index})` | Добавить / удалить стену |
-| `api.markers.update({level,index,patch})` | Поля `x`, `y`, `note`, `localPano` |
-| `api.view.read()` / `set({layout,planView,zoom})` | `layout`: plan/tour/split/split-rev; `planView`: 2d/3d |
-| `api.tour.read()` / `select(id)` | Прочитать камеры / открыть камеру |
-| `api.tour.pose({yaw,pitch,fov})` | Ракурс активной панорамы |
-| `api.tour.update({id,patch})` | `room`, `hidden`, `headingDeg`, `navYawOffsetDeg`, `planPx` |
-| `api.tour.connect({from,to,add})` / `setStart(id)` | Двусторонний переход / начальная камера; `null` сбрасывает начальную |
-| `api.ui.commands()` / `execute(id)` | Список штатных команд / их выполнение через обычный интерфейс |
-| `api.ui.tools()` / `setToolVisible(id,visible)` | Инструменты и сохранение видимости |
-| `api.ui.themes()` / `theme(id)` / `scale(0|1|2)` | Темы, переключение темы, размер UI |
-| `api.ui.overlay({id,location,shapes})` | Графический слой поверх плана или панорамы |
+| API                                                                 | Параметры                                                                   |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `api.plan.read(level)`                                              | Полная копия этажа; без аргумента — активный                                |
+| `api.plan.add({name,src,floorId})`                                  | Добавить этаж из локального data URL изображения                            |
+| `api.plan.remove(level)` / `rename({level,name})`                   | Удалить / переименовать этаж                                                |
+| `api.plan.select(level)` / `move({from,to})`                        | Выбрать / переставить этаж                                                  |
+| `api.plan.merge({from,to})` / `split(level)`                        | Совместить / разделить планы; совмещение открывает штатный режим размещения |
+| `api.plan.transform({rotation})`                                    | Поворот активного плана                                                     |
+| `api.plan.walls.add({level,x1,y1,x2,y2})` / `remove({level,index})` | Добавить / удалить стену                                                    |
+| `api.markers.update({level,index,patch})`                           | Поля `x`, `y`, `note`, `localPano`                                          |
+| `api.view.read()` / `set({layout,planView,zoom})`                   | `layout`: plan/tour/split/split-rev; `planView`: 2d/3d                      |
+| `api.tour.read()` / `select(id)`                                    | Прочитать камеры / открыть камеру                                           |
+| `api.tour.pose({yaw,pitch,fov})`                                    | Ракурс активной панорамы                                                    |
+| `api.tour.update({id,patch})`                                       | `room`, `hidden`, `headingDeg`, `navYawOffsetDeg`, `planPx`                 |
+| `api.tour.connect({from,to,add})` / `setStart(id)`                  | Двусторонний переход / начальная камера; `null` сбрасывает начальную        |
+| `api.ui.commands()` / `execute(id)`                                 | Список штатных команд / их выполнение через обычный интерфейс               |
+| `api.ui.tools()` / `setToolVisible(id,visible)`                     | Инструменты и сохранение видимости                                          |
+| `api.ui.themes()` / `theme(id)` / `scale(0                          | 1                                                                           | 2)` | Темы, переключение темы, размер UI |
+| `api.ui.overlay({id,location,shapes})`                              | Графический слой поверх плана или панорамы                                  |
 
 Слой поддерживает безопасные фигуры `circle`, `rect`, `line`, `text`, до 500 фигур. Для плана координаты совпадают с координатами изображения; для 3D-экрана используется область 1000×1000. Пример:
 
 ```js
 await api.ui.overlay({
-  id: 'my.addon.selection', location: 'plan',
-  shapes: [{type: 'circle', cx: 120, cy: 80, r: 20, stroke: '#4da3ff', fill: 'none'}]
+  id: "my.addon.selection",
+  location: "plan",
+  shapes: [
+    { type: "circle", cx: 120, cy: 80, r: 20, stroke: "#4da3ff", fill: "none" },
+  ],
 });
 // Удаление слоя:
-await api.ui.overlay({id: 'my.addon.selection', location: 'plan', remove: true});
+await api.ui.overlay({
+  id: "my.addon.selection",
+  location: "plan",
+  remove: true,
+});
 ```
 
 HTML панелей остаётся внутри изолированного iframe. Прямой DOM редактора и произвольное выполнение кода в его контексте не открываются. Изменения данных разрешены только в редактировании, вне повторения; координаты и поля проверяются на стороне приложения. Это доступ через интерфейсы, а не подмена внутренних объектов редактора.
@@ -158,22 +185,22 @@ HTML панелей остаётся внутри изолированного i
 
 Остаётся `apiVersion: 1`. Добавлены разрешения `archive.read`, `archive.write`, `keybindings.write`; операции камеры используют существующее `tour.write`. Все методы ниже возвращают Promise.
 
-| Метод | Действие |
-| --- | --- |
+| Метод                                           | Действие                                                                                                                                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `api.tour.add({id?,level?,room?,planPx?,src?})` | Создать камеру. `level` — индекс этажа, по умолчанию активный; без `id` генерируется UUID. `planPx` — `{x,y}` в координатах изображения плана. Без `src` создаётся камера без фото |
-| `api.tour.loadPanorama({id,src})` | Загрузить/заменить эквидистантную панораму существующей камеры |
-| `api.tour.remove(id)` | Удалить камеру, входящие/исходящие переходы, назначение начальной и привязки локусов; отмена восстанавливает их |
-| `api.archive.list()` | Список файлов открытого исходного архива: `[{path}]`, с учётом правок |
-| `api.archive.read({path,encoding?})` | `{path,encoding,data}`; `encoding`: `text` (UTF-8, по умолчанию) / `base64` |
-| `api.archive.write({path,encoding,data})` | Добавить или заменить текстовый/бинарный файл; UTF-8 текст или base64 |
-| `api.archive.remove(path)` | Удалить файл из копии исходного архива |
-| `api.archive.meta.read()` | Объект `meta.json`; `null`, если отсутствует |
-| `api.archive.meta.write(object)` | Заменить `meta.json`; `null` удаляет его |
-| `api.archive.export()` | Вернуть копию исходного ZIP с правками: `{name,encoding:'base64',data}` |
-| `api.archive.download()` | Скачать копию исходного ZIP с правками; вернуть `{name}` |
-| `api.keybindings.register({id,command,key})` | Привязать зарегистрированную команду аддона; вернуть `{id,key}` |
-| `api.keybindings.unregister(id)` | Снять собственную привязку |
-| `api.keybindings.list()` | Список системных и аддонных сочетаний: `[{id,title,key,owner}]` |
+| `api.tour.loadPanorama({id,src})`               | Загрузить/заменить эквидистантную панораму существующей камеры                                                                                                                     |
+| `api.tour.remove(id)`                           | Удалить камеру, входящие/исходящие переходы, назначение начальной и привязки локусов; отмена восстанавливает их                                                                    |
+| `api.archive.list()`                            | Список файлов открытого исходного архива: `[{path}]`, с учётом правок                                                                                                              |
+| `api.archive.read({path,encoding?})`            | `{path,encoding,data}`; `encoding`: `text` (UTF-8, по умолчанию) / `base64`                                                                                                        |
+| `api.archive.write({path,encoding,data})`       | Добавить или заменить текстовый/бинарный файл; UTF-8 текст или base64                                                                                                              |
+| `api.archive.remove(path)`                      | Удалить файл из копии исходного архива                                                                                                                                             |
+| `api.archive.meta.read()`                       | Объект `meta.json`; `null`, если отсутствует                                                                                                                                       |
+| `api.archive.meta.write(object)`                | Заменить `meta.json`; `null` удаляет его                                                                                                                                           |
+| `api.archive.export()`                          | Вернуть копию исходного ZIP с правками: `{name,encoding:'base64',data}`                                                                                                            |
+| `api.archive.download()`                        | Скачать копию исходного ZIP с правками; вернуть `{name}`                                                                                                                           |
+| `api.keybindings.register({id,command,key})`    | Привязать зарегистрированную команду аддона; вернуть `{id,key}`                                                                                                                    |
+| `api.keybindings.unregister(id)`                | Снять собственную привязку                                                                                                                                                         |
+| `api.keybindings.list()`                        | Список системных и аддонных сочетаний: `[{id,title,key,owner}]`                                                                                                                    |
 
 Для чтения/экспорта/скачивания архива требуется `archive.read`, для изменения — `archive.write`. Исходный архив должен быть открыт в приложении. Правки файлов и `meta.json` входят в историю отмены и локальное восстановление. Камера принимает `src` как локальный data URL PNG/JPEG/WebP/AVIF до 16 МБ; для файла, выбранного в панели аддона, получите data URL через FileReader. Камера без позиции доступна в выборе панорам; её можно поставить на план позднее. На этаже без `floorId` идентификатор назначается автоматически.
 
@@ -184,18 +211,26 @@ HTML панелей остаётся внутри изолированного i
 Пример после объявления команды `my.addon.create` в manifest и разрешений `tour.write`, `archive.write`, `keybindings.write`:
 
 ```js
-exports.activate = async api => {
-  api.commands.register('my.addon.create', async () => {
-    const {id} = await api.tour.add({
-      level: 0, room: 'Новая камера', planPx: {x: 120, y: 90},
-      src: api.assets.read('panorama.jpg')
+exports.activate = async (api) => {
+  api.commands.register("my.addon.create", async () => {
+    const { id } = await api.tour.add({
+      level: 0,
+      room: "Новая камера",
+      planPx: { x: 120, y: 90 },
+      src: api.assets.read("panorama.jpg"),
     });
     await api.tour.setStart(id);
-    await api.archive.meta.write({addon: 'my.addon'});
-    await api.archive.write({path: 'addon/info.txt', encoding: 'text', data: 'Создано аддоном'});
+    await api.archive.meta.write({ addon: "my.addon" });
+    await api.archive.write({
+      path: "addon/info.txt",
+      encoding: "text",
+      data: "Создано аддоном",
+    });
   });
   await api.keybindings.register({
-    id: 'my.addon.create-key', command: 'my.addon.create', key: 'Ctrl+Alt+Shift+KeyU'
+    id: "my.addon.create-key",
+    command: "my.addon.create",
+    key: "Ctrl+Alt+Shift+KeyU",
   });
 };
 ```
@@ -208,12 +243,29 @@ Packages continue to use `apiVersion: 1`. Optional `engines.palace` specifies th
 
 ```json
 {
-  "engines": {"palace": ">=1.4.0 <2.0.0"},
+  "engines": { "palace": ">=1.4.0 <2.0.0" },
   "contributes": {
     "settings": [
-      {"key": "showLabels", "title": "Show labels", "type": "boolean", "default": true},
-      {"key": "title", "title": "Panel title", "type": "string", "default": "My panel"},
-      {"key": "limit", "title": "Item limit", "type": "number", "min": 1, "max": 100, "default": 10}
+      {
+        "key": "showLabels",
+        "title": "Show labels",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "title",
+        "title": "Panel title",
+        "type": "string",
+        "default": "My panel"
+      },
+      {
+        "key": "limit",
+        "title": "Item limit",
+        "type": "number",
+        "min": 1,
+        "max": 100,
+        "default": 10
+      }
     ]
   }
 }
@@ -222,10 +274,10 @@ Packages continue to use `apiVersion: 1`. Optional `engines.palace` specifies th
 A plugin can declare up to 30 settings. Keys are unique and scoped to its own plugin; values are validated against the declarations. Optional `description` supplies helper text in the manager. Strings are limited to 2,000 characters. Settings are persisted in the installed package record, independently from `api.storage`.
 
 ```js
-exports.activate = async api => {
+exports.activate = async (api) => {
   const values = await api.settings.read();
-  await api.settings.update({showLabels: false});
-  const subscription = api.onSettingsChanged(next => {
+  await api.settings.update({ showLabels: false });
+  const subscription = api.onSettingsChanged((next) => {
     // Apply changes without restarting the plugin.
   });
 };

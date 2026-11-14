@@ -21,12 +21,6 @@
       "type": "image/png"
     }
   ],
-  "display_override": [
-    "standalone",
-    "minimal-ui"
-  ],
-  "categories": [
-    "education",
-    "productivity"
-  ]
+  "display_override": ["standalone", "minimal-ui"],
+  "categories": ["education", "productivity"]
 }

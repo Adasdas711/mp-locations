@@ -2,234 +2,879 @@
  * Development declarations only. The running API is passed to exports.activate(api).
  * Permission, mode, size and identifier rules are in ADDONS_AI_GUIDE.md.
  */
-export type CalibrationState = 'collecting' | 'insufficient_data' | 'degenerate' | 'provisional' | 'solved' | 'failed';
-export interface CalibrationObservation { panoId: string; yaw: number; pitch: number; verified: boolean; }
-export interface CalibrationLandmark { id: string; label: string; observations: CalibrationObservation[]; enabled: boolean; worldPosition?: Point3D; }
-export interface CalibrationDistance { type: 'cameras' | 'landmarks'; from: string; to: string; distance: number; }
-export interface CalibrationConfig { automaticSolve?: boolean; requireVerified?: boolean; referenceCameraId?: string; distances?: CalibrationDistance[]; orientationModel?: 'free' | 'upright'; minCorrespondences?: number; ransacThresholdDeg?: number; ransacIterations?: number; minParallaxDeg?: number; bundleIterations?: number; seed?: number; timeoutMs?: number; }
-export interface CalibrationCreateConfig extends CalibrationConfig {id?: string; label?: string; cameraIds?: string[];}
-export interface CalibrationMetricScale { known: boolean; units: 'relative' | 'meters'; factor: number; worldMetersPerUnit?: number | null; coordinateFactor?: number; constraintCount?: number; relativeSpread?: number; }
-export interface CalibrationQuality {
- observationCount: number; verifiedCorrespondences: number; inliers: number; outliers: number; unresolvedObservations?: number;
- meanAngularErrorDeg: number | null; medianAngularErrorDeg: number | null; medianParallaxDeg: number | null;
- degeneracy: string[]; metricScale: CalibrationMetricScale; registeredCameraIds: string[]; unregisteredCameraIds: string[];
- visibility: {checked: number; occluded: {landmarkId: string; panoId: string}[]; unknown: number; unverified?: number};
- gauge?: {referenceCameraId: string; baselineCameraId: string; relativeBaselineLength: number; worldBaselineLength?: number; worldScaleAnchored?: boolean};
- edges: {from: string; to: string; status: string; inliers: number; outliers: number; parallaxDeg: number; reason: string | null}[];
- landmarks: {id: string; distances: {panoId: string; distance: number; distanceMeters?: number; angularErrorDeg: number}[]; segmentDistance: number | null; relativeSegmentDistance: number | null; triangulationAngleDeg: number; effectiveParallaxDeg: number; stable: boolean; preferredBetweenCameras: boolean; stability: {conditionNumber: number; estimatedPositionUncertainty: number; estimatedPositionUncertaintyMeters?: number; assumedAngularNoiseDeg: number}}[];
- bundleAdjustment?: {iterations: number; initialCost: number; cost: number} | null;
+export type CalibrationState =
+  | "collecting"
+  | "insufficient_data"
+  | "degenerate"
+  | "provisional"
+  | "solved"
+  | "failed";
+export interface CalibrationObservation {
+  panoId: string;
+  yaw: number;
+  pitch: number;
+  verified: boolean;
 }
-export interface CalibrationSolution { referenceCameraId: string; cameras: Record<string, PanoramaCamera>; landmarks: Record<string, Point3D>; anchor?: PanoramaCamera; scale: CalibrationMetricScale; }
-export interface CalibrationSession { id: string; version: 1; label: string; landmarks: CalibrationLandmark[]; cameraIds: string[]; status: CalibrationState; revision: number; config: CalibrationConfig; pending: boolean; quality: CalibrationQuality | null; solution: CalibrationSolution | null; solvedRevision: number | null; preview: {id: string; revision: number; wholeWorld: boolean} | null; applied: {revision: number; wholeWorld: boolean} | null; error: {code: string; message: string} | null; [key: string]: unknown; }
-export interface CalibrationStatus { sessionId: string; revision: number; status: CalibrationState; pending: boolean; solvedRevision: number | null; appliedRevision: number | null; error: {code: string; message: string} | null; }
-export interface CalibrationPreview { previewId: string; sessionId: string; revision: number; status: CalibrationState; cameras: Record<string, PanoramaCamera>; landmarks: Record<string, Point3D>; objects: Record<string, WorldObject>; wholeWorld: boolean; objectsIncluded?: boolean; metricScale: CalibrationMetricScale; quality: CalibrationQuality; }
-export interface CalibrationEvent { sessionId: string; revision: number; landmarkId?: string; observation?: CalibrationObservation; quality?: CalibrationQuality; status?: CalibrationState; wholeWorld?: boolean; error?: {code: string; message: string}; [key: string]: unknown; }
+export interface CalibrationLandmark {
+  id: string;
+  label: string;
+  observations: CalibrationObservation[];
+  enabled: boolean;
+  worldPosition?: Point3D;
+}
+export interface CalibrationDistance {
+  type: "cameras" | "landmarks";
+  from: string;
+  to: string;
+  distance: number;
+}
+export interface CalibrationConfig {
+  automaticSolve?: boolean;
+  requireVerified?: boolean;
+  referenceCameraId?: string;
+  distances?: CalibrationDistance[];
+  orientationModel?: "free" | "upright";
+  minCorrespondences?: number;
+  ransacThresholdDeg?: number;
+  ransacIterations?: number;
+  minParallaxDeg?: number;
+  bundleIterations?: number;
+  seed?: number;
+  timeoutMs?: number;
+}
+export interface CalibrationCreateConfig extends CalibrationConfig {
+  id?: string;
+  label?: string;
+  cameraIds?: string[];
+}
+export interface CalibrationMetricScale {
+  known: boolean;
+  units: "relative" | "meters";
+  factor: number;
+  worldMetersPerUnit?: number | null;
+  coordinateFactor?: number;
+  constraintCount?: number;
+  relativeSpread?: number;
+}
+export interface CalibrationQuality {
+  observationCount: number;
+  verifiedCorrespondences: number;
+  inliers: number;
+  outliers: number;
+  unresolvedObservations?: number;
+  meanAngularErrorDeg: number | null;
+  medianAngularErrorDeg: number | null;
+  medianParallaxDeg: number | null;
+  degeneracy: string[];
+  metricScale: CalibrationMetricScale;
+  registeredCameraIds: string[];
+  unregisteredCameraIds: string[];
+  visibility: {
+    checked: number;
+    occluded: { landmarkId: string; panoId: string }[];
+    unknown: number;
+    unverified?: number;
+  };
+  gauge?: {
+    referenceCameraId: string;
+    baselineCameraId: string;
+    relativeBaselineLength: number;
+    worldBaselineLength?: number;
+    worldScaleAnchored?: boolean;
+  };
+  edges: {
+    from: string;
+    to: string;
+    status: string;
+    inliers: number;
+    outliers: number;
+    parallaxDeg: number;
+    reason: string | null;
+  }[];
+  landmarks: {
+    id: string;
+    distances: {
+      panoId: string;
+      distance: number;
+      distanceMeters?: number;
+      angularErrorDeg: number;
+    }[];
+    segmentDistance: number | null;
+    relativeSegmentDistance: number | null;
+    triangulationAngleDeg: number;
+    effectiveParallaxDeg: number;
+    stable: boolean;
+    preferredBetweenCameras: boolean;
+    stability: {
+      conditionNumber: number;
+      estimatedPositionUncertainty: number;
+      estimatedPositionUncertaintyMeters?: number;
+      assumedAngularNoiseDeg: number;
+    };
+  }[];
+  bundleAdjustment?: {
+    iterations: number;
+    initialCost: number;
+    cost: number;
+  } | null;
+}
+export interface CalibrationSolution {
+  referenceCameraId: string;
+  cameras: Record<string, PanoramaCamera>;
+  landmarks: Record<string, Point3D>;
+  anchor?: PanoramaCamera;
+  scale: CalibrationMetricScale;
+}
+export interface CalibrationSession {
+  id: string;
+  version: 1;
+  label: string;
+  landmarks: CalibrationLandmark[];
+  cameraIds: string[];
+  status: CalibrationState;
+  revision: number;
+  config: CalibrationConfig;
+  pending: boolean;
+  quality: CalibrationQuality | null;
+  solution: CalibrationSolution | null;
+  solvedRevision: number | null;
+  preview: { id: string; revision: number; wholeWorld: boolean } | null;
+  applied: { revision: number; wholeWorld: boolean } | null;
+  error: { code: string; message: string } | null;
+  [key: string]: unknown;
+}
+export interface CalibrationStatus {
+  sessionId: string;
+  revision: number;
+  status: CalibrationState;
+  pending: boolean;
+  solvedRevision: number | null;
+  appliedRevision: number | null;
+  error: { code: string; message: string } | null;
+}
+export interface CalibrationPreview {
+  previewId: string;
+  sessionId: string;
+  revision: number;
+  status: CalibrationState;
+  cameras: Record<string, PanoramaCamera>;
+  landmarks: Record<string, Point3D>;
+  objects: Record<string, WorldObject>;
+  wholeWorld: boolean;
+  objectsIncluded?: boolean;
+  metricScale: CalibrationMetricScale;
+  quality: CalibrationQuality;
+}
+export interface CalibrationEvent {
+  sessionId: string;
+  revision: number;
+  landmarkId?: string;
+  observation?: CalibrationObservation;
+  quality?: CalibrationQuality;
+  status?: CalibrationState;
+  wholeWorld?: boolean;
+  error?: { code: string; message: string };
+  [key: string]: unknown;
+}
 
-export interface Quaternion { x: number; y: number; z: number; w: number; }
-export interface PanoramaCamera { panoId: string; position: Point3D; rotation: Quaternion; fov: number; }
-export type WorldObjectInput = {id?: string; position: Point3D; rotation?: Quaternion; scale?: Point3D; label?: string; visible?: boolean; interactive?: boolean; style?: Omit<AnchorStyle, 'type'> & {type?: AnchorStyle['type'] | 'cube'}; metadata?: JsonObject | null};
-export interface WorldObject {id: string; type: 'world'; position: Point3D; rotation: Quaternion; scale: Point3D; label: string; visible: boolean; interactive: boolean; style: Omit<AnchorStyle, 'type' | 'color' | 'size' | 'opacity'> & {type: NonNullable<AnchorStyle['type']> | 'cube'; color: string; size: number; opacity: number}; metadata?: JsonObject;}
-export type OcclusionMode = 'none' | 'geometry' | 'depth-map';
-export interface WorldInfo { units: string; handedness: 'right'; axes: {x: string; y: string; z: string}; registered: boolean; metersPerUnit: number | null; panoId: string | null; occlusion: OcclusionMode; effectiveOcclusion: OcclusionMode; selectedObjectId: string | null; objectCount: number; cameraCount: number; }
-export interface WorldCameraEvent {panoId: string; camera: PanoramaCamera | null; active: boolean; reason: string; pose?: CameraPose3D; }
-export interface WorldObjectEvent {objectId: string; object: WorldObject; panoId: string | null; position?: Point3D; }
+export interface Quaternion {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+}
+export interface PanoramaCamera {
+  panoId: string;
+  position: Point3D;
+  rotation: Quaternion;
+  fov: number;
+}
+export type WorldObjectInput = {
+  id?: string;
+  position: Point3D;
+  rotation?: Quaternion;
+  scale?: Point3D;
+  label?: string;
+  visible?: boolean;
+  interactive?: boolean;
+  style?: Omit<AnchorStyle, "type"> & { type?: AnchorStyle["type"] | "cube" };
+  metadata?: JsonObject | null;
+};
+export interface WorldObject {
+  id: string;
+  type: "world";
+  position: Point3D;
+  rotation: Quaternion;
+  scale: Point3D;
+  label: string;
+  visible: boolean;
+  interactive: boolean;
+  style: Omit<AnchorStyle, "type" | "color" | "size" | "opacity"> & {
+    type: NonNullable<AnchorStyle["type"]> | "cube";
+    color: string;
+    size: number;
+    opacity: number;
+  };
+  metadata?: JsonObject;
+}
+export type OcclusionMode = "none" | "geometry" | "depth-map";
+export interface WorldInfo {
+  units: string;
+  handedness: "right";
+  axes: { x: string; y: string; z: string };
+  registered: boolean;
+  metersPerUnit: number | null;
+  panoId: string | null;
+  occlusion: OcclusionMode;
+  effectiveOcclusion: OcclusionMode;
+  selectedObjectId: string | null;
+  objectCount: number;
+  cameraCount: number;
+}
+export interface WorldCameraEvent {
+  panoId: string;
+  camera: PanoramaCamera | null;
+  active: boolean;
+  reason: string;
+  pose?: CameraPose3D;
+}
+export interface WorldObjectEvent {
+  objectId: string;
+  object: WorldObject;
+  panoId: string | null;
+  position?: Point3D;
+}
 
-export interface Point3D { x: number; y: number; z: number; }
-export interface GeometryData { positions: number[]; indices?: number[]; uvs?: number[]; }
-export interface AnchorStyle { type?: 'sphere' | 'billboard' | 'sprite' | 'model'; color?: string; size?: number; opacity?: number; icon?: string; model?: GeometryData; }
-export interface Anchor3D { id: string; panoId: string; position: Point3D; rotation: Point3D; scale: number; label: string; visible: boolean; interactive: boolean; style: AnchorStyle; metadata?: JsonObject; }
-export type AnchorInput = Pick<Anchor3D, 'position'> & Partial<Omit<Anchor3D, 'position'>>;
-export interface SceneConfiguration { units?: 'scene-units' | 'meters' | 'model-units'; geometry?: (GeometryData | {source: 'dollhouse'; origin: Point3D; rotation?: Point3D; scale?: number}) & {render?: 'solid' | 'occlusion'; color?: string}; depthMap?: {width: number; height: number; data: number[]}; }
-export interface CameraPose3D { panoId: string; position: Point3D; yaw: number; pitch: number; roll: number; fov: number; }
-export interface CameraAnimation { duration?: number; easing?: 'linear' | 'easeInOut' | 'easeOut'; }
-export interface ScreenPosition { x: number; y: number; space?: 'normalized' | 'pixels'; }
-export interface SceneInfo { panoId: string; type: 'panorama' | '3d'; coordinateSystem: {units: string; [key: string]: unknown}; hasGeometry: boolean; hasDepthMap: boolean; unregisteredDollhouseAvailable: boolean; capabilities: {anchors: boolean; raycast: boolean; syntheticDistancePlacement: boolean; translation: boolean; occlusion: boolean; styles: string[]}; camera: CameraPose3D; [key: string]: unknown; }
-export interface PanoramaReady { panoId: string; ready: boolean; hasImage: boolean; scene: SceneInfo; }
-export interface RayHit { panoId: string; position: Point3D; distance: number; synthetic: boolean; source: string; anchorId?: string | null; }
-export interface PlaybackStop { panoId: string; anchorId?: string; duration?: number; hold?: number; easing?: CameraAnimation['easing']; pose?: Partial<Pick<CameraPose3D, 'yaw' | 'pitch' | 'roll' | 'fov'>>; }
-export interface PlaybackState { status: 'idle' | 'playing' | 'paused' | 'stopped' | 'completed' | 'error'; index: number; phase: string; stops: PlaybackStop[]; loop: boolean; error: string | null; [key: string]: unknown; }
-export interface TourSubscription extends Disposable { ready: Promise<{id: string; event: string}>; }
-export interface AnchorEvent { panoId: string; anchorId: string; anchor: Anchor3D; [key: string]: unknown; }
+export interface Point3D {
+  x: number;
+  y: number;
+  z: number;
+}
+export interface GeometryData {
+  positions: number[];
+  indices?: number[];
+  uvs?: number[];
+}
+export interface AnchorStyle {
+  type?: "sphere" | "billboard" | "sprite" | "model";
+  color?: string;
+  size?: number;
+  opacity?: number;
+  icon?: string;
+  model?: GeometryData;
+}
+export interface Anchor3D {
+  id: string;
+  panoId: string;
+  position: Point3D;
+  rotation: Point3D;
+  scale: number;
+  label: string;
+  visible: boolean;
+  interactive: boolean;
+  style: AnchorStyle;
+  metadata?: JsonObject;
+}
+export type AnchorInput = Pick<Anchor3D, "position"> &
+  Partial<Omit<Anchor3D, "position">>;
+export interface SceneConfiguration {
+  units?: "scene-units" | "meters" | "model-units";
+  geometry?: (
+    | GeometryData
+    | {
+        source: "dollhouse";
+        origin: Point3D;
+        rotation?: Point3D;
+        scale?: number;
+      }
+  ) & { render?: "solid" | "occlusion"; color?: string };
+  depthMap?: { width: number; height: number; data: number[] };
+}
+export interface CameraPose3D {
+  panoId: string;
+  position: Point3D;
+  yaw: number;
+  pitch: number;
+  roll: number;
+  fov: number;
+}
+export interface CameraAnimation {
+  duration?: number;
+  easing?: "linear" | "easeInOut" | "easeOut";
+}
+export interface ScreenPosition {
+  x: number;
+  y: number;
+  space?: "normalized" | "pixels";
+}
+export interface SceneInfo {
+  panoId: string;
+  type: "panorama" | "3d";
+  coordinateSystem: { units: string; [key: string]: unknown };
+  hasGeometry: boolean;
+  hasDepthMap: boolean;
+  unregisteredDollhouseAvailable: boolean;
+  capabilities: {
+    anchors: boolean;
+    raycast: boolean;
+    syntheticDistancePlacement: boolean;
+    translation: boolean;
+    occlusion: boolean;
+    styles: string[];
+  };
+  camera: CameraPose3D;
+  [key: string]: unknown;
+}
+export interface PanoramaReady {
+  panoId: string;
+  ready: boolean;
+  hasImage: boolean;
+  scene: SceneInfo;
+}
+export interface RayHit {
+  panoId: string;
+  position: Point3D;
+  distance: number;
+  synthetic: boolean;
+  source: string;
+  anchorId?: string | null;
+}
+export interface PlaybackStop {
+  panoId: string;
+  anchorId?: string;
+  duration?: number;
+  hold?: number;
+  easing?: CameraAnimation["easing"];
+  pose?: Partial<Pick<CameraPose3D, "yaw" | "pitch" | "roll" | "fov">>;
+}
+export interface PlaybackState {
+  status: "idle" | "playing" | "paused" | "stopped" | "completed" | "error";
+  index: number;
+  phase: string;
+  stops: PlaybackStop[];
+  loop: boolean;
+  error: string | null;
+  [key: string]: unknown;
+}
+export interface TourSubscription extends Disposable {
+  ready: Promise<{ id: string; event: string }>;
+}
+export interface AnchorEvent {
+  panoId: string;
+  anchorId: string;
+  anchor: Anchor3D;
+  [key: string]: unknown;
+}
 
-export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject;
-export interface JsonObject { [key: string]: JsonValue; }
-export interface Disposable { dispose(): void; }
+export type JsonValue =
+  null | boolean | number | string | JsonValue[] | JsonObject;
+export interface JsonObject {
+  [key: string]: JsonValue;
+}
+export interface Disposable {
+  dispose(): void;
+}
 export type FloorId = string | number | null;
-export interface Point { x: number; y: number; }
-export type Layout = 'plan' | 'tour' | 'split' | 'split-rev';
-export type PlanView = '2d' | '3d';
+export interface Point {
+  x: number;
+  y: number;
+}
+export type Layout = "plan" | "tour" | "split" | "split-rev";
+export type PlanView = "2d" | "3d";
 export type SettingValue = string | number | boolean;
 export type SettingsValues = Record<string, SettingValue>;
 export type Permission =
-  | 'project.read' | 'metadata.write' | 'markers.write'
-  | 'plan.read' | 'plan.write' | 'tour.read' | 'tour.write'
-  | 'view.control' | 'ui.control' | 'ui.contribute'
-  | 'archive.read' | 'archive.write' | 'keybindings.write'
-  | 'scene.read' | 'scene.write' | 'camera.control' | 'anchors.read' | 'anchors.write';
+  | "project.read"
+  | "metadata.write"
+  | "markers.write"
+  | "plan.read"
+  | "plan.write"
+  | "tour.read"
+  | "tour.write"
+  | "view.control"
+  | "ui.control"
+  | "ui.contribute"
+  | "archive.read"
+  | "archive.write"
+  | "keybindings.write"
+  | "scene.read"
+  | "scene.write"
+  | "camera.control"
+  | "anchors.read"
+  | "anchors.write";
 
-export interface Contribution { id: string; title: string; }
-export interface ActivityContribution extends Contribution { command: string; icon?: string; }
-export interface ToolbarContribution extends ActivityContribution { location: 'plan' | 'tour' | 'header' | 'status'; }
+export interface Contribution {
+  id: string;
+  title: string;
+}
+export interface ActivityContribution extends Contribution {
+  command: string;
+  icon?: string;
+}
+export interface ToolbarContribution extends ActivityContribution {
+  location: "plan" | "tour" | "header" | "status";
+}
 export type SettingDefinition =
-  | { key: string; title: string; description?: string; type: 'boolean'; default?: boolean }
-  | { key: string; title: string; description?: string; type: 'string'; default?: string }
-  | { key: string; title: string; description?: string; type: 'number'; default?: number; min?: number; max?: number };
+  | {
+      key: string;
+      title: string;
+      description?: string;
+      type: "boolean";
+      default?: boolean;
+    }
+  | {
+      key: string;
+      title: string;
+      description?: string;
+      type: "string";
+      default?: string;
+    }
+  | {
+      key: string;
+      title: string;
+      description?: string;
+      type: "number";
+      default?: number;
+      min?: number;
+      max?: number;
+    };
 export interface AddonManifest {
-  id: string; name: string; description?: string; version: string; apiVersion: 1;
-  main: string; permissions: Permission[]; engines?: {palace?: string};
+  id: string;
+  name: string;
+  description?: string;
+  version: string;
+  apiVersion: 1;
+  main: string;
+  permissions: Permission[];
+  engines?: { palace?: string };
   contributes?: {
-    commands?: Contribution[]; panels?: Contribution[];
-    activityBar?: ActivityContribution[]; toolbars?: ToolbarContribution[];
+    commands?: Contribution[];
+    panels?: Contribution[];
+    activityBar?: ActivityContribution[];
+    toolbars?: ToolbarContribution[];
     settings?: SettingDefinition[];
   };
 }
 
 export interface Marker {
-  x: number; y: number; note?: string; localPano?: string | null;
+  x: number;
+  y: number;
+  note?: string;
+  localPano?: string | null;
   [field: string]: unknown;
 }
-export interface Wall { x1: number; y1: number; x2: number; y2: number; [field: string]: unknown; }
-export interface Destination { panoId: string; room?: string; angleDeg?: number | null; [field: string]: unknown; }
+export interface Wall {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  [field: string]: unknown;
+}
+export interface Destination {
+  panoId: string;
+  room?: string;
+  angleDeg?: number | null;
+  [field: string]: unknown;
+}
 export interface Camera {
-  room?: string | null; floorId?: FloorId; planPx?: Point | null;
-  destinations?: Destination[]; hidden?: boolean; mode?: string;
-  data?: string; mime?: string; file?: string; headingDeg?: number; navYawOffsetDeg?: number;
+  room?: string | null;
+  floorId?: FloorId;
+  planPx?: Point | null;
+  destinations?: Destination[];
+  hidden?: boolean;
+  mode?: string;
+  data?: string;
+  mime?: string;
+  file?: string;
+  headingDeg?: number;
+  navYawOffsetDeg?: number;
   [field: string]: unknown;
 }
-export interface FloorSummary { index: number; name: string; w: number | null; h: number | null; floorId?: FloorId; markers: Marker[]; }
+export interface FloorSummary {
+  index: number;
+  name: string;
+  w: number | null;
+  h: number | null;
+  floorId?: FloorId;
+  markers: Marker[];
+}
 /** Raw floor copy may carry more editor-specific properties and image/part data. */
 export interface Floor {
-  name: string; w?: number | null; h?: number | null; floorId?: FloorId;
-  src?: string | null; markers: Marker[]; walls?: Wall[]; selected?: number | null;
+  name: string;
+  w?: number | null;
+  h?: number | null;
+  floorId?: FloorId;
+  src?: string | null;
+  markers: Marker[];
+  walls?: Wall[];
+  selected?: number | null;
   [field: string]: unknown;
 }
 export interface ProjectSummary {
-  name: string; purpose: string; source: string; explain: string; notes: string;
-  active: number; mode: 'edit' | 'view'; levels: FloorSummary[];
+  name: string;
+  purpose: string;
+  source: string;
+  explain: string;
+  notes: string;
+  active: number;
+  mode: "edit" | "view";
+  levels: FloorSummary[];
   /** An array here; tour.read() instead returns a record keyed by camera ID. */
-  panoramas: Array<Pick<Camera, 'room' | 'floorId' | 'planPx' | 'destinations'> & {id: string}>;
+  panoramas: Array<
+    Pick<Camera, "room" | "floorId" | "planPx" | "destinations"> & {
+      id: string;
+    }
+  >;
 }
-export type MetadataPatch = Partial<Pick<ProjectSummary, 'name' | 'purpose' | 'source' | 'explain' | 'notes'>>;
+export type MetadataPatch = Partial<
+  Pick<ProjectSummary, "name" | "purpose" | "source" | "explain" | "notes">
+>;
 export interface ViewState {
-  layout: Layout; planView: PlanView; zoom: number; rotation: number;
-  activeCamera: string | null; yaw: number; pitch: number; fov: number;
+  layout: Layout;
+  planView: PlanView;
+  zoom: number;
+  rotation: number;
+  activeCamera: string | null;
+  yaw: number;
+  pitch: number;
+  fov: number;
 }
 export interface ThemeState {
-  name: string; background: string; foreground: string; accent: string;
-  colorScheme: string; ui: Record<string, string>;
+  name: string;
+  background: string;
+  foreground: string;
+  accent: string;
+  colorScheme: string;
+  ui: Record<string, string>;
 }
-export interface Tool { id: string; title: string; owner: string; visible: boolean; }
-export interface CommandInfo { id: string; title: string; }
-export interface IconThemeInfo { id: string; title: string; active: boolean; }
+export interface Tool {
+  id: string;
+  title: string;
+  owner: string;
+  visible: boolean;
+}
+export interface CommandInfo {
+  id: string;
+  title: string;
+}
+export interface IconThemeInfo {
+  id: string;
+  title: string;
+  active: boolean;
+}
 
 export type UiColorKey =
-  | 'chrome' | 'editor' | 'widget' | 'dialog' | 'border' | 'widgetBorder'
-  | 'fg' | 'fgStrong' | 'fgDim' | 'fgMute' | 'input' | 'inputBorder'
-  | 'btn' | 'btnHover' | 'btnFg' | 'btn2' | 'btn2Hover' | 'accent' | 'focus' | 'sel'
-  | 'status' | 'statusFg' | 'statusItem' | 'statusItemFg' | 'activityFg' | 'activityInactive' | 'hover';
+  | "chrome"
+  | "editor"
+  | "widget"
+  | "dialog"
+  | "border"
+  | "widgetBorder"
+  | "fg"
+  | "fgStrong"
+  | "fgDim"
+  | "fgMute"
+  | "input"
+  | "inputBorder"
+  | "btn"
+  | "btnHover"
+  | "btnFg"
+  | "btn2"
+  | "btn2Hover"
+  | "accent"
+  | "focus"
+  | "sel"
+  | "status"
+  | "statusFg"
+  | "statusItem"
+  | "statusItemFg"
+  | "activityFg"
+  | "activityInactive"
+  | "hover";
 /** Hex colors must be #RRGGBB at runtime. */
 export interface ThemeDefinition {
-  id: string; title: string; base: string; mode?: 'dark' | 'light';
+  id: string;
+  title: string;
+  base: string;
+  mode?: "dark" | "light";
   colors?: Partial<Record<UiColorKey, string>>;
-  canvas?: Partial<Record<'bg' | 'walls', string>>;
+  canvas?: Partial<Record<"bg" | "walls", string>>;
 }
-export interface IconPath { d: string; filled?: boolean; }
-export interface IconThemeDefinition { id: string; title: string; icons: Record<string, IconPath[]>; }
-export interface AppearanceCatalog { themes?: ThemeDefinition[]; iconThemes?: IconThemeDefinition[]; }
+export interface IconPath {
+  d: string;
+  filled?: boolean;
+}
+export interface IconThemeDefinition {
+  id: string;
+  title: string;
+  icons: Record<string, IconPath[]>;
+}
+export interface AppearanceCatalog {
+  themes?: ThemeDefinition[];
+  iconThemes?: IconThemeDefinition[];
+}
 export interface ShapeAttributes {
-  x?: number; y?: number; x1?: number; y1?: number; x2?: number; y2?: number;
-  width?: number; height?: number; r?: number; cx?: number; cy?: number;
-  stroke?: string; fill?: string; opacity?: number;
-  'stroke-width'?: number; 'font-size'?: number;
+  x?: number;
+  y?: number;
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  width?: number;
+  height?: number;
+  r?: number;
+  cx?: number;
+  cy?: number;
+  stroke?: string;
+  fill?: string;
+  opacity?: number;
+  "stroke-width"?: number;
+  "font-size"?: number;
 }
-export type Shape = ShapeAttributes & ({type: 'circle' | 'rect' | 'line'} | {type: 'text'; text?: string});
-export type OverlayInput = {id: string; location: 'plan' | 'tour'; title?: string} &
-  ({shapes: Shape[]; remove?: false} | {remove: true});
-export interface ArchiveFile { path: string; }
-export type Encoding = 'text' | 'base64';
-export interface FileContent { path: string; encoding: Encoding; data: string; }
-export interface KeybindingInfo { id: string; title: string; key: string; owner: string; }
+export type Shape = ShapeAttributes &
+  ({ type: "circle" | "rect" | "line" } | { type: "text"; text?: string });
+export type OverlayInput = {
+  id: string;
+  location: "plan" | "tour";
+  title?: string;
+} & ({ shapes: Shape[]; remove?: false } | { remove: true });
+export interface ArchiveFile {
+  path: string;
+}
+export type Encoding = "text" | "base64";
+export interface FileContent {
+  path: string;
+  encoding: Encoding;
+  data: string;
+}
+export interface KeybindingInfo {
+  id: string;
+  title: string;
+  key: string;
+  owner: string;
+}
 
 export interface PalaceSDK {
   readonly version: string;
   commands: {
-    register(id: string, handler: (args?: unknown) => unknown | Promise<unknown>): Disposable;
+    register(
+      id: string,
+      handler: (args?: unknown) => unknown | Promise<unknown>,
+    ): Disposable;
   };
   project: {
     read(): Promise<ProjectSummary>;
     updateMetadata(patch: MetadataPatch): Promise<ProjectSummary>;
   };
   markers: {
-    add(input: {level: number; x: number; y: number; note?: string}): Promise<{level: number; index: number}>;
-    remove(input: {level: number; index: number}): Promise<true>;
-    update(input: {level: number; index: number; patch: Partial<Pick<Marker, 'x' | 'y' | 'note' | 'localPano'>>}): Promise<true>;
+    add(input: {
+      level: number;
+      x: number;
+      y: number;
+      note?: string;
+    }): Promise<{ level: number; index: number }>;
+    remove(input: { level: number; index: number }): Promise<true>;
+    update(input: {
+      level: number;
+      index: number;
+      patch: Partial<Pick<Marker, "x" | "y" | "note" | "localPano">>;
+    }): Promise<true>;
   };
   plan: {
     read(level?: number): Promise<Floor>;
-    add(input: {src: string; name?: string; floorId?: FloorId}): Promise<number>;
+    add(input: {
+      src: string;
+      name?: string;
+      floorId?: FloorId;
+    }): Promise<number>;
     remove(level: number): Promise<true>;
-    rename(input: {level: number; name: string}): Promise<true>;
+    rename(input: { level: number; name: string }): Promise<true>;
     select(level: number): Promise<true>;
-    move(input: {from: number; to: number}): Promise<true>;
+    move(input: { from: number; to: number }): Promise<true>;
     /** Opens native arrangement. true is not a placement/completion guarantee. */
-    merge(input: {from: number; to: number}): Promise<true>;
+    merge(input: { from: number; to: number }): Promise<true>;
     split(level: number): Promise<true>;
     /** Display rotation; does not rewrite source image pixels. */
-    transform(input: {rotation: number}): Promise<true>;
+    transform(input: { rotation: number }): Promise<true>;
     walls: {
-      add(input: {level: number; x1: number; y1: number; x2: number; y2: number}): Promise<number>;
-      remove(input: {level: number; index: number}): Promise<true>;
+      add(input: {
+        level: number;
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+      }): Promise<number>;
+      remove(input: { level: number; index: number }): Promise<true>;
     };
   };
   view: {
     read(): Promise<ViewState>;
     /** zoom controls the 2D plan; renderer limits/layout adjustments still apply. */
-    set(input: {layout?: Layout; planView?: PlanView; zoom?: number}): Promise<ViewState>;
+    set(input: {
+      layout?: Layout;
+      planView?: PlanView;
+      zoom?: number;
+    }): Promise<ViewState>;
   };
   tour: {
     world: {
       calibration: {
-        createSession(config?: CalibrationCreateConfig): Promise<CalibrationSession>;
+        createSession(
+          config?: CalibrationCreateConfig,
+        ): Promise<CalibrationSession>;
         getSession(sessionId: string): Promise<CalibrationSession>;
         listSessions(): Promise<CalibrationSession[]>;
-        updateSession(sessionId: string, patch: {label?: string; cameraIds?: string[]; config?: CalibrationConfig}): Promise<CalibrationSession>;
+        updateSession(
+          sessionId: string,
+          patch: {
+            label?: string;
+            cameraIds?: string[];
+            config?: CalibrationConfig;
+          },
+        ): Promise<CalibrationSession>;
         removeSession(sessionId: string): Promise<boolean>;
-        addLandmark(sessionId: string, data: {id?: string; label?: string; enabled?: boolean; observations?: CalibrationObservation[]}): Promise<CalibrationLandmark>;
+        addLandmark(
+          sessionId: string,
+          data: {
+            id?: string;
+            label?: string;
+            enabled?: boolean;
+            observations?: CalibrationObservation[];
+          },
+        ): Promise<CalibrationLandmark>;
         /** Adds 1..10000 landmarks as one revision (one recalculation, one history entry). */
-        addLandmarks(sessionId: string, data: Array<{id?: string; label?: string; enabled?: boolean; observations?: CalibrationObservation[]}>): Promise<CalibrationLandmark[]>;
-        updateLandmark(sessionId: string, landmarkId: string, patch: {label?: string; enabled?: boolean; observations?: CalibrationObservation[]}): Promise<CalibrationLandmark>;
+        addLandmarks(
+          sessionId: string,
+          data: Array<{
+            id?: string;
+            label?: string;
+            enabled?: boolean;
+            observations?: CalibrationObservation[];
+          }>,
+        ): Promise<CalibrationLandmark[]>;
+        updateLandmark(
+          sessionId: string,
+          landmarkId: string,
+          patch: {
+            label?: string;
+            enabled?: boolean;
+            observations?: CalibrationObservation[];
+          },
+        ): Promise<CalibrationLandmark>;
         removeLandmark(sessionId: string, landmarkId: string): Promise<true>;
-        addObservation(sessionId: string, landmarkId: string, data: CalibrationObservation): Promise<CalibrationObservation>;
-        updateObservation(sessionId: string, landmarkId: string, panoId: string, data: Partial<Pick<CalibrationObservation, 'yaw' | 'pitch' | 'verified'>>): Promise<CalibrationObservation>;
-        removeObservation(sessionId: string, landmarkId: string, panoId: string): Promise<boolean>;
+        addObservation(
+          sessionId: string,
+          landmarkId: string,
+          data: CalibrationObservation,
+        ): Promise<CalibrationObservation>;
+        updateObservation(
+          sessionId: string,
+          landmarkId: string,
+          panoId: string,
+          data: Partial<
+            Pick<CalibrationObservation, "yaw" | "pitch" | "verified">
+          >,
+        ): Promise<CalibrationObservation>;
+        removeObservation(
+          sessionId: string,
+          landmarkId: string,
+          panoId: string,
+        ): Promise<boolean>;
         /** Starts a background job; completion is reported by events/status, not by this receipt. */
-        solve(sessionId: string): Promise<{sessionId: string; revision: number; status: CalibrationState; queued: true}>;
+        solve(sessionId: string): Promise<{
+          sessionId: string;
+          revision: number;
+          status: CalibrationState;
+          queued: true;
+        }>;
         getStatus(sessionId: string): Promise<CalibrationStatus>;
         getQuality(sessionId: string): Promise<CalibrationQuality | null>;
-        preview(sessionId: string, options?: {worldTransform?: {position?: Point3D; rotation?: Quaternion; scale?: number; units?: 'scene-units' | 'meters' | 'model-units'}}): Promise<CalibrationPreview>;
-        apply(sessionId: string, options?: {previewId?: string}): Promise<{sessionId: string; revision: number; applied: true; wholeWorld: boolean}>;
-        revert(sessionId: string): Promise<{sessionId: string; reverted: true}>;
-        onObservationAdded(handler: (event: CalibrationEvent) => void): TourSubscription;
-        onObservationUpdated(handler: (event: CalibrationEvent) => void): TourSubscription;
-        onCalibrationStatusChanged(handler: (event: CalibrationEvent) => void): TourSubscription;
-        onCalibrationSolved(handler: (event: CalibrationEvent) => void): TourSubscription;
-        onCalibrationApplied(handler: (event: CalibrationEvent) => void): TourSubscription;
-        onCalibrationFailed(handler: (event: CalibrationEvent) => void): TourSubscription;
+        preview(
+          sessionId: string,
+          options?: {
+            worldTransform?: {
+              position?: Point3D;
+              rotation?: Quaternion;
+              scale?: number;
+              units?: "scene-units" | "meters" | "model-units";
+            };
+          },
+        ): Promise<CalibrationPreview>;
+        apply(
+          sessionId: string,
+          options?: { previewId?: string },
+        ): Promise<{
+          sessionId: string;
+          revision: number;
+          applied: true;
+          wholeWorld: boolean;
+        }>;
+        revert(
+          sessionId: string,
+        ): Promise<{ sessionId: string; reverted: true }>;
+        onObservationAdded(
+          handler: (event: CalibrationEvent) => void,
+        ): TourSubscription;
+        onObservationUpdated(
+          handler: (event: CalibrationEvent) => void,
+        ): TourSubscription;
+        onCalibrationStatusChanged(
+          handler: (event: CalibrationEvent) => void,
+        ): TourSubscription;
+        onCalibrationSolved(
+          handler: (event: CalibrationEvent) => void,
+        ): TourSubscription;
+        onCalibrationApplied(
+          handler: (event: CalibrationEvent) => void,
+        ): TourSubscription;
+        onCalibrationFailed(
+          handler: (event: CalibrationEvent) => void,
+        ): TourSubscription;
       };
 
       getCameraTransform(panoId?: string): Promise<PanoramaCamera>;
-      setCameraTransform(panoId: string, input: {position?: Point3D; rotation?: Quaternion; fov?: number}): Promise<PanoramaCamera>;
+      setCameraTransform(
+        panoId: string,
+        input: { position?: Point3D; rotation?: Quaternion; fov?: number },
+      ): Promise<PanoramaCamera>;
       removeCameraTransform(panoId: string): Promise<boolean>;
       listCameras(): Promise<PanoramaCamera[]>;
       getInfo(): Promise<WorldInfo>;
-      configure(input: {units?: 'scene-units' | 'meters' | 'model-units'; metersPerUnit?: number | null; geometry?: SceneConfiguration['geometry'] | null}): Promise<WorldInfo>;
+      configure(input: {
+        units?: "scene-units" | "meters" | "model-units";
+        metersPerUnit?: number | null;
+        geometry?: SceneConfiguration["geometry"] | null;
+      }): Promise<WorldInfo>;
       localToWorld(position: Point3D, panoId?: string): Promise<Point3D>;
       worldToLocal(position: Point3D, panoId?: string): Promise<Point3D>;
-      project(position: Point3D): Promise<{panoId: string; x: number; y: number; depth: number; visible: boolean; occluded: boolean}>;
-      raycast(input: {panoId?: string; screenX?: number; screenY?: number; screenPosition?: ScreenPosition; distance?: number}): Promise<{hit: boolean; position: Point3D | null; distance: number | null; source: 'geometry' | 'depth-map' | 'reference-distance' | 'none'; synthetic: boolean; panoId: string}>;
+      project(position: Point3D): Promise<{
+        panoId: string;
+        x: number;
+        y: number;
+        depth: number;
+        visible: boolean;
+        occluded: boolean;
+      }>;
+      raycast(input: {
+        panoId?: string;
+        screenX?: number;
+        screenY?: number;
+        screenPosition?: ScreenPosition;
+        distance?: number;
+      }): Promise<{
+        hit: boolean;
+        position: Point3D | null;
+        distance: number | null;
+        source: "geometry" | "depth-map" | "reference-distance" | "none";
+        synthetic: boolean;
+        panoId: string;
+      }>;
       objects: {
         create(input: WorldObjectInput): Promise<WorldObject>;
-        update(id: string, patch: Partial<Omit<WorldObjectInput, 'id'>>): Promise<WorldObject>;
+        update(
+          id: string,
+          patch: Partial<Omit<WorldObjectInput, "id">>,
+        ): Promise<WorldObject>;
         remove(id: string): Promise<boolean>;
         get(id: string): Promise<WorldObject>;
         list(): Promise<WorldObject[]>;
@@ -238,16 +883,29 @@ export interface PalaceSDK {
         getMode(): Promise<OcclusionMode>;
         setMode(mode: OcclusionMode): Promise<OcclusionMode>;
       };
-      onCameraChanged(handler: (event: WorldCameraEvent) => void): TourSubscription;
-      onObjectCreated(handler: (event: WorldObjectEvent) => void): TourSubscription;
-      onObjectUpdated(handler: (event: WorldObjectEvent) => void): TourSubscription;
-      onObjectRemoved(handler: (event: WorldObjectEvent) => void): TourSubscription;
-      onObjectClicked(handler: (event: WorldObjectEvent) => void): TourSubscription;
+      onCameraChanged(
+        handler: (event: WorldCameraEvent) => void,
+      ): TourSubscription;
+      onObjectCreated(
+        handler: (event: WorldObjectEvent) => void,
+      ): TourSubscription;
+      onObjectUpdated(
+        handler: (event: WorldObjectEvent) => void,
+      ): TourSubscription;
+      onObjectRemoved(
+        handler: (event: WorldObjectEvent) => void,
+      ): TourSubscription;
+      onObjectClicked(
+        handler: (event: WorldObjectEvent) => void,
+      ): TourSubscription;
     };
 
     anchors: {
       create(input: AnchorInput): Promise<Anchor3D>;
-      update(id: string, patch: Partial<Omit<Anchor3D, 'id'>>): Promise<Anchor3D>;
+      update(
+        id: string,
+        patch: Partial<Omit<Anchor3D, "id">>,
+      ): Promise<Anchor3D>;
       remove(id: string): Promise<boolean>;
       get(id: string): Promise<Anchor3D>;
       list(panoId?: string): Promise<Anchor3D[]>;
@@ -255,21 +913,58 @@ export interface PalaceSDK {
     };
     scene: {
       getInfo(panoId?: string): Promise<SceneInfo>;
-      configure(panoId: string, input: SceneConfiguration | null): Promise<SceneInfo>;
-      raycast(input: {screenPosition?: ScreenPosition; origin?: Point3D; direction?: Point3D; distance?: number; includeAnchors?: boolean}): Promise<RayHit | null>;
-      project(position: Point3D): Promise<{x: number; y: number; depth: number; visible: boolean; occluded: boolean; panoId: string}>;
-      unproject(screenPosition: ScreenPosition, depth: number): Promise<Point3D>;
+      configure(
+        panoId: string,
+        input: SceneConfiguration | null,
+      ): Promise<SceneInfo>;
+      raycast(input: {
+        screenPosition?: ScreenPosition;
+        origin?: Point3D;
+        direction?: Point3D;
+        distance?: number;
+        includeAnchors?: boolean;
+      }): Promise<RayHit | null>;
+      project(position: Point3D): Promise<{
+        x: number;
+        y: number;
+        depth: number;
+        visible: boolean;
+        occluded: boolean;
+        panoId: string;
+      }>;
+      unproject(
+        screenPosition: ScreenPosition,
+        depth: number,
+      ): Promise<Point3D>;
     };
     camera: {
       getPose(): Promise<CameraPose3D>;
-      setPose(input: Partial<Omit<CameraPose3D, 'panoId'>> & CameraAnimation): Promise<CameraPose3D>;
+      setPose(
+        input: Partial<Omit<CameraPose3D, "panoId">> & CameraAnimation,
+      ): Promise<CameraPose3D>;
       lookAt(target: Point3D, options?: CameraAnimation): Promise<CameraPose3D>;
-      moveTo(target: {panoId?: string; anchorId?: string; position?: Point3D; pose?: Partial<CameraPose3D>} | Point3D, options?: CameraAnimation): Promise<{pose: CameraPose3D; mode: string; translated: boolean}>;
-      focusAnchor(anchorId: string, options?: CameraAnimation): Promise<CameraPose3D>;
+      moveTo(
+        target:
+          | {
+              panoId?: string;
+              anchorId?: string;
+              position?: Point3D;
+              pose?: Partial<CameraPose3D>;
+            }
+          | Point3D,
+        options?: CameraAnimation,
+      ): Promise<{ pose: CameraPose3D; mode: string; translated: boolean }>;
+      focusAnchor(
+        anchorId: string,
+        options?: CameraAnimation,
+      ): Promise<CameraPose3D>;
       stopAnimation(): Promise<boolean>;
     };
     playback: {
-      start(config: {stops: PlaybackStop[]; loop?: boolean}): Promise<PlaybackState>;
+      start(config: {
+        stops: PlaybackStop[];
+        loop?: boolean;
+      }): Promise<PlaybackState>;
       pause(): Promise<PlaybackState>;
       resume(): Promise<PlaybackState>;
       stop(): Promise<PlaybackState>;
@@ -277,27 +972,64 @@ export interface PalaceSDK {
       previous(): Promise<PlaybackState>;
       getState(): Promise<PlaybackState>;
     };
-    waitForPanoramaReady(panoId?: string, options?: {timeout?: number}): Promise<PanoramaReady>;
+    waitForPanoramaReady(
+      panoId?: string,
+      options?: { timeout?: number },
+    ): Promise<PanoramaReady>;
     onCameraChanged(handler: (pose: CameraPose3D) => void): TourSubscription;
     onPanoramaReady(handler: (event: PanoramaReady) => void): TourSubscription;
     onAnchorClick(handler: (event: AnchorEvent) => void): TourSubscription;
-    onAnchorHover(handler: (event: Omit<AnchorEvent, 'anchor'> & {anchor?: Anchor3D; hovered: boolean}) => void): TourSubscription;
+    onAnchorHover(
+      handler: (
+        event: Omit<AnchorEvent, "anchor"> & {
+          anchor?: Anchor3D;
+          hovered: boolean;
+        },
+      ) => void,
+    ): TourSubscription;
     onAnchorMoved(handler: (event: AnchorEvent) => void): TourSubscription;
-    onPlaybackChanged(handler: (event: PlaybackState) => void): TourSubscription;
+    onPlaybackChanged(
+      handler: (event: PlaybackState) => void,
+    ): TourSubscription;
 
-    add(input: {id?: string; level?: number; room?: string; planPx?: Point; src?: string}): Promise<{id: string}>;
+    add(input: {
+      id?: string;
+      level?: number;
+      room?: string;
+      planPx?: Point;
+      src?: string;
+    }): Promise<{ id: string }>;
     remove(id: string): Promise<true>;
-    loadPanorama(input: {id: string; src: string}): Promise<{id: string}>;
+    loadPanorama(input: { id: string; src: string }): Promise<{ id: string }>;
     read(): Promise<Record<string, Camera>>;
     /** Selection is requested; image/WebGL readiness is not awaited. */
     select(id: string): Promise<true>;
-    pose(input: {yaw?: number; pitch?: number; fov?: number}): Promise<ViewState>;
-    update(input: {id: string; patch: {room?: string; hidden?: boolean; headingDeg?: number; navYawOffsetDeg?: number; planPx?: Point | null}}): Promise<true>;
-    connect(input: {from: string; to: string; add: boolean}): Promise<boolean>;
+    pose(input: {
+      yaw?: number;
+      pitch?: number;
+      fov?: number;
+    }): Promise<ViewState>;
+    update(input: {
+      id: string;
+      patch: {
+        room?: string;
+        hidden?: boolean;
+        headingDeg?: number;
+        navYawOffsetDeg?: number;
+        planPx?: Point | null;
+      };
+    }): Promise<true>;
+    connect(input: {
+      from: string;
+      to: string;
+      add: boolean;
+    }): Promise<boolean>;
     setStart(id: string | null): Promise<true>;
   };
   ui: {
-    registerAppearance(input: AppearanceCatalog): Promise<{themes: string[]; iconThemes: string[]}>;
+    registerAppearance(
+      input: AppearanceCatalog,
+    ): Promise<{ themes: string[]; iconThemes: string[] }>;
     removeAppearance(): Promise<true>;
     iconThemes(): Promise<IconThemeInfo[]>;
     iconTheme(id: string): Promise<string>;
@@ -316,28 +1048,32 @@ export interface PalaceSDK {
   };
   archive: {
     list(): Promise<ArchiveFile[]>;
-    read(input: {path: string; encoding?: Encoding}): Promise<FileContent>;
+    read(input: { path: string; encoding?: Encoding }): Promise<FileContent>;
     write(input: FileContent): Promise<boolean>;
     remove(path: string): Promise<boolean>;
-    export(): Promise<{name: string; encoding: 'base64'; data: string}>;
-    download(): Promise<{name: string}>;
+    export(): Promise<{ name: string; encoding: "base64"; data: string }>;
+    download(): Promise<{ name: string }>;
     meta: {
       read(): Promise<JsonObject | null>;
       write(value: JsonObject | null): Promise<boolean>;
     };
   };
   keybindings: {
-    register(input: {id: string; command: string; key: string}): Promise<{id: string; key: string}>;
+    register(input: {
+      id: string;
+      command: string;
+      key: string;
+    }): Promise<{ id: string; key: string }>;
     unregister(id: string): Promise<boolean>;
     list(): Promise<KeybindingInfo[]>;
   };
-  theme: {read(): Promise<ThemeState>};
+  theme: { read(): Promise<ThemeState> };
   storage: {
     get<T extends JsonValue = JsonValue>(key: string): Promise<T | null>;
     set(key: string, value: JsonValue): Promise<true>;
   };
   /** Local package resources. Synchronous; not an HTTP/filesystem API. */
-  assets: {read(path: string): string};
+  assets: { read(path: string): string };
   settings: {
     read(): Promise<SettingsValues>;
     update(patch: SettingsValues): Promise<SettingsValues>;
@@ -353,4 +1089,4 @@ export interface PalaceExtension {
 }
 
 /** Same calibration contract exposed to trusted system modules through window.PalaceAPI. */
-export type PalaceCalibrationAPI = PalaceSDK['tour']['world']['calibration'];
+export type PalaceCalibrationAPI = PalaceSDK["tour"]["world"]["calibration"];

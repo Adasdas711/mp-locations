@@ -70,20 +70,20 @@ Project state contains `calibrationSessions`, keyed by ID. A session includes:
 
 `createSession` accepts optional `id`, `label`, `cameraIds`, and the following flat config. `updateSession` accepts `{label?,cameraIds?,config?:partialConfig}`:
 
-| Field | Default | Valid range/meaning |
-| --- | --- | --- |
-| automaticSolve | true | Debounced recalculation after edits. |
-| requireVerified | true | Unverified inlier visibility without usable depth makes candidate provisional. |
-| referenceCameraId | first observed registered camera, otherwise first observed camera | Stored when calculation is first scheduled. Explicit reference must belong to the current project; a disconnected reference cannot be silently replaced. |
-| orientationModel | free | `free` estimates unrestricted orientation; `upright` assumes both source panorama +Y axes follow gravity. |
-| minCorrespondences | 8 in free / 4 in upright | Integer 8..100 in free or 4..100 in upright. |
-| ransacThresholdDeg | .6 | .01..5 spherical angular tolerance. |
-| ransacIterations | 512 | Integer 32..4000 maximum. |
-| minParallaxDeg | .75 | .05..20 effective angle; excludes near 0° and 180° lines. |
-| bundleIterations | 35 | Integer 1..200 block refinement passes. |
-| seed | 1 | Integer 0..4294967295. |
-| timeoutMs | 60000 | Integer 1000..120000 active-worker milliseconds. |
-| distances | [] | `{type:'cameras'|'landmarks',from,to,distance}`; distance is positive **meters**, .0001..100000. |
+| Field              | Default                                                           | Valid range/meaning                                                                                                                                      |
+| ------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| automaticSolve     | true                                                              | Debounced recalculation after edits.                                                                                                                     |
+| requireVerified    | true                                                              | Unverified inlier visibility without usable depth makes candidate provisional.                                                                           |
+| referenceCameraId  | first observed registered camera, otherwise first observed camera | Stored when calculation is first scheduled. Explicit reference must belong to the current project; a disconnected reference cannot be silently replaced. |
+| orientationModel   | free                                                              | `free` estimates unrestricted orientation; `upright` assumes both source panorama +Y axes follow gravity.                                                |
+| minCorrespondences | 8 in free / 4 in upright                                          | Integer 8..100 in free or 4..100 in upright.                                                                                                             |
+| ransacThresholdDeg | .6                                                                | .01..5 spherical angular tolerance.                                                                                                                      |
+| ransacIterations   | 512                                                               | Integer 32..4000 maximum.                                                                                                                                |
+| minParallaxDeg     | .75                                                               | .05..20 effective angle; excludes near 0° and 180° lines.                                                                                                |
+| bundleIterations   | 35                                                                | Integer 1..200 block refinement passes.                                                                                                                  |
+| seed               | 1                                                                 | Integer 0..4294967295.                                                                                                                                   |
+| timeoutMs          | 60000                                                             | Integer 1000..120000 active-worker milliseconds.                                                                                                         |
+| distances          | []                                                                | `{type:'cameras'                                                                                                                                         | 'landmarks',from,to,distance}`; distance is positive **meters**, .0001..100000. |
 
 IDs follow existing SDK safe identifiers, labels max 500 characters, values must be finite. The algorithm has no predetermined camera count. Calibration state is bounded by **32 MiB serialized characters**; world registrations remain subject to the World Space serialized-size budget. The old fixed camera-count cap was removed; global object count/mesh limits remain unchanged.
 
@@ -91,26 +91,26 @@ IDs follow existing SDK safe identifiers, labels max 500 characters, values must
 
 All operations below return Promises except event factories. They use existing `scene.read`/`scene.write`; legacy `tour.read`/`tour.write` aliases remain supported. Mutating/requesting calculation/preview/apply/revert requires Edit mode and no active review session. Read operations can inspect stored progress without a renderer.
 
-| Method | Result | Permission |
-| --- | --- | --- |
-| createSession(config?) | Complete normalized CalibrationSession. | scene.write |
-| getSession(id) | Complete clone; missing ID rejects. | scene.read |
-| listSessions() | Complete session array. | scene.read |
-| updateSession(id,patch) | Complete session after invalidation/revision increment. | scene.write |
-| removeSession(id) | true, cancels its job and removes its data. | scene.write |
-| addLandmark(id,data) | Normalized landmark, UUID default ID. | scene.write |
-| addLandmarks(id,list) | Array of normalized landmarks added as one revision (1..10000). | scene.write |
-| updateLandmark(id,landmarkId,patch) | Landmark; patch label/enabled/observations. | scene.write |
-| removeLandmark(id,landmarkId) | true; missing landmark rejects. | scene.write |
-| addObservation(id,landmarkId,data) | `{panoId,yaw,pitch,verified}`; duplicate camera observation rejects. | scene.write |
-| updateObservation(id,landmarkId,panoId,patch) | Observation; patch yaw/pitch/verified, not camera identity. | scene.write |
-| removeObservation(id,landmarkId,panoId) | false if absent, otherwise true. | scene.write |
-| solve(id) | `{sessionId,revision,status,queued:true}` request receipt. | scene.write |
-| getStatus(id) | `{sessionId,revision,status,pending,solvedRevision,appliedRevision,error}`. | scene.read |
-| getQuality(id) | Quality metrics or null before metrics exist. | scene.read |
-| preview(id,options?) | Unapplied camera/landmark/object snapshot and preview token. | scene.write |
-| apply(id,{previewId?}?) | `{sessionId,revision,applied:true,wholeWorld}`. | scene.write |
-| revert(id) | `{sessionId,reverted:true}`; guarded against overwriting newer world changes. | scene.write |
+| Method                                        | Result                                                                        | Permission  |
+| --------------------------------------------- | ----------------------------------------------------------------------------- | ----------- |
+| createSession(config?)                        | Complete normalized CalibrationSession.                                       | scene.write |
+| getSession(id)                                | Complete clone; missing ID rejects.                                           | scene.read  |
+| listSessions()                                | Complete session array.                                                       | scene.read  |
+| updateSession(id,patch)                       | Complete session after invalidation/revision increment.                       | scene.write |
+| removeSession(id)                             | true, cancels its job and removes its data.                                   | scene.write |
+| addLandmark(id,data)                          | Normalized landmark, UUID default ID.                                         | scene.write |
+| addLandmarks(id,list)                         | Array of normalized landmarks added as one revision (1..10000).               | scene.write |
+| updateLandmark(id,landmarkId,patch)           | Landmark; patch label/enabled/observations.                                   | scene.write |
+| removeLandmark(id,landmarkId)                 | true; missing landmark rejects.                                               | scene.write |
+| addObservation(id,landmarkId,data)            | `{panoId,yaw,pitch,verified}`; duplicate camera observation rejects.          | scene.write |
+| updateObservation(id,landmarkId,panoId,patch) | Observation; patch yaw/pitch/verified, not camera identity.                   | scene.write |
+| removeObservation(id,landmarkId,panoId)       | false if absent, otherwise true.                                              | scene.write |
+| solve(id)                                     | `{sessionId,revision,status,queued:true}` request receipt.                    | scene.write |
+| getStatus(id)                                 | `{sessionId,revision,status,pending,solvedRevision,appliedRevision,error}`.   | scene.read  |
+| getQuality(id)                                | Quality metrics or null before metrics exist.                                 | scene.read  |
+| preview(id,options?)                          | Unapplied camera/landmark/object snapshot and preview token.                  | scene.write |
+| apply(id,{previewId?}?)                       | `{sessionId,revision,applied:true,wholeWorld}`.                               | scene.write |
+| revert(id)                                    | `{sessionId,reverted:true}`; guarded against overwriting newer world changes. | scene.write |
 
 A sandboxed full-world transform additionally requires `anchors.read` and `anchors.write`; applying/reverting that transform requires `anchors.write`. Ordinary calibration does not need these permissions. Ordinary preview returns an empty objects map with `objectsIncluded:false` to callers without anchors.read, rather than exposing unrelated anchor metadata.
 
@@ -128,10 +128,14 @@ For an intentional change of the entire world's origin/coordinate scale:
 
 ```js
 const preview = await calibration.preview(id, {
-  worldTransform:{position:{x:10,y:0,z:0},rotation:{x:0,y:0,z:0,w:1},scale:2}
+  worldTransform: {
+    position: { x: 10, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0, w: 1 },
+    scale: 2,
+  },
 });
 // Inspect preview.cameras, preview.objects, preview.landmarks and wholeWorld.
-await calibration.apply(id,{previewId:preview.previewId});
+await calibration.apply(id, { previewId: preview.previewId });
 await calibration.revert(id); // unless subsequent world edits conflict
 ```
 
@@ -172,7 +176,9 @@ Errors reject with an Error message prefixed by code. Custom Error.code is not t
 
 ```js
 const group = await api.tour.world.calibration.createSession({
-  orientationModel: 'upright', minCorrespondences: 4, cameraIds: []
+  orientationModel: "upright",
+  minCorrespondences: 4,
+  cameraIds: [],
 });
 // Add four distinct physical landmarks observed on two level source panoramas.
 // Arbitrary viewing yaw/pitch/FOV do not change the source horizon assumption.

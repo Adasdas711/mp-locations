@@ -14,19 +14,27 @@
 
 ```json
 {
-  "themes": [{
-    "id": "palace.appearance.my-theme",
-    "title": "Моя тема",
-    "base": "darcula",
-    "mode": "dark",
-    "colors": {"editor": "#15252d", "widget": "#21343d", "focus": "#419cc2"},
-    "canvas": {"bg": "#15252d", "walls": "#419cc2"}
-  }],
-  "iconThemes": [{
-    "id": "palace.appearance.my-icons",
-    "title": "Мои иконки",
-    "icons": {"i-camera": [{"d": "M2 2H14V14H2Z", "filled": false}]}
-  }]
+  "themes": [
+    {
+      "id": "palace.appearance.my-theme",
+      "title": "Моя тема",
+      "base": "darcula",
+      "mode": "dark",
+      "colors": {
+        "editor": "#15252d",
+        "widget": "#21343d",
+        "focus": "#419cc2"
+      },
+      "canvas": { "bg": "#15252d", "walls": "#419cc2" }
+    }
+  ],
+  "iconThemes": [
+    {
+      "id": "palace.appearance.my-icons",
+      "title": "Мои иконки",
+      "icons": { "i-camera": [{ "d": "M2 2H14V14H2Z", "filled": false }] }
+    }
+  ]
 }
 ```
 
