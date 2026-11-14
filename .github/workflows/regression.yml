@@ -2,10 +2,17 @@ name: Browser regression
 on:
   push:
   pull_request:
+  workflow_dispatch:
+concurrency:
+  # A newer push to the same branch makes older runs obsolete.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -13,11 +20,35 @@ jobs:
     env:
       PALACE_BROWSER: ${{ matrix.browser }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Built files match their sources
+        if: matrix.browser == 'chromium'
+        run: |
+          npm run build
+          git diff --exit-code -- index.html sw.js || {
+            echo "::error::index.html or sw.js is out of date. Run 'npm run build' and commit the result."
+            exit 1
+          }
       - run: npx playwright-core install --with-deps ${{ matrix.browser }}
-      - run: npm test
+      - name: Test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee test-output.tap
+      - name: Failed tests
+        if: failure()
+        run: |
+          node scripts/tap-summary.cjs test-output.tap | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-output-${{ matrix.browser }}
+          path: test-output.tap
+          if-no-files-found: ignore
+          retention-days: 14
