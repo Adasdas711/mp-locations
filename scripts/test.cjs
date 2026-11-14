@@ -1,42 +1,9 @@
 // Serve the actual application on an ephemeral loopback port for browser regression tests.
-const http = require("node:http");
-const fs = require("node:fs/promises");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
-const mime = {
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript",
-  ".css": "text/css",
-  ".json": "application/json",
-  ".webmanifest": "application/manifest+json",
-  ".png": "image/png",
-  ".wasm": "application/wasm",
-};
-const server = http.createServer(async (request, response) => {
-  try {
-    const pathname = decodeURIComponent(
-      new URL(request.url, "http://localhost").pathname,
-    );
-    const file = path.resolve(
-      root,
-      "." + pathname + (pathname.endsWith("/") ? "index.html" : ""),
-    );
-    if (!file.startsWith(root + path.sep)) {
-      response.writeHead(403);
-      response.end();
-      return;
-    }
-    const data = await fs.readFile(file);
-    response.writeHead(200, {
-      "Content-Type": mime[path.extname(file)] || "application/octet-stream",
-    });
-    response.end(data);
-  } catch (error) {
-    response.writeHead(error.code === "ENOENT" ? 404 : 500);
-    response.end();
-  }
-});
+const { createAppServer } = require("../test/support/server.cjs");
+const server = createAppServer();
 // PALACE_TEST_FILES=a.cjs,b.cjs limits the run; PALACE_SHARD=i/n runs one of
 // n balanced parts (files assigned greedily by size, largest first), so CI
 // can split the suite over parallel jobs without losing or repeating files.

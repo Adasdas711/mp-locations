@@ -160,6 +160,31 @@ async function waitAfterPress(page, predicate, arg) {
     throw error;
   }
 }
+// Waits for an installed plugin to activate. The application itself allows a
+// plugin 12 s to activate before marking it failed, so wait a little longer,
+// and report what the host looked like if it never became ready.
+async function waitForAddon(page, id) {
+  try {
+    await page.waitForFunction((id) => addonHosts.get(id)?.ready, id, {
+      timeout: 15000,
+    });
+  } catch (error) {
+    const host = await page
+      .evaluate((id) => {
+        const host = addonHosts.get(id);
+        return JSON.stringify({
+          installed: addonPackages.has(id),
+          host: !!host,
+          ready: host?.ready,
+          error: host?.error,
+          status: document.querySelector("#addonStatus")?.textContent,
+        });
+      }, id)
+      .catch(() => "n/a");
+    error.message += ` (plugin ${id}: ${host})`;
+    throw error;
+  }
+}
 module.exports = {
   profiles,
   openSession,
@@ -167,5 +192,6 @@ module.exports = {
   pressAt,
   inputTrace,
   waitAfterPress,
+  waitForAddon,
   palace,
 };

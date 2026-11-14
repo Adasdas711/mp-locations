@@ -2,7 +2,12 @@ const { test, before, after } = require("node:test"),
   assert = require("node:assert/strict"),
   fs = require("node:fs"),
   Zip = require("../vendor/jszip.min.js");
-const { profiles, openSession, pressAt } = require("./support/fixtures.cjs"),
+const {
+    profiles,
+    openSession,
+    pressAt,
+    waitForAddon,
+  } = require("./support/fixtures.cjs"),
   { launchBrowser } = require("./support/browser.cjs");
 let browser;
 before(async () => (browser = await launchBrowser()));
@@ -42,7 +47,7 @@ async function install(
     buffer: await zip.generateAsync({ type: "nodebuffer" }),
   });
   await page.locator("#addonInstall").click();
-  await page.waitForFunction(() => addonHosts.get("test.scene")?.ready);
+  await waitForAddon(page, "test.scene");
   await page.locator("#addonsClose").click();
   return (
     await page.locator("#addonPanelFrames iframe").elementHandle()
@@ -151,7 +156,7 @@ for (const [name, options] of profiles) {
       { x: 2, y: 1, z: -8 },
     );
     await page.reload({ waitUntil: "networkidle" });
-    await page.waitForFunction(() => addonHosts.get("test.scene")?.ready);
+    await waitForAddon(page, "test.scene");
     await page.locator("#fileOpen").setInputFiles({
       name: "anchors.mpalace",
       mimeType: "application/zip",

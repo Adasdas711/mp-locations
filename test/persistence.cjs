@@ -1,17 +1,20 @@
 const { test } = require("node:test");
 const { profiles } = require("./support/fixtures.cjs");
 const { launchBrowser } = require("./support/browser.cjs");
+const { startAppServer } = require("./support/server.cjs");
 /* Run: NODE_PATH=/path/to/node_modules node test/persistence.cjs */
-const { chromium } = require("playwright-core");
 const JSZip = require("../vendor/jszip.min.js");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const fsSync = require("node:fs");
-const base = process.env.PALACE_TEST_URL || "http://127.0.0.1:8000";
 const root = path.resolve(__dirname, "..");
 for (const [profile, options] of profiles)
   test(`${profile}: recovery, archive metadata and offline workflow`, async () => {
+    // A server of its own, so going offline can mean that the server is gone:
+    // browser offline emulation does not work with service workers in WebKit.
+    const server = await startAppServer(),
+      base = server.url;
     const browser = await launchBrowser();
     try {
       const context = await browser.newContext({
@@ -335,13 +338,7 @@ for (const [profile, options] of profiles)
       await page.locator("#metaClose").click();
       await page.locator("#closeSaveModal").click();
       await page.evaluate(() => saveRecovery());
-      if ((process.env.PALACE_BROWSER || "chromium") === "webkit")
-        // WebKit's offline emulation breaks reloads served by a service worker
-        // ("internal error"); fail every network request instead.
-        await context.route("**/*", (route) =>
-          route.abort("internetdisconnected"),
-        );
-      else await context.setOffline(true);
+      await server.stop(); // offline: every request to the origin now fails
       await page.reload({ waitUntil: "networkidle" });
       await page.evaluate(async () => {
         await showRecovery();
@@ -409,5 +406,6 @@ for (const [profile, options] of profiles)
       );
     } finally {
       await browser.close();
+      await server.stop();
     }
   });

@@ -5,34 +5,38 @@ const { profiles, openSession } = require("./support/fixtures.cjs"),
 let browser;
 before(async () => (browser = await launchBrowser()));
 after(async () => browser?.close());
+// Opening an archive assigns the history project and writes its first version
+// asynchronously, after archiveContext is already set; wait for both.
+async function openingVersion(page) {
+  await page
+    .waitForFunction(async () => {
+      if (changeHistoryImporting) return false;
+      await changeHistoryQueue;
+      const db = await historyDB(),
+        versions = await idbResult(
+          db
+            .transaction("versions")
+            .objectStore("versions")
+            .index("project")
+            .getAll(changeHistoryProject),
+        );
+      return !changeHistoryImporting && versions?.length > 0;
+    })
+    .catch(async (error) => {
+      throw new Error(
+        `${error.message} (history status: ${await page
+          .locator("#historyStatus")
+          .textContent()
+          .catch(() => "n/a")})`,
+      );
+    });
+}
 for (const [name, options] of profiles)
   test(`${name}: system history persists edits, deduplicates assets, restores archives and keeps a backup`, async (t) => {
     const { page } = await openSession(browser, t, options, {
       offlineCache: true,
     });
-    // The opening version is written asynchronously; wait until it exists
-    // rather than for a queue that may not have received it yet.
-    await page
-      .waitForFunction(async () => {
-        await changeHistoryQueue;
-        const db = await historyDB(),
-          versions = await idbResult(
-            db
-              .transaction("versions")
-              .objectStore("versions")
-              .index("project")
-              .getAll(changeHistoryProject),
-          );
-        return Array.isArray(versions) && versions.length > 0;
-      })
-      .catch(async (error) => {
-        throw new Error(
-          `${error.message} (history status: ${await page
-            .locator("#historyStatus")
-            .textContent()
-            .catch(() => "n/a")})`,
-        );
-      });
+    await openingVersion(page);
     const baseline = await page.evaluate(async () => {
       const db = await historyDB();
       return (
@@ -156,8 +160,8 @@ for (const [name, options] of profiles)
   });
 test("history retention, view-mode safety, failed imports and asset encoding preserve user data", async (t) => {
   const { page } = await openSession(browser, t, profiles[0][1]);
-  await page.evaluate(() => changeHistoryQueue);
-  const { status, ...result } = await page.evaluate(async () => {
+  await openingVersion(page);
+  const result = await page.evaluate(async () => {
     const project = changeHistoryProject,
       assets = new Map(),
       original = {
@@ -214,15 +218,11 @@ test("history retention, view-mode safety, failed imports and asset encoding pre
       rejected,
     };
   });
-  assert.deepEqual(
-    result,
-    {
-      safe: true,
-      importSafe: true,
-      count: 50,
-      orphan: false,
-      rejected: true,
-    },
-    "history status: " + status,
-  );
+  assert.deepEqual(result, {
+    safe: true,
+    importSafe: true,
+    count: 50,
+    orphan: false,
+    rejected: true,
+  });
 });

@@ -2,7 +2,11 @@ const { test, before, after } = require("node:test"),
   assert = require("node:assert/strict"),
   fs = require("node:fs"),
   Zip = require("../vendor/jszip.min.js");
-const { profiles, openSession } = require("./support/fixtures.cjs"),
+const {
+    profiles,
+    openSession,
+    waitForAddon,
+  } = require("./support/fixtures.cjs"),
   { launchBrowser } = require("./support/browser.cjs");
 let browser;
 before(async () => (browser = await launchBrowser()));
@@ -52,7 +56,7 @@ async function setup(t, options) {
     buffer: await zip.generateAsync({ type: "nodebuffer" }),
   });
   await page.locator("#addonInstall").click();
-  await page.waitForFunction(() => addonHosts.get("test.world")?.ready);
+  await waitForAddon(page, "test.world");
   await page.locator("#addonsClose").click();
   const frame = await (
     await page.locator("#addonPanelFrames iframe").elementHandle()
@@ -202,7 +206,7 @@ for (const [name, options] of profiles) {
     assert.equal(Object.keys(data.worldSpace.objects).length, 1);
     assert.equal(Object.keys(data.worldSpace.cameras).length, 3);
     await page.reload({ waitUntil: "networkidle" });
-    await page.waitForFunction(() => addonHosts.get("test.world")?.ready);
+    await waitForAddon(page, "test.world");
     await page.locator("#fileOpen").setInputFiles({
       name: "world.mpalace",
       mimeType: "application/zip",

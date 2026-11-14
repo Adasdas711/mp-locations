@@ -2,7 +2,11 @@ const { test, before, after } = require("node:test"),
   assert = require("node:assert/strict"),
   fs = require("node:fs"),
   Zip = require("../vendor/jszip.min.js");
-const { profiles, openSession } = require("./support/fixtures.cjs"),
+const {
+    profiles,
+    openSession,
+    waitForAddon,
+  } = require("./support/fixtures.cjs"),
   { launchBrowser } = require("./support/browser.cjs"),
   { fixture } = require("./support/calibration-fixtures.cjs");
 let browser;
@@ -71,7 +75,7 @@ async function setup(
     buffer: await zip.generateAsync({ type: "nodebuffer" }),
   });
   await page.locator("#addonInstall").click();
-  await page.waitForFunction(() => addonHosts.get("test.calibration")?.ready);
+  await waitForAddon(page, "test.calibration");
   await page.locator("#addonsClose").click();
   const frame = await (
     await page.locator("#addonPanelFrames iframe").elementHandle()
@@ -194,7 +198,7 @@ for (const [name, options] of profiles) {
       24,
     );
     await page.reload({ waitUntil: "networkidle" });
-    await page.waitForFunction(() => addonHosts.get("test.calibration")?.ready);
+    await waitForAddon(page, "test.calibration");
     await page.locator("#fileOpen").setInputFiles({
       name: "calibrated.mpalace",
       mimeType: "application/zip",

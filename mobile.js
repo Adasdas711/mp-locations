@@ -324,6 +324,13 @@
         !0,
       ));
     const up = (e) => {
+      // A finger lifted before the next animation frame still owns the last
+      // pinch movement: apply it while both points are known.
+      l.has(e.pointerId) &&
+        u &&
+        "pinch" === u.mode &&
+        u.raf &&
+        (cancelAnimationFrame(u.raf), pinchFrame());
       if (l.has(e.pointerId) && (markTouch(), l.delete(e.pointerId), u))
         if ("one" === u.mode && u.id === e.pointerId) {
           if (
