@@ -185,6 +185,28 @@ async function waitForAddon(page, id) {
     throw error;
   }
 }
+// page.waitForFunction() treats a returned Promise as a truthy value and
+// resolves at once, so asynchronous conditions are polled here instead.
+async function waitForAsync(page, predicate, arg, { timeout = 10000 } = {}) {
+  const deadline = Date.now() + timeout;
+  let last;
+  for (;;) {
+    try {
+      last = await page.evaluate(predicate, arg);
+    } catch (error) {
+      // Like waitForFunction, keep waiting across navigations of the page.
+      if (!/Execution context was destroyed|navigation/i.test(error.message))
+        throw error;
+      last = undefined;
+    }
+    if (last) return last;
+    if (Date.now() > deadline)
+      throw new Error(
+        `waitForAsync: condition still ${JSON.stringify(last)} after ${timeout}ms: ${String(predicate).replace(/\s+/g, " ").slice(0, 160)}`,
+      );
+    await page.waitForTimeout(100);
+  }
+}
 module.exports = {
   profiles,
   openSession,
@@ -193,5 +215,6 @@ module.exports = {
   inputTrace,
   waitAfterPress,
   waitForAddon,
+  waitForAsync,
   palace,
 };

@@ -1,6 +1,10 @@
 const { test, before, after } = require("node:test"),
   assert = require("node:assert/strict");
-const { profiles, openSession } = require("./support/fixtures.cjs"),
+const {
+    profiles,
+    openSession,
+    waitForAsync,
+  } = require("./support/fixtures.cjs"),
   { launchBrowser } = require("./support/browser.cjs");
 let browser;
 before(async () => (browser = await launchBrowser()));
@@ -8,28 +12,26 @@ after(async () => browser?.close());
 // Opening an archive assigns the history project and writes its first version
 // asynchronously, after archiveContext is already set; wait for both.
 async function openingVersion(page) {
-  await page
-    .waitForFunction(async () => {
-      if (changeHistoryImporting) return false;
-      await changeHistoryQueue;
-      const db = await historyDB(),
-        versions = await idbResult(
-          db
-            .transaction("versions")
-            .objectStore("versions")
-            .index("project")
-            .getAll(changeHistoryProject),
-        );
-      return !changeHistoryImporting && versions?.length > 0;
-    })
-    .catch(async (error) => {
-      throw new Error(
-        `${error.message} (history status: ${await page
-          .locator("#historyStatus")
-          .textContent()
-          .catch(() => "n/a")})`,
+  await waitForAsync(page, async () => {
+    if (changeHistoryImporting) return false;
+    await changeHistoryQueue;
+    const db = await historyDB(),
+      versions = await idbResult(
+        db
+          .transaction("versions")
+          .objectStore("versions")
+          .index("project")
+          .getAll(changeHistoryProject),
       );
-    });
+    return !changeHistoryImporting && versions?.length > 0;
+  }).catch(async (error) => {
+    throw new Error(
+      `${error.message} (history status: ${await page
+        .locator("#historyStatus")
+        .textContent()
+        .catch(() => "n/a")})`,
+    );
+  });
 }
 for (const [name, options] of profiles)
   test(`${name}: system history persists edits, deduplicates assets, restores archives and keeps a backup`, async (t) => {

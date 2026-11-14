@@ -4,7 +4,7 @@ const http = require("node:http"),
   fs = require("node:fs/promises"),
   path = require("node:path");
 const { launchBrowser } = require("./support/browser.cjs");
-const { palace } = require("./support/fixtures.cjs");
+const { palace, waitForAsync } = require("./support/fixtures.cjs");
 test("old offline cache updates without closing tabs; saved versions stay closed and recover manually", async (t) => {
   const root = path.resolve(__dirname, "..");
   let legacy = true;
@@ -86,7 +86,8 @@ test("old offline cache updates without closing tabs; saved versions stay closed
     const r = await navigator.serviceWorker.getRegistration();
     await r.update();
   });
-  await page.waitForFunction(
+  await waitForAsync(
+    page,
     async () => !(await caches.keys()).includes("palace-offline-legacy"),
     null,
     { timeout: 30000 },
@@ -107,7 +108,7 @@ test("old offline cache updates without closing tabs; saved versions stay closed
     const r = await navigator.serviceWorker.getRegistration();
     await r.update();
   });
-  await page.waitForFunction(async () => {
+  await waitForAsync(page, async () => {
     const r = await navigator.serviceWorker.getRegistration();
     return (
       (await caches.keys()).includes("palace-offline-legacy") &&
@@ -120,7 +121,8 @@ test("old offline cache updates without closing tabs; saved versions stay closed
     const r = await navigator.serviceWorker.getRegistration();
     await r.update();
   });
-  await page.waitForFunction(
+  await waitForAsync(
+    page,
     async () => !(await caches.keys()).includes("palace-offline-legacy"),
     null,
     { timeout: 30000 },

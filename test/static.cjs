@@ -84,3 +84,15 @@ test("index.html is the reproducible minified build of index.max.html", async ()
   }
   assert.ok(count > 0);
 });
+test("tests do not pass asynchronous predicates to waitForFunction", () => {
+  // Playwright treats the returned Promise as truthy and stops waiting at
+  // once; such conditions belong in waitForAsync() (test/support/fixtures.cjs).
+  const dir = path.join(root, "test"),
+    offenders = [];
+  for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".cjs")))
+    for (const match of fs
+      .readFileSync(path.join(dir, file), "utf8")
+      .matchAll(/waitForFunction\(\s*async\b/g))
+      offenders.push(file + ":" + match.index);
+  assert.deepEqual(offenders, []);
+});
