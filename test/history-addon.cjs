@@ -10,7 +10,29 @@ for (const [name, options] of profiles)
     const { page } = await openSession(browser, t, options, {
       offlineCache: true,
     });
-    await page.evaluate(() => changeHistoryQueue);
+    // The opening version is written asynchronously; wait until it exists
+    // rather than for a queue that may not have received it yet.
+    await page
+      .waitForFunction(async () => {
+        await changeHistoryQueue;
+        const db = await historyDB(),
+          versions = await idbResult(
+            db
+              .transaction("versions")
+              .objectStore("versions")
+              .index("project")
+              .getAll(changeHistoryProject),
+          );
+        return Array.isArray(versions) && versions.length > 0;
+      })
+      .catch(async (error) => {
+        throw new Error(
+          `${error.message} (history status: ${await page
+            .locator("#historyStatus")
+            .textContent()
+            .catch(() => "n/a")})`,
+        );
+      });
     const baseline = await page.evaluate(async () => {
       const db = await historyDB();
       return (

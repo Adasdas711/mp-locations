@@ -335,7 +335,13 @@ for (const [profile, options] of profiles)
       await page.locator("#metaClose").click();
       await page.locator("#closeSaveModal").click();
       await page.evaluate(() => saveRecovery());
-      await context.setOffline(true);
+      if ((process.env.PALACE_BROWSER || "chromium") === "webkit")
+        // WebKit's offline emulation breaks reloads served by a service worker
+        // ("internal error"); fail every network request instead.
+        await context.route("**/*", (route) =>
+          route.abort("internetdisconnected"),
+        );
+      else await context.setOffline(true);
       await page.reload({ waitUntil: "networkidle" });
       await page.evaluate(async () => {
         await showRecovery();

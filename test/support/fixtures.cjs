@@ -136,7 +136,14 @@ async function pressAt(page, options, x, y) {
         true,
       );
   });
-  if (options.hasTouch) await page.touchscreen.tap(x, y);
+  // Playwright's WebKit taps dispatch touch, pointer and mouse down/up events
+  // but no click, unlike Safari (recorded with inputTrace() in CI), so taps
+  // there are performed as clicks. Chromium exercises real touch input.
+  if (
+    options.hasTouch &&
+    (process.env.PALACE_BROWSER || "chromium") !== "webkit"
+  )
+    await page.touchscreen.tap(x, y);
   else await page.mouse.click(x, y);
 }
 async function inputTrace(page) {

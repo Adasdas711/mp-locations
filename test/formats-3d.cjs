@@ -22,19 +22,26 @@ for (const [name, options] of profiles) {
       null,
       { timeout: 20000 },
     );
+    // The software-rendered dollhouse keeps the main thread busy on CI, so
+    // Playwright's "stable element" check can take longer than 10 s.
+    const slow3D = 30000;
     assert.ok(await page.locator("#dollhouseCanvas").isVisible());
     const r = await page.evaluate(() => DH.ctl.r);
-    await page.locator("#zoomIn").click();
+    await page.locator("#zoomIn").click({ timeout: slow3D });
     await page.waitForFunction((r) => DH.ctl.r < r, r);
     const photo = await page.evaluate(() => DH.photo);
-    await page.locator("#planPhoto3d").click();
+    await page.locator("#planPhoto3d").click({ timeout: slow3D });
     assert.notEqual(await page.evaluate(() => DH.photo), photo);
-    await page.locator('#floorOverlay button[data-li="1"]').click();
+    await page
+      .locator('#floorOverlay button[data-li="1"]')
+      .click({ timeout: slow3D });
     assert.equal(await page.evaluate(() => state.active), 1);
     // This button changes an animated canvas mode, not the document. Wait for
     // that observable result instead of Playwright's unrelated navigation wait.
     const documentURL = page.url();
-    await page.locator("#planView2d").click({ noWaitAfter: true });
+    await page
+      .locator("#planView2d")
+      .click({ noWaitAfter: true, timeout: slow3D });
     await page.waitForFunction(
       () =>
         planView === "2d" &&
