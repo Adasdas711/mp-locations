@@ -1,39 +1,56 @@
-name: Browser regression
+name: CI
 on:
   push:
   pull_request:
   workflow_dispatch:
 concurrency:
-  # A newer push to the same branch makes older runs obsolete.
+  # A newer push to the same branch makes older runs obsolete; never cancel
+  # a deployment of main that is already running.
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 permissions:
   contents: read
 jobs:
-  test:
+  checks:
+    name: Format and build
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, webkit]
-    env:
-      PALACE_BROWSER: ${{ matrix.browser }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Formatting (Prettier)
+        run: npm run format:check
       - name: Built files match their sources
-        if: matrix.browser == 'chromium'
         run: |
           npm run build
           git diff --exit-code -- index.html sw.js || {
             echo "::error::index.html or sw.js is out of date. Run 'npm run build' and commit the result."
             exit 1
           }
+
+  test:
+    name: Test (${{ matrix.browser }} ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+        shard: [1, 2, 3]
+    env:
+      PALACE_BROWSER: ${{ matrix.browser }}
+      PALACE_SHARD: ${{ matrix.shard }}/3
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
       - run: npx playwright-core install --with-deps ${{ matrix.browser }}
       - name: Test
         shell: bash
@@ -42,13 +59,40 @@ jobs:
           npm test 2>&1 | tee test-output.tap
       - name: Failed tests
         if: failure()
-        run: |
-          node scripts/tap-summary.cjs test-output.tap | tee -a "$GITHUB_STEP_SUMMARY"
+        run: node scripts/tap-summary.cjs test-output.tap | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload test log
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
-          name: test-output-${{ matrix.browser }}
+          name: test-output-${{ matrix.browser }}-${{ matrix.shard }}
           path: test-output.tap
           if-no-files-found: ignore
           retention-days: 14
+
+  deploy:
+    name: Deploy to GitHub Pages
+    # Only a green main is published, and only the application files.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [checks, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      - name: Assemble site
+        run: node scripts/build-site.cjs _site
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

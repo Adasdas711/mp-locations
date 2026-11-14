@@ -1,0 +1,12 @@
+# Third-party, generated and data files
+node_modules/
+vendor/
+_site/
+package-lock.json
+index.html
+sw.js
+*.palace-addon
+# HTML is excluded: reformatting can change whitespace between inline elements.
+*.html
+# app.js is still minified; it gets a readable source and a build step separately.
+app.js

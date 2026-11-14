@@ -4,14 +4,20 @@
   "private": true,
   "scripts": {
     "test": "node scripts/test.cjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "update:offline": "node scripts/update-offline.cjs",
     "package:addon": "node scripts/package-addon.cjs",
     "build:html": "node scripts/build-html.cjs",
-    "build": "npm run build:html && npm run update:offline"
+    "build": "npm run build:html && npm run update:offline",
+    "build:site": "node scripts/build-site.cjs"
   },
   "devDependencies": {
     "html-minifier-terser": "^7.2.0",
     "playwright-core": "1.61.1",
     "prettier": "^3.9.10"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
