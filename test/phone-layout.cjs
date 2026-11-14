@@ -34,8 +34,36 @@ async function swipe(context, page, locator, axis = "x") {
   };
   if ((process.env.PALACE_BROWSER || "chromium") !== "chromium") {
     // WebKit has no CDP touch driver; exercise the browser's native scroll input.
+    const dx = start.x - end.x,
+      dy = start.y - end.y;
     await page.mouse.move(start.x, start.y);
-    await page.mouse.wheel(start.x - end.x, start.y - end.y);
+    try {
+      await page.mouse.wheel(dx, dy);
+    } catch (error) {
+      if (!/not supported/i.test(error.message)) throw error;
+      // Mobile WebKit has neither a touch driver nor wheel input in
+      // Playwright: scroll the element under the finger as the swipe would.
+      await page.evaluate(
+        ({ x, y, dx, dy }) => {
+          const scrollable = (el) => {
+            const style = getComputedStyle(el),
+              canX =
+                dx &&
+                el.scrollWidth > el.clientWidth &&
+                /auto|scroll/.test(style.overflowX),
+              canY =
+                dy &&
+                el.scrollHeight > el.clientHeight &&
+                /auto|scroll/.test(style.overflowY);
+            return canX || canY;
+          };
+          let el = document.elementFromPoint(x, y);
+          while (el && !scrollable(el)) el = el.parentElement;
+          (el || document.scrollingElement).scrollBy(dx, dy);
+        },
+        { x: start.x, y: start.y, dx, dy },
+      );
+    }
     return;
   }
   const cdp = await context.newCDPSession(page);

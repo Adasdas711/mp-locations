@@ -112,7 +112,53 @@ async function point(page, x = 0.8, y = 0.25) {
   );
 }
 async function pressAt(page, options, x, y) {
+  // Record which input events reach the page, so a tap that the application
+  // never sees can be told apart from one it mishandles (inputTrace()).
+  await page.evaluate(() => {
+    window.__palaceInputTrace = [];
+    if (window.__palaceInputTraceInstalled) return;
+    window.__palaceInputTraceInstalled = true;
+    for (const type of [
+      "touchstart",
+      "touchend",
+      "pointerdown",
+      "pointerup",
+      "mousedown",
+      "mouseup",
+      "click",
+    ])
+      document.addEventListener(
+        type,
+        (event) =>
+          window.__palaceInputTrace?.push(
+            `${type}${event.pointerType ? ":" + event.pointerType : ""}${event.defaultPrevented ? "!" : ""}@${event.target?.id || event.target?.tagName || "?"}`,
+          ),
+        true,
+      );
+  });
   if (options.hasTouch) await page.touchscreen.tap(x, y);
   else await page.mouse.click(x, y);
 }
-module.exports = { profiles, openSession, point, pressAt, palace };
+async function inputTrace(page) {
+  return page
+    .evaluate(() => (window.__palaceInputTrace || []).join(" "))
+    .catch(() => "n/a");
+}
+// waitForFunction that reports the input events of the last pressAt() on timeout.
+async function waitAfterPress(page, predicate, arg) {
+  try {
+    await page.waitForFunction(predicate, arg);
+  } catch (error) {
+    error.message += ` (input events after the last press: ${(await inputTrace(page)) || "none"})`;
+    throw error;
+  }
+}
+module.exports = {
+  profiles,
+  openSession,
+  point,
+  pressAt,
+  inputTrace,
+  waitAfterPress,
+  palace,
+};

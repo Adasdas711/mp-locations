@@ -135,7 +135,7 @@ for (const [name, options] of profiles)
 test("history retention, view-mode safety, failed imports and asset encoding preserve user data", async (t) => {
   const { page } = await openSession(browser, t, profiles[0][1]);
   await page.evaluate(() => changeHistoryQueue);
-  const result = await page.evaluate(async () => {
+  const { status, ...result } = await page.evaluate(async () => {
     const project = changeHistoryProject,
       assets = new Map(),
       original = {
@@ -192,11 +192,15 @@ test("history retention, view-mode safety, failed imports and asset encoding pre
       rejected,
     };
   });
-  assert.deepEqual(result, {
-    safe: true,
-    importSafe: true,
-    count: 50,
-    orphan: false,
-    rejected: true,
-  });
+  assert.deepEqual(
+    result,
+    {
+      safe: true,
+      importSafe: true,
+      count: 50,
+      orphan: false,
+      rejected: true,
+    },
+    "history status: " + status,
+  );
 });

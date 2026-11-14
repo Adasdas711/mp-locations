@@ -38,6 +38,11 @@ for (let i = 0; i < lines.length; i++) {
     nested: indent > 0,
     location: pick("location").join(" ").replace(/^'|'$/g, ""),
     error: pick("error").slice(0, 8),
+    // first frames inside the test files show which step failed
+    at: pick("stack")
+      .filter((line) => /\/test\/[^/]+\.cjs:\d+/.test(line))
+      .slice(0, 2)
+      .map((line) => line.replace(/^.*?\/(test\/[^)]+)\)?$/, "$1")),
   });
 }
 const top = failures.filter((f) => !f.nested);
@@ -48,6 +53,8 @@ console.log(`### Failed tests (${top.length})\n`);
 if (summary) console.log(summary.replace(/# /g, "") + "\n");
 for (const f of top) {
   console.log(`- **${f.name}**${f.location ? ` — \`${f.location}\`` : ""}`);
+  if (f.at.length)
+    console.log(`  at ${f.at.map((a) => "`" + a + "`").join(", ")}`);
   if (f.error.length)
     console.log("  ```\n  " + f.error.join("\n  ") + "\n  ```");
 }

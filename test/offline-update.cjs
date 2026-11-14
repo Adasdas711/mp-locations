@@ -13,9 +13,16 @@ test("old offline cache updates without closing tabs; saved versions stay closed
     path.join(root, "persistence.js"),
     "utf8",
   );
+  // Simulate an older release without the trusted-event guard in
+  // showRecovery(); match the guard however the source is formatted.
   const legacyPersistence = persistence.replace(
-    /  if \(!event\?\.isTrusted[^\n]+\n/,
+    /  if \(\s*!event\?\.isTrusted[\s\S]*?\)\s*return;\n/,
     "",
+  );
+  assert.notEqual(
+    legacyPersistence,
+    persistence,
+    "persistence.js no longer contains the trusted-event guard this test removes",
   );
   const oldWorker = `self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open('palace-offline-legacy');await c.put('./index.html',new Response(${JSON.stringify(html)},{headers:{'Content-Type':'text/html'}}));await c.put('./persistence.js',new Response(${JSON.stringify(legacyPersistence + "\nshowRecovery(true);")},{headers:{'Content-Type':'text/javascript'}}));await self.skipWaiting()})()));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{if(e.request.method==='GET')e.respondWith((async()=>{const c=await caches.open('palace-offline-legacy');return await c.match(e.request.mode==='navigate'?'./index.html':e.request)||fetch(e.request)})())});`;
   const server = http.createServer(async (req, res) => {

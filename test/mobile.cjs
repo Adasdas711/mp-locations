@@ -1,7 +1,13 @@
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const { launchBrowser } = require("./support/browser.cjs");
-const { profiles, openSession, point } = require("./support/fixtures.cjs");
+const {
+  profiles,
+  openSession,
+  point,
+  pressAt,
+  waitAfterPress,
+} = require("./support/fixtures.cjs");
 let browser;
 before(async () => {
   browser = await launchBrowser();
@@ -63,8 +69,8 @@ for (const [name, options] of profiles.filter(
     const { page, context } = await openSession(browser, t, options);
     await page.locator('[data-tool="marker"]').tap();
     const p = await point(page, 0.85, 0.2);
-    await page.touchscreen.tap(p.x, p.y);
-    await page.waitForFunction(() => level().markers.length === 3);
+    await pressAt(page, options, p.x, p.y); // a native touchscreen tap
+    await waitAfterPress(page, () => level().markers.length === 3);
     await page.locator('[data-tool="select"]').tap();
     await page.locator("#plan .marker").last().tap();
     assert.equal(await page.evaluate(() => level().selected), 2);

@@ -9,6 +9,8 @@ const {
   openSession,
   point,
   pressAt,
+  inputTrace,
+  waitAfterPress,
 } = require("./support/fixtures.cjs");
 let browser;
 before(async () => {
@@ -23,7 +25,7 @@ for (const [profile, options] of profiles) {
     await page.locator('[data-tool="marker"]').click();
     let p = await point(page, 0.8, 0.25);
     await pressAt(page, options, p.x, p.y);
-    await page.waitForFunction(() => state.levels[0].markers.length === 3);
+    await waitAfterPress(page, () => state.levels[0].markers.length === 3);
     await page.locator('[data-tool="select"]').click();
     await page.locator("#plan .marker").last().click();
     const before = await page.evaluate(() => ({
@@ -169,13 +171,17 @@ for (const [profile, options] of profiles) {
           Math.abs(state.panoramas.a.planPx.y - 38) < 3,
       ),
       JSON.stringify(
-        await page.evaluate(() => ({
-          point: state.panoramas.a.planPx,
-          placing: placingCam,
-          tool: state.tool,
-          active: activeLocalPano,
-          floor: state.active,
-        })),
+        await page.evaluate(
+          (events) => ({
+            events,
+            point: state.panoramas.a.planPx,
+            placing: placingCam,
+            tool: state.tool,
+            active: activeLocalPano,
+            floor: state.active,
+          }),
+          await inputTrace(page),
+        ),
       ),
     );
     await page.evaluate(() => setStartPano(null));
