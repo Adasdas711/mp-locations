@@ -729,6 +729,13 @@ document.querySelector("#addonMode").onchange = (event) => {
   try {
     addonMode = localStorage.getItem("palace.addonMode") !== "false";
     document.querySelector("#addonMode").checked = addonMode;
+    // Scripts after this one extend the plugin API (scene, world, calibration)
+    // by wrapping addonHostDocument; start stored plugins only once all of
+    // them have run, or a fast storage read gives a plugin an incomplete API.
+    if (document.readyState === "loading")
+      await new Promise((resolve) =>
+        document.addEventListener("DOMContentLoaded", resolve, { once: true }),
+      );
     const db = await addonStorage();
     const records = await idbResult(
       db.transaction("packages").objectStore("packages").getAll(),
