@@ -14,8 +14,8 @@
   },
   "devDependencies": {
     "html-minifier-terser": "^7.2.0",
-    "playwright-core": "1.65.0",
-    "prettier": "^3.9.10"
+    "playwright-core": "1.65.1",
+    "prettier": "^3.10.1"
   },
   "engines": {
     "node": ">=22"
